@@ -1,15 +1,16 @@
 package uk.gov.hmrc.nationaldirectdebit
 
+import com.google.inject.AbstractModule
 import play.api.{Configuration, Environment}
-import play.api.inject.{Binding, Module => AppModule}
+import uk.gov.hmrc.nationaldirectdebit.actions.{AuthAction, DefaultAuthAction}
+import uk.gov.hmrc.nationaldirectdebit.config.AppConfig
 
 import java.time.Clock
 
-class Module extends AppModule:
+class Module extends AbstractModule {
 
-  override def bindings(
-    environment  : Environment,
-    configuration: Configuration
-  ): Seq[Binding[_]] =
-    bind[Clock].toInstance(Clock.systemDefaultZone) :: // inject if current time needs to be controlled in unit tests
-    Nil
+  override def configure(): Unit = {
+    bind(classOf[AuthAction]).to(classOf[DefaultAuthAction]).asEagerSingleton()
+    bind(classOf[AppConfig]).asEagerSingleton()
+  }
+}
