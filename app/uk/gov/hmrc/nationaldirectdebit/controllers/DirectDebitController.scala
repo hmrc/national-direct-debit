@@ -18,13 +18,13 @@ package uk.gov.hmrc.nationaldirectdebit.controllers
 
 import com.google.inject.Inject
 import play.api.libs.json.{JsValue, Json}
-import play.api.mvc.{Action, AnyContent, BodyParser, ControllerComponents, Request, Result}
+import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.nationaldirectdebit.actions.AuthAction
-import uk.gov.hmrc.nationaldirectdebit.models.requests.{AuthenticatedRequest, CreateDirectDebitRequest, WorkingDaysOffsetRequest}
+import uk.gov.hmrc.nationaldirectdebit.models.requests.{CreateDirectDebitRequest, WorkingDaysOffsetRequest}
 import uk.gov.hmrc.nationaldirectdebit.services.DirectDebitService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 class DirectDebitController @Inject()(
                                        authorise: AuthAction,

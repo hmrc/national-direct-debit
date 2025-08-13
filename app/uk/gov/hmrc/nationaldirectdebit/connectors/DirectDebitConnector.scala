@@ -28,7 +28,6 @@ import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import uk.gov.hmrc.nationaldirectdebit.models.responses.EarliestPaymentDateResponse
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
 
 class DirectDebitConnector @Inject()(
                                       http: HttpClientV2,
