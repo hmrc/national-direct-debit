@@ -36,24 +36,26 @@ class DirectDebitController @Inject()(
   def retrieveDirectDebits(firstRecordNumber: Option[Int], maxRecords: Option[Int]): Action[AnyContent] =
     authorise.async {
       implicit request =>
-        service.retrieveDirectDebits(maxRecords.getOrElse(0)).map{ response =>
+        service.retrieveDirectDebits(maxRecords.getOrElse(0)).map { response =>
           Ok(Json.toJson(response))
         }
     }
 
-  def createDirectDebit(): Action[CreateDirectDebitRequest] =
-    authorise.async(parse.json[CreateDirectDebitRequest]):
+  def createDirectDebit(): Action[JsValue] =
+    authorise(parse.json).async:
       implicit request =>
-        service.createDirectDebit(request.body).map(
-          response =>
-            Ok(response)
-        )
+        withJsonBody[CreateDirectDebitRequest] { request =>
+          service.createDirectDebit(request).map(
+            response =>
+              Ok(response)
+          )
+        }
 
   def getWorkingDaysOffset(): Action[JsValue] =
     authorise(parse.json).async:
       implicit request =>
         withJsonBody[WorkingDaysOffsetRequest] { request =>
-          service.getWorkingDaysOffset(request).map{ response =>
+          service.getWorkingDaysOffset(request).map { response =>
             Ok(Json.toJson(response))
           }
         }
