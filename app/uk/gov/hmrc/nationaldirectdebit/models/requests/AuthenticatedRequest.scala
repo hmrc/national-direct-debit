@@ -14,16 +14,13 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.nationaldirectdebit
+package uk.gov.hmrc.nationaldirectdebit.models.requests
 
-import com.google.inject.AbstractModule
-import uk.gov.hmrc.nationaldirectdebit.actions.{AuthAction, DefaultAuthAction}
-import uk.gov.hmrc.nationaldirectdebit.config.AppConfig
+import play.api.mvc.{Request, WrappedRequest}
+import uk.gov.hmrc.http.SessionId
 
-class Module extends AbstractModule {
-
-  override def configure(): Unit = {
-    bind(classOf[AuthAction]).to(classOf[DefaultAuthAction]).asEagerSingleton()
-    bind(classOf[AppConfig]).asEagerSingleton()
-  }
-}
+case class AuthenticatedRequest[A](
+                                    private val request: Request[A],
+                                    internalId: String,
+                                    sessionId: SessionId
+                                  ) extends WrappedRequest[A](request)
