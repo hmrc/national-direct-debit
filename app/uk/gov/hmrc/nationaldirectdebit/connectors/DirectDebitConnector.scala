@@ -36,7 +36,6 @@ class DirectDebitConnector @Inject()(
 
   private val rdsDatacacheProxyBaseUrl: String = config.baseUrl("rds-datacache-proxy") + "/rds-datacache-proxy"
 
-
   def retrieveDirectDebits(limit: Int)(implicit hc: HeaderCarrier): Future[RDSDatacacheResponse] = {
     http.get(url"$rdsDatacacheProxyBaseUrl/direct-debits?maxRecords=$limit")(hc)
       .execute[RDSDatacacheResponse]
