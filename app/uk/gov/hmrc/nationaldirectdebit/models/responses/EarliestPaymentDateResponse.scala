@@ -14,16 +14,14 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.nationaldirectdebit
+package uk.gov.hmrc.nationaldirectdebit.models.responses
 
-import com.google.inject.AbstractModule
-import uk.gov.hmrc.nationaldirectdebit.actions.{AuthAction, DefaultAuthAction}
-import uk.gov.hmrc.nationaldirectdebit.config.AppConfig
+import play.api.libs.json.{Json, OFormat}
 
-class Module extends AbstractModule {
+import java.time.LocalDate
 
-  override def configure(): Unit = {
-    bind(classOf[AuthAction]).to(classOf[DefaultAuthAction]).asEagerSingleton()
-    bind(classOf[AppConfig]).asEagerSingleton()
-  }
+case class EarliestPaymentDateResponse(date: LocalDate)
+
+object EarliestPaymentDateResponse {
+  implicit val format: OFormat[EarliestPaymentDateResponse] = Json.format
 }
