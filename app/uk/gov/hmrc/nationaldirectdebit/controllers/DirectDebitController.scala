@@ -20,11 +20,11 @@ import com.google.inject.Inject
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.nationaldirectdebit.actions.AuthAction
-import uk.gov.hmrc.nationaldirectdebit.models.requests.{CreateDirectDebitRequest, WorkingDaysOffsetRequest}
+import uk.gov.hmrc.nationaldirectdebit.models.requests.{CreateDirectDebitRequest, GenerateDdiRefRequest, WorkingDaysOffsetRequest}
 import uk.gov.hmrc.nationaldirectdebit.services.DirectDebitService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 class DirectDebitController @Inject()(
                                        authorise: AuthAction,
@@ -60,4 +60,11 @@ class DirectDebitController @Inject()(
           }
         }
 
+  def generateDdiReference(): Action[JsValue] =
+    authorise(parse.json).async:
+      implicit request =>
+        withJsonBody[GenerateDdiRefRequest] { request =>
+          Future.successful(Ok(Json.toJson(service.generateDdiReference(request))))
+        }
+  
 }

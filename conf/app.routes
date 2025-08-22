@@ -4,3 +4,5 @@ GET      /direct-debits                         uk.gov.hmrc.nationaldirectdebit.
 POST     /direct-debits                         uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.createDirectDebit()
 
 POST     /direct-debits/earliest-payment-date   uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.getWorkingDaysOffset()
+
+POST     /direct-debit-reference                uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.generateDdiReference()
