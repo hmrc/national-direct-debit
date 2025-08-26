@@ -22,8 +22,8 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.scalatestplus.mockito.MockitoSugar.mock
 import uk.gov.hmrc.nationaldirectdebit.connectors.DirectDebitConnector
-import uk.gov.hmrc.nationaldirectdebit.models.requests.{CreateDirectDebitRequest, WorkingDaysOffsetRequest}
-import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, RDSDatacacheResponse, RDSDirectDebitDetails}
+import uk.gov.hmrc.nationaldirectdebit.models.requests.{CreateDirectDebitRequest, GenerateDdiRefRequest, WorkingDaysOffsetRequest}
+import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDatacacheResponse, RDSDirectDebitDetails}
 import uk.gov.hmrc.nationaldirectdebit.services.DirectDebitService
 
 import java.time.{LocalDate, LocalDateTime}
@@ -64,6 +64,14 @@ class DirectDebitServiceSpec extends SpecBase {
         val result = testService.getWorkingDaysOffset(WorkingDaysOffsetRequest(baseDate = LocalDate.of(2025, 12, 12), offsetWorkingDays = 10)).futureValue
 
         result mustBe EarliestPaymentDateResponse(LocalDate.of(2025, 12, 12))
+      }
+    }
+    
+    "generateDdiReference method" - {
+      "must return the response from the connector" in {
+        val result = testService.generateDdiReference(GenerateDdiRefRequest("12345"))
+        val expectedResult = GenerateDdiRefResponse("12345".hashCode.abs.toString)
+        result mustBe expectedResult
       }
     }
   }

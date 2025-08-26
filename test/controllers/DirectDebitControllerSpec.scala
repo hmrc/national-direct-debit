@@ -25,8 +25,8 @@ import play.api.libs.json.Json
 import play.api.mvc.Result
 import play.api.test.Helpers.{contentAsJson, contentAsString, status}
 import uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController
-import uk.gov.hmrc.nationaldirectdebit.models.requests.{CreateDirectDebitRequest, WorkingDaysOffsetRequest}
-import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, RDSDatacacheResponse, RDSDirectDebitDetails}
+import uk.gov.hmrc.nationaldirectdebit.models.requests.{CreateDirectDebitRequest, GenerateDdiRefRequest, WorkingDaysOffsetRequest}
+import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDatacacheResponse, RDSDirectDebitDetails}
 import uk.gov.hmrc.nationaldirectdebit.services.DirectDebitService
 
 import java.time.{LocalDate, LocalDateTime}
@@ -92,6 +92,24 @@ class DirectDebitControllerSpec extends SpecBase {
         status(result) mustBe BAD_REQUEST
       }
     }
+
+    "generateDdiReference method" - {
+      "return 200 and a successful response when the request is valid" in new SetUp {
+        when(mockDirectDebitService.generateDdiReference(any()))
+          .thenReturn(GenerateDdiRefResponse("123"))
+
+        val result: Future[Result] = controller.generateDdiReference()(fakeRequestWithJsonBody(Json.toJson(testDdiRefRequestModel)))
+
+        status(result) mustBe OK
+        contentAsJson(result) mustBe Json.toJson(GenerateDdiRefResponse("123"))
+      }
+
+      "return 400 when the request is not valid" in new SetUp {
+        val result: Future[Result] = controller.generateDdiReference()(fakeRequestWithJsonBody(Json.toJson(789)))
+
+        status(result) mustBe BAD_REQUEST
+      }
+    }
   }
 
   class SetUp {
@@ -99,6 +117,7 @@ class DirectDebitControllerSpec extends SpecBase {
 
     val testResponseModel: EarliestPaymentDateResponse = EarliestPaymentDateResponse(LocalDate.of(2025, 12, 13))
     val testRequestModel: WorkingDaysOffsetRequest = WorkingDaysOffsetRequest(LocalDate.of(2025, 12, 5), 8)
+    val testDdiRefRequestModel: GenerateDdiRefRequest = GenerateDdiRefRequest("12345")
     val testEmptyDataCacheResponse: RDSDatacacheResponse = RDSDatacacheResponse(directDebitCount = 0, directDebitList = Seq.empty)
     val testDataCacheResponse: RDSDatacacheResponse = RDSDatacacheResponse(directDebitCount = 2,
       directDebitList = Seq(

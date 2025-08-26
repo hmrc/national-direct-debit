@@ -41,7 +41,7 @@ class DirectDebitService @Inject()(
   }
   
   def generateDdiReference(request: GenerateDdiRefRequest): GenerateDdiRefResponse = {
-    val ddiReference = request.paymentReference.hashCode.toString
+    val ddiReference = request.paymentReference.hashCode.abs.toString
 
     GenerateDdiRefResponse(ddiReference)
   }
