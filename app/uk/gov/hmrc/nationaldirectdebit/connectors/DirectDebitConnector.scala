@@ -56,7 +56,7 @@ class DirectDebitConnector @Inject()(
   }
 
   def getWorkingDaysOffset(getWorkingDaysOffsetRequest: WorkingDaysOffsetRequest)(implicit hc: HeaderCarrier): Future[EarliestPaymentDateResponse] = {
-    http.post(url"$rdsDatacacheProxyBaseUrl/direct-debits/earliest-payment-date")(hc)
+    http.post(url"$rdsDatacacheProxyBaseUrl/direct-debits/future-working-days")(hc)
       .withBody(Json.toJson(getWorkingDaysOffsetRequest))
       .execute[EarliestPaymentDateResponse]
   }
