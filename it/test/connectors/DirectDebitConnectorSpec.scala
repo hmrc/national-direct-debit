@@ -209,7 +209,7 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock
     "retrieveDdiReference" should {
       "successfully retrieve reference number" in {
         stubFor(
-          post(urlPathMatching("/rds-datacache-proxy/direct-debits/direct-debit-reference"))
+          post(urlPathMatching("/rds-datacache-proxy/direct-debit-reference"))
             .willReturn(
               aResponse()
                 .withStatus(OK)
@@ -225,7 +225,7 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock
 
       "must fail when the result is parsed as an UpstreamErrorResponse" in {
         stubFor(
-          post(urlPathMatching("/rds-datacache-proxy/direct-debits/direct-debit-reference"))
+          post(urlPathMatching("/rds-datacache-proxy/direct-debit-reference"))
             .willReturn(
               aResponse()
                 .withStatus(INTERNAL_SERVER_ERROR)
@@ -241,7 +241,7 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock
 
       "must fail when the result is a failed future" in {
         stubFor(
-          post(urlPathMatching("/rds-datacache-proxy/direct-debits/direct-debit-reference"))
+          post(urlPathMatching("/rds-datacache-proxy/direct-debit-reference"))
             .willReturn(
               aResponse()
                 .withStatus(0)

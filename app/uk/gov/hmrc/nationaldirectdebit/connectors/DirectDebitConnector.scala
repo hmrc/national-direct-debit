@@ -61,7 +61,7 @@ class DirectDebitConnector @Inject()(
   }
 
   def generateDdiReference(getDdiRefRequest: GenerateDdiRefRequest)(implicit hc: HeaderCarrier): Future[GenerateDdiRefResponse] = {
-    http.post(url"$rdsDatacacheProxyBaseUrl/direct-debits/direct-debit-reference")(hc)
+    http.post(url"$rdsDatacacheProxyBaseUrl/direct-debit-reference")(hc)
       .withBody(Json.toJson(getDdiRefRequest))
       .execute[GenerateDdiRefResponse]
   }
