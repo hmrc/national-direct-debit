@@ -25,8 +25,8 @@ import play.api.http.Status.{CREATED, INTERNAL_SERVER_ERROR, OK}
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.DirectDebitConnector
-import uk.gov.hmrc.nationaldirectdebit.models.requests.{CreateDirectDebitRequest, WorkingDaysOffsetRequest}
-import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, RDSDatacacheResponse, RDSDirectDebitDetails}
+import uk.gov.hmrc.nationaldirectdebit.models.requests.{CreateDirectDebitRequest, GenerateDdiRefRequest, WorkingDaysOffsetRequest}
+import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDatacacheResponse, RDSDirectDebitDetails}
 
 import java.time.{LocalDate, LocalDateTime}
 
@@ -201,6 +201,55 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock
 
         val requestBody = WorkingDaysOffsetRequest(baseDate = LocalDate.of(2025, 12, 25), offsetWorkingDays = 3)
         val result = intercept[Exception](connector.getWorkingDaysOffset(requestBody).futureValue)
+
+        result.getMessage must include("The future returned an exception")
+      }
+    }
+
+    "retrieveDdiReference" should {
+      "successfully retrieve reference number" in {
+        stubFor(
+          post(urlPathMatching("/rds-datacache-proxy/direct-debits/direct-debit-reference"))
+            .willReturn(
+              aResponse()
+                .withStatus(OK)
+                .withBody(s"""{"ddiRefNumber":"567890"}""")
+            )
+        )
+
+        val requestBody = GenerateDdiRefRequest(paymentReference = "123456")
+        val result = connector.generateDdiReference(requestBody).futureValue
+
+        result mustBe GenerateDdiRefResponse("567890")
+      }
+
+      "must fail when the result is parsed as an UpstreamErrorResponse" in {
+        stubFor(
+          post(urlPathMatching("/rds-datacache-proxy/direct-debits/direct-debit-reference"))
+            .willReturn(
+              aResponse()
+                .withStatus(INTERNAL_SERVER_ERROR)
+                .withBody("test error")
+            )
+        )
+
+        val requestBody = GenerateDdiRefRequest(paymentReference = "123456")
+        val result = intercept[Exception](connector.generateDdiReference(requestBody).futureValue)
+
+        result.getMessage must include("returned 500. Response body: 'test error'")
+      }
+
+      "must fail when the result is a failed future" in {
+        stubFor(
+          post(urlPathMatching("/rds-datacache-proxy/direct-debits/direct-debit-reference"))
+            .willReturn(
+              aResponse()
+                .withStatus(0)
+            )
+        )
+
+        val requestBody = GenerateDdiRefRequest(paymentReference = "123456")
+        val result = intercept[Exception](connector.generateDdiReference(requestBody).futureValue)
 
         result.getMessage must include("The future returned an exception")
       }

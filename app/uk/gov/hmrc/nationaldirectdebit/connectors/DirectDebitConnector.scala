@@ -21,11 +21,10 @@ import play.api.http.Status.CREATED
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.{HeaderCarrier, HttpReadsInstances, HttpResponse, StringContextOps, UpstreamErrorResponse}
-import uk.gov.hmrc.nationaldirectdebit.models.responses.RDSDatacacheResponse
-import uk.gov.hmrc.nationaldirectdebit.models.requests.{CreateDirectDebitRequest, WorkingDaysOffsetRequest}
+import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDatacacheResponse}
+import uk.gov.hmrc.nationaldirectdebit.models.requests.{CreateDirectDebitRequest, GenerateDdiRefRequest, WorkingDaysOffsetRequest}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
-import uk.gov.hmrc.nationaldirectdebit.models.responses.EarliestPaymentDateResponse
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -59,6 +58,12 @@ class DirectDebitConnector @Inject()(
     http.post(url"$rdsDatacacheProxyBaseUrl/direct-debits/future-working-days")(hc)
       .withBody(Json.toJson(getWorkingDaysOffsetRequest))
       .execute[EarliestPaymentDateResponse]
+  }
+
+  def generateDdiReference(getDdiRefRequest: GenerateDdiRefRequest)(implicit hc: HeaderCarrier): Future[GenerateDdiRefResponse] = {
+    http.post(url"$rdsDatacacheProxyBaseUrl/direct-debits/direct-debit-reference")(hc)
+      .withBody(Json.toJson(getDdiRefRequest))
+      .execute[GenerateDdiRefResponse]
   }
 
 }

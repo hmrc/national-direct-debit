@@ -24,7 +24,7 @@ import uk.gov.hmrc.nationaldirectdebit.models.requests.{CreateDirectDebitRequest
 import uk.gov.hmrc.nationaldirectdebit.services.DirectDebitService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 class DirectDebitController @Inject()(
                                        authorise: AuthAction,
@@ -51,7 +51,7 @@ class DirectDebitController @Inject()(
           )
         }
 
-  def getWorkingDaysOffset(): Action[JsValue] =
+  def getWorkingDaysOffset: Action[JsValue] =
     authorise(parse.json).async:
       implicit request =>
         withJsonBody[WorkingDaysOffsetRequest] { request =>
@@ -64,7 +64,9 @@ class DirectDebitController @Inject()(
     authorise(parse.json).async:
       implicit request =>
         withJsonBody[GenerateDdiRefRequest] { request =>
-          Future.successful(Ok(Json.toJson(service.generateDdiReference(request))))
+          service.generateDdiReference(request).map { response =>
+            Ok(Json.toJson(response))
+          }
         }
   
 }

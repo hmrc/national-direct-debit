@@ -40,10 +40,8 @@ class DirectDebitService @Inject()(
     connector.getWorkingDaysOffset(getWorkingDaysOffsetRequest)
   }
   
-  def generateDdiReference(request: GenerateDdiRefRequest): GenerateDdiRefResponse = {
-    val ddiReference = request.paymentReference.hashCode.abs.toString
-
-    GenerateDdiRefResponse(ddiReference)
+  def generateDdiReference(request: GenerateDdiRefRequest)(implicit hc: HeaderCarrier): Future[GenerateDdiRefResponse] = {
+    connector.generateDdiReference(request)
   }
 
 }
