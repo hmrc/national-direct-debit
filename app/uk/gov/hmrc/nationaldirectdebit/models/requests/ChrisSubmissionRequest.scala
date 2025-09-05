@@ -19,21 +19,28 @@ package uk.gov.hmrc.nationaldirectdebit.models.requests
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.{BankAddress, DirectDebitSource, PaymentDateDetails, PaymentPlanCalculation, PaymentPlanType, PaymentsFrequency, PlanStartDateDetails, YearEndAndMonth, YourBankDetails, YourBankDetailsWithAuddisStatus}
 
+import java.time.LocalDate
+
 
 case class ChrisSubmissionRequest(
                                    serviceType: DirectDebitSource,
                                    paymentPlanType: PaymentPlanType,
-                                   paymentFrequency: Option[PaymentsFrequency],            // optional
+                                   paymentFrequency: Option[PaymentsFrequency],
                                    yourBankDetailsWithAuddisStatus: YourBankDetailsWithAuddisStatus,
                                    auddisStatus: Option[Boolean],
-                                   planStartDate: Option[PlanStartDateDetails],                       // optional
-                                   paymentDate: Option[PaymentDateDetails],                        // optional
-                                   yearEndAndMonth: Option[YearEndAndMonth],              // optional
+                                   planStartDate: Option[PlanStartDateDetails],
+                                   planEndDate: Option[LocalDate],
+                                   paymentDate: Option[PaymentDateDetails],
+                                   yearEndAndMonth: Option[YearEndAndMonth],
                                    bankDetails: YourBankDetails,
                                    bankDetailsAddress: BankAddress,
                                    ddiReferenceNo: String,
+                                   paymentReference: Option[String],
                                    bankName: String,
-                                   calculation: Option[PaymentPlanCalculation]            // optional
+                                   totalAmountDue:Option[BigDecimal],
+                                   paymentAmount:Option[BigDecimal],
+                                   regularPaymentAmount:Option[BigDecimal],
+                                   calculation: Option[PaymentPlanCalculation]
                                  )
 
 object ChrisSubmissionRequest {

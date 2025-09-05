@@ -17,6 +17,7 @@
 package uk.gov.hmrc.nationaldirectdebit.controllers
 
 import com.google.inject.Inject
+import play.api.Logging
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.nationaldirectdebit.actions.AuthAction
@@ -30,7 +31,7 @@ class DirectDebitController @Inject()(
                                        authorise: AuthAction,
                                        service: DirectDebitService,
                                        val cc: ControllerComponents
-                                     )(implicit ec: ExecutionContext) extends BackendController(cc) {
+                                     )(implicit ec: ExecutionContext) extends BackendController(cc) with Logging {
 
 
   def retrieveDirectDebits(firstRecordNumber: Option[Int], maxRecords: Option[Int]): Action[AnyContent] =
@@ -74,7 +75,12 @@ class DirectDebitController @Inject()(
       implicit request =>
         withJsonBody[ChrisSubmissionRequest] { request =>
 
-          println("......................" + request)
+          logger.info(
+            s"""|
+              |Chris Submission Request received:
+                |${Json.prettyPrint(Json.toJson(request))}
+                |""".stripMargin
+          )
           Future.successful(Ok(Json.toJson(true)))
         }
 }
