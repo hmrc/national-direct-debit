@@ -95,8 +95,8 @@ class DirectDebitControllerSpec extends SpecBase {
 
     "generateDdiReference method" - {
       "return 200 and a successful response when the request is valid" in new SetUp {
-        when(mockDirectDebitService.generateDdiReference(any()))
-          .thenReturn(GenerateDdiRefResponse("123"))
+        when(mockDirectDebitService.generateDdiReference(any())(any()))
+          .thenReturn(Future.successful(GenerateDdiRefResponse("123")))
 
         val result: Future[Result] = controller.generateDdiReference()(fakeRequestWithJsonBody(Json.toJson(testDdiRefRequestModel)))
 
