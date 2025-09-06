@@ -25,7 +25,8 @@ import play.api.libs.json.Json
 import play.api.mvc.Result
 import play.api.test.Helpers.{contentAsJson, contentAsString, status}
 import uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController
-import uk.gov.hmrc.nationaldirectdebit.models.requests.{CreateDirectDebitRequest, GenerateDdiRefRequest, WorkingDaysOffsetRequest}
+import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.{BankAddress, Country, DirectDebitSource, PaymentDateDetails, PaymentPlanType, PaymentsFrequency, PlanStartDateDetails, YourBankDetailsWithAuddisStatus}
+import uk.gov.hmrc.nationaldirectdebit.models.requests.{ChrisSubmissionRequest, CreateDirectDebitRequest, GenerateDdiRefRequest, WorkingDaysOffsetRequest}
 import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDatacacheResponse, RDSDirectDebitDetails}
 import uk.gov.hmrc.nationaldirectdebit.services.DirectDebitService
 
@@ -92,6 +93,62 @@ class DirectDebitControllerSpec extends SpecBase {
         status(result) mustBe BAD_REQUEST
       }
     }
+
+    "submitToChris method" - {
+      "return 200 and true when the request is valid" in new SetUp {
+        val chrisSubmissionInstance = ChrisSubmissionRequest(
+          serviceType = DirectDebitSource.TC,
+          paymentPlanType = PaymentPlanType.TaxCreditRepaymentPlan,
+          paymentFrequency = Some(PaymentsFrequency.Monthly),
+          yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
+            accountHolderName = "Test",
+            sortCode = "123456",
+            accountNumber = "12345678",
+            auddisStatus = false,
+            accountVerified = false
+          ),
+          planStartDate = Some(PlanStartDateDetails(
+            enteredDate = LocalDate.of(2025, 9, 1),
+            earliestPlanStartDate = "2025-09-01"
+          )),
+          planEndDate = None,
+          paymentDate = Some(PaymentDateDetails(
+            enteredDate = LocalDate.of(2025, 9, 15),
+            earliestPaymentDate = "2025-09-01"
+          )),
+          yearEndAndMonth = None,
+          bankDetailsAddress = BankAddress(
+            lines = Seq("line 1"),
+            town = "Town",
+            country = Country("UK"),
+            postCode = "NE5 2DH"
+          ),
+          ddiReferenceNo = "DDI123456789",
+          paymentReference = Some("testReference"),
+          bankName = "Barclays",
+          totalAmountDue = Some(BigDecimal(200)),
+          paymentAmount = Some(BigDecimal(100)),
+          regularPaymentAmount = Some(BigDecimal(90)),
+          calculation = None
+        )
+
+        val chrisSubmissionJson = Json.toJson(chrisSubmissionInstance)
+
+        val result = controller.submitToChris()(fakeRequestWithJsonBody(chrisSubmissionJson))
+
+        status(result) mustBe OK
+        contentAsJson(result) mustBe Json.toJson(true)
+      }
+
+      "return 400 when the request JSON is invalid" in new SetUp {
+        val badJson = Json.obj("invalid" -> "data")
+
+        val result = controller.submitToChris()(fakeRequestWithJsonBody(badJson))
+
+        status(result) mustBe BAD_REQUEST
+      }
+    }
+
 
     "generateDdiReference method" - {
       "return 200 and a successful response when the request is valid" in new SetUp {
