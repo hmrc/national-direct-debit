@@ -69,9 +69,10 @@ class DirectDebitServiceSpec extends SpecBase {
     
     "generateDdiReference method" - {
       "must return the response from the connector" in {
-        val result = testService.generateDdiReference(GenerateDdiRefRequest("12345"))
-        val expectedResult = GenerateDdiRefResponse("12345".hashCode.abs.toString)
-        result mustBe expectedResult
+        when(mockConnector.generateDdiReference(any())(any())).thenReturn(Future.successful(GenerateDdiRefResponse("12345")))
+        val result = testService.generateDdiReference(GenerateDdiRefRequest("12345")).futureValue
+
+        result mustBe GenerateDdiRefResponse("12345")
       }
     }
   }
