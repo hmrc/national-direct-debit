@@ -16,14 +16,16 @@
 
 package uk.gov.hmrc.nationaldirectdebit.services
 
-import java.time.{LocalDate, LocalDateTime, ZoneOffset}
-import java.time.format.DateTimeFormatter
-import java.util.UUID
-import javax.inject.Inject
-import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
 import uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.DirectDebitSource
+
+import java.time.format.DateTimeFormatter
+import java.time.{LocalDate, LocalDateTime, ZoneOffset}
+import java.util.UUID
+import javax.inject.Inject
+import scala.concurrent.{ExecutionContext, Future}
+import scala.xml.Elem
 
 class ChrisService @Inject()(chrisConnector: ChrisConnector)(implicit ec: ExecutionContext) {
 
@@ -31,56 +33,54 @@ class ChrisService @Inject()(chrisConnector: ChrisConnector)(implicit ec: Execut
 
   def submitToChris(request: ChrisSubmissionRequest, credId: String, affinityGroup: String): Future[String] = {
     val envelopeXml = buildEnvelopeXml(request, credId, affinityGroup)
-    chrisConnector.submitEnvelope(scala.xml.XML.loadString(envelopeXml))
+    chrisConnector.submitEnvelope(envelopeXml)
   }
 
-  private def buildEnvelopeXml(request: ChrisSubmissionRequest, credId: String, affinityGroup: String): String = {
+  private def buildEnvelopeXml(request: ChrisSubmissionRequest, credId: String, affinityGroup: String): Elem = {
     val correlatingId = UUID.randomUUID().toString.replace("-", "")
     val receiptDate = LocalDateTime.now(ZoneOffset.UTC).format(dateTimeFormatter)
     val submissionDateTime = LocalDateTime.now(ZoneOffset.UTC).format(dateTimeFormatter)
     val periodEnd = calculatePeriodEnd()
     val senderType = if (affinityGroup == "agent") "Agent" else "Individual"
-    val paymentPlanXml = buildPaymentPlanXml(request)
 
-    s"""<?xml version="1.0" encoding="UTF-8"?>
-       |<ChRISEnvelope xmlns="http://www.hmrc.gov.uk/ChRIS/Envelope/2">
-       |  <EnvelopeVersion>2.0</EnvelopeVersion>
-       |  <Header>
-       |    <MessageClass>HMRC-NDDS-DDI</MessageClass>
-       |    <Qualifier>request</Qualifier>
-       |    <Function>submit</Function>
-       |    <Sender>
-       |      <System>Portal</System>
-       |      <CorrelatingID>$correlatingId</CorrelatingID>
-       |      <ReceiptDate>$receiptDate</ReceiptDate>
-       |    </Sender>
-       |  </Header>
-       |  <Body>
-       |    <IRenvelope xmlns="">
-       |      <IRheader>
-       |        <Keys>
-       |          <!-- TODO: populate known facts here -->
-       |        </Keys>
-       |        <PeriodEnd>$periodEnd</PeriodEnd>
-       |        <Sender>$senderType</Sender>
-       |      </IRheader>
-       |      <dDIPPDetails>
-       |        <submissionDateTime>$submissionDateTime</submissionDateTime>
-       |        <credentialID>$credId</credentialID>
-       |        <!-- TODO: add knownFact list here -->
-       |        <directDebitInstruction>
-       |          <actionType>01</actionType>
-       |          <ddiReferenceNo>${request.ddiReferenceNo}</ddiReferenceNo>
-       |          <bankSortCode>${request.yourBankDetailsWithAuddisStatus.sortCode}</bankSortCode>
-       |          <bankAccountNo>${request.yourBankDetailsWithAuddisStatus.accountNumber}</bankAccountNo>
-       |          <bankAccountName>${request.bankName}</bankAccountName>
-       |          ${if (request.yourBankDetailsWithAuddisStatus.auddisStatus) "<paperAuddisFlag>01</paperAuddisFlag>" else ""}
-       |        </directDebitInstruction>
-       |        $paymentPlanXml
-       |      </dDIPPDetails>
-       |    </IRenvelope>
-       |  </Body>
-       |</ChRISEnvelope>""".stripMargin
+    <ChRISEnvelope xmlns="http://www.hmrc.gov.uk/ChRIS/Envelope/2">
+      <EnvelopeVersion>2.0</EnvelopeVersion>
+      <Header>
+        <MessageClass>HMRC-NDDS-DDI</MessageClass>
+        <Qualifier>request</Qualifier>
+        <Function>submit</Function>
+        <Sender>
+          <System>Portal</System>
+          <CorrelatingID>{correlatingId}</CorrelatingID>
+          <ReceiptDate>{receiptDate}</ReceiptDate>
+        </Sender>
+      </Header>
+      <Body>
+        <IRenvelope xmlns=" add ask for value">
+          <IRheader>
+            <Keys>
+              <!-- TODO: populate known facts as <Key Type="...">value</Key> -->
+            </Keys>
+            <PeriodEnd>{periodEnd}</PeriodEnd>
+            <Sender>{senderType}</Sender>
+          </IRheader>
+          <dDIPPDetails>
+            <submissionDateTime>{submissionDateTime}</submissionDateTime>
+            <credentialID>{credId}</credentialID>
+            <!-- TODO: populate knownFact elements here -->
+            <directDebitInstruction>
+              <actionType>01</actionType>
+              <ddiReferenceNo>{request.ddiReferenceNo}</ddiReferenceNo>
+              <bankSortCode>{request.yourBankDetailsWithAuddisStatus.sortCode}</bankSortCode>
+              <bankAccountNo>{request.yourBankDetailsWithAuddisStatus.accountNumber}</bankAccountNo>
+              <bankAccountName>{request.bankName}</bankAccountName>
+              {if (request.yourBankDetailsWithAuddisStatus.auddisStatus) <paperAuddisFlag>01</paperAuddisFlag> else scala.xml.Null}
+            </directDebitInstruction>
+            {buildPaymentPlanXml(request)}
+          </dDIPPDetails>
+        </IRenvelope>
+      </Body>
+    </ChRISEnvelope>
   }
 
   private def calculatePeriodEnd(): String = {
@@ -91,97 +91,66 @@ class ChrisService @Inject()(chrisConnector: ChrisConnector)(implicit ec: Execut
     periodDate.toString
   }
 
-  private def buildPaymentPlanXml(request: ChrisSubmissionRequest): String = {
-    request.serviceType match {
-      case DirectDebitSource.CT   => buildCTPlanXml(request)
-      case DirectDebitSource.TC   => buildTCPlanXml(request)
-      case DirectDebitSource.MGD  => buildMGDPlanXml(request)
-      case DirectDebitSource.SA   => buildBudgetPlanXml(request)
-      case DirectDebitSource.NIC  => buildDefaultSinglePlanXml(request, "NIC")
-      case DirectDebitSource.OL   => buildDefaultSinglePlanXml(request, "OTHER_LIABILITY")
-      case DirectDebitSource.PAYE => buildDefaultSinglePlanXml(request, "PAYE")
-      case DirectDebitSource.SDLT => buildDefaultSinglePlanXml(request, "SDLT")
-      case DirectDebitSource.VAT  => buildDefaultSinglePlanXml(request, "VAT")
-    }
-  }
+  private def buildPaymentPlanXml(request: ChrisSubmissionRequest): Elem = request.serviceType match {
+    case DirectDebitSource.CT =>
+      <paymentPlan>
+        <actionType>01</actionType>
+        <pPType>01</pPType>
+        <paymentReference>{request.paymentReference.getOrElse("")}</paymentReference>
+        <hodService>CT</hodService>
+        <paymentCurrency>GBP</paymentCurrency>
+        <scheduledPaymentAmount>{request.paymentAmount.getOrElse(BigDecimal(0))}</scheduledPaymentAmount>
+        <scheduledPaymentStartDate>{request.paymentDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
+        <totalLiability>{request.totalAmountDue.getOrElse(BigDecimal(0))}</totalLiability>
+      </paymentPlan>
 
-  private def buildCTPlanXml(request: ChrisSubmissionRequest): String = {
-    s"""
-       |<paymentPlan>
-       |  <actionType>01</actionType>
-       |  <pPType>01</pPType>
-       |  <paymentReference>${request.paymentReference.getOrElse("")}</paymentReference>
-       |  <hodService>CT</hodService>
-       |  <paymentCurrency>GBP</paymentCurrency>
-       |  <scheduledPaymentAmount>${request.paymentAmount.getOrElse(BigDecimal(0))}</scheduledPaymentAmount>
-       |  <scheduledPaymentStartDate>${request.paymentDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
-       |  <totalLiability>${request.totalAmountDue.getOrElse(BigDecimal(0))}</totalLiability>
-       |</paymentPlan>
-       |""".stripMargin
-  }
+    case DirectDebitSource.TC =>
+      <paymentPlan>
+        <actionType>01</actionType>
+        <pPType>03</pPType>
+        <paymentReference>{request.paymentReference.getOrElse("")}</paymentReference>
+        <hodService>TC</hodService>
+        <paymentCurrency>GBP</paymentCurrency>
+        <scheduledPaymentAmount>{request.regularPaymentAmount.getOrElse(BigDecimal(0))}</scheduledPaymentAmount>
+        <scheduledPaymentStartDate>{request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
+        <scheduledPaymentEndDate>{request.planEndDate.getOrElse("")}</scheduledPaymentEndDate>
+        <scheduledPaymentFrequency>05</scheduledPaymentFrequency>
+        <balancingPaymentAmount>{request.totalAmountDue.getOrElse(BigDecimal(0)) - request.regularPaymentAmount.getOrElse(BigDecimal(0))}</balancingPaymentAmount>
+        <balancingPaymentDate>{request.planEndDate.getOrElse("")}</balancingPaymentDate>
+        <totalLiability>{request.totalAmountDue.getOrElse(BigDecimal(0))}</totalLiability>
+      </paymentPlan>
 
-  private def buildTCPlanXml(request: ChrisSubmissionRequest): String = {
-    s"""
-       |<paymentPlan>
-       |  <actionType>01</actionType>
-       |  <pPType>03</pPType>
-       |  <paymentReference>${request.paymentReference.getOrElse("")}</paymentReference>
-       |  <hodService>TC</hodService>
-       |  <paymentCurrency>GBP</paymentCurrency>
-       |  <scheduledPaymentAmount>${request.regularPaymentAmount.getOrElse(BigDecimal(0))}</scheduledPaymentAmount>
-       |  <scheduledPaymentStartDate>${request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
-       |  <scheduledPaymentEndDate>${request.planEndDate.getOrElse("")}</scheduledPaymentEndDate>
-       |  <scheduledPaymentFrequency>05</scheduledPaymentFrequency>
-       |  <balancingPaymentAmount>${request.totalAmountDue.getOrElse(BigDecimal(0)) - request.regularPaymentAmount.getOrElse(BigDecimal(0))}</balancingPaymentAmount>
-       |  <balancingPaymentDate>${request.planEndDate.getOrElse("")}</balancingPaymentDate>
-       |  <totalLiability>${request.totalAmountDue.getOrElse(BigDecimal(0))}</totalLiability>
-       |</paymentPlan>
-       |""".stripMargin
-  }
+    case DirectDebitSource.MGD =>
+      <paymentPlan>
+        <actionType>01</actionType>
+        <pPType>04</pPType>
+        <paymentReference>{request.paymentReference.getOrElse("")}</paymentReference>
+        <hodService>MGD</hodService>
+        <paymentCurrency>GBP</paymentCurrency>
+        <scheduledPaymentStartDate>{request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
+      </paymentPlan>
 
-  private def buildMGDPlanXml(request: ChrisSubmissionRequest): String = {
-    s"""
-       |<paymentPlan>
-       |  <actionType>01</actionType>
-       |  <pPType>04</pPType>
-       |  <paymentReference>${request.paymentReference.getOrElse("")}</paymentReference>
-       |  <hodService>MGD</hodService>
-       |  <paymentCurrency>GBP</paymentCurrency>
-       |  <scheduledPaymentStartDate>${request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
-       |</paymentPlan>
-       |""".stripMargin
-  }
+    case DirectDebitSource.SA =>
+      <paymentPlan>
+        <actionType>01</actionType>
+        <pPType>02</pPType>
+        <paymentReference>{request.paymentReference.getOrElse("")}</paymentReference>
+        <hodService>SA</hodService>
+        <paymentCurrency>GBP</paymentCurrency>
+        <scheduledPaymentAmount>{request.regularPaymentAmount.getOrElse(BigDecimal(0))}</scheduledPaymentAmount>
+        <scheduledPaymentStartDate>{request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
+        <scheduledPaymentEndDate>{request.planEndDate.getOrElse("")}</scheduledPaymentEndDate>
+        <scheduledPaymentFrequency>05</scheduledPaymentFrequency>
+        <totalLiability>{request.totalAmountDue.getOrElse(BigDecimal(0))}</totalLiability>
+      </paymentPlan>
 
-  private def buildBudgetPlanXml(request: ChrisSubmissionRequest): String = {
-    s"""
-       |<paymentPlan>
-       |  <actionType>01</actionType>
-       |  <pPType>02</pPType>
-       |  <paymentReference>${request.paymentReference.getOrElse("")}</paymentReference>
-       |  <hodService>SA</hodService>
-       |  <paymentCurrency>GBP</paymentCurrency>
-       |  <scheduledPaymentAmount>${request.regularPaymentAmount.getOrElse(BigDecimal(0))}</scheduledPaymentAmount>
-       |  <scheduledPaymentStartDate>${request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
-       |  <scheduledPaymentEndDate>${request.planEndDate.getOrElse("")}</scheduledPaymentEndDate>
-       |  <scheduledPaymentFrequency>05</scheduledPaymentFrequency>
-       |  <totalLiability>${request.totalAmountDue.getOrElse(BigDecimal(0))}</totalLiability>
-       |</paymentPlan>
-       |""".stripMargin
+    case _ =>
+      <paymentPlan>
+        <actionType>01</actionType>
+        <pPType>01</pPType>
+        <paymentReference>{request.paymentReference.getOrElse("")}</paymentReference>
+        <hodService>{request.serviceType.toString}</hodService>
+        <paymentCurrency>GBP</paymentCurrency>
+      </paymentPlan>
   }
-
-  private def buildDefaultSinglePlanXml(request: ChrisSubmissionRequest, hodService: String): String = {
-    s"""
-       |<paymentPlan>
-       |  <actionType>01</actionType>
-       |  <pPType>01</pPType>
-       |  <paymentReference>${request.paymentReference.getOrElse("")}</paymentReference>
-       |  <hodService>$hodService</hodService>
-       |  <paymentCurrency>GBP</paymentCurrency>
-       |  <scheduledPaymentAmount>${request.paymentAmount.getOrElse(BigDecimal(0))}</scheduledPaymentAmount>
-       |  <scheduledPaymentStartDate>${request.paymentDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
-       |  <totalLiability>${request.totalAmountDue.getOrElse(BigDecimal(0))}</totalLiability>
-       |</paymentPlan>
-       |""".stripMargin
-  }
-
 }

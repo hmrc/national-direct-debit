@@ -84,11 +84,10 @@ class DirectDebitController @Inject()(
               |""".stripMargin
         )
 
-        // Retrieve the logged in user's credId and affinityGroup
         val affinityGroup: String = "Individual"
         val credId: String = request.internalId
 
-        // Call your ChrisService to submit the request
+
         chrisService.submitToChris(chrisRequest, credId, affinityGroup).map { response =>
           Ok(Json.obj("success" -> true, "response" -> response))
         }.recover { case ex =>
