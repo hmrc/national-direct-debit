@@ -52,7 +52,7 @@ class DirectDebitController @Inject()(
           )
         }
 
-  def getWorkingDaysOffset(): Action[JsValue] =
+  def getWorkingDaysOffset: Action[JsValue] =
     authorise(parse.json).async:
       implicit request =>
         withJsonBody[WorkingDaysOffsetRequest] { request =>
@@ -65,8 +65,9 @@ class DirectDebitController @Inject()(
     authorise(parse.json).async:
       implicit request =>
         withJsonBody[GenerateDdiRefRequest] { request =>
-          
-          Future.successful(Ok(Json.toJson(service.generateDdiReference(request))))
+          service.generateDdiReference(request).map { response =>
+            Ok(Json.toJson(response))
+          }
         }
 
 
