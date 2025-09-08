@@ -7,4 +7,4 @@ POST     /direct-debit-reference                uk.gov.hmrc.nationaldirectdebit.
 
 POST     /direct-debits/future-working-days     uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.getWorkingDaysOffset()
 
-POST     /chris-submission                uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.submitToChris()
+POST     /chris                uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.submitToChris()
