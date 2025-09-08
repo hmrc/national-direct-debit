@@ -20,9 +20,10 @@ import com.google.inject.Inject
 import play.api.Logging
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
+import uk.gov.hmrc.auth.core.AuthorisedFunctions
 import uk.gov.hmrc.nationaldirectdebit.actions.AuthAction
 import uk.gov.hmrc.nationaldirectdebit.models.requests.{ChrisSubmissionRequest, CreateDirectDebitRequest, GenerateDdiRefRequest, WorkingDaysOffsetRequest}
-import uk.gov.hmrc.nationaldirectdebit.services.DirectDebitService
+import uk.gov.hmrc.nationaldirectdebit.services.{ChrisService, DirectDebitService}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -30,8 +31,9 @@ import scala.concurrent.{ExecutionContext, Future}
 class DirectDebitController @Inject()(
                                        authorise: AuthAction,
                                        service: DirectDebitService,
+                                       chrisService: ChrisService,
                                        val cc: ControllerComponents
-                                     )(implicit ec: ExecutionContext) extends BackendController(cc) with Logging {
+                                     )(implicit ec: ExecutionContext) extends BackendController(cc) with  Logging  {
 
 
   def retrieveDirectDebits(firstRecordNumber: Option[Int], maxRecords: Option[Int]): Action[AnyContent] =
@@ -72,16 +74,28 @@ class DirectDebitController @Inject()(
 
 
   def submitToChris(): Action[JsValue] =
-    authorise(parse.json).async:
-      implicit request =>
-        withJsonBody[ChrisSubmissionRequest] { request =>
+    authorise(parse.json).async { implicit request =>
+      withJsonBody[ChrisSubmissionRequest] { chrisRequest =>
 
-          logger.info(
-            s"""|
-              |Chris Submission Request received:
-                |${Json.prettyPrint(Json.toJson(request))}
-                |""".stripMargin
-          )
-          Future.successful(Ok(Json.toJson(true)))
+        logger.info(
+          s"""|
+             |Chris Submission Request received:
+              |${Json.prettyPrint(Json.toJson(chrisRequest))}
+              |""".stripMargin
+        )
+
+        // Retrieve the logged in user's credId and affinityGroup
+        val affinityGroup: String = "Individual"
+        val credId: String = request.internalId
+
+        // Call your ChrisService to submit the request
+        chrisService.submitToChris(chrisRequest, credId, affinityGroup).map { response =>
+          Ok(Json.obj("success" -> true, "response" -> response))
+        }.recover { case ex =>
+          logger.error("ChRIS submission failed", ex)
+          InternalServerError(Json.obj("success" -> false, "message" -> ex.getMessage))
         }
+      }
+    }
+
 }
