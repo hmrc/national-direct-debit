@@ -45,9 +45,7 @@ class ChrisService @Inject()(chrisConnector: ChrisConnector)(implicit ec: Execut
     chrisConnector.submitEnvelope(envelopeXml)
   }
 
-  // ============================
-  // Lookups for HOD service & known facts
-  // ============================
+  //Lookups for HOD service & known facts
   private val serviceToHod: Map[DirectDebitSource, String] = Map(
     DirectDebitSource.CT   -> "COTA",
     DirectDebitSource.PAYE -> "PAYE",
@@ -81,22 +79,21 @@ class ChrisService @Inject()(chrisConnector: ChrisConnector)(implicit ec: Execut
 
     val hodService = serviceToHod(request.serviceType)
     val knownFactCfg = hodToKnownFact.getOrElse(hodService, KnownFactConfig("UNKNOWN", "UNKNOWN"))
-    val knownFactValue = request.paymentReference.getOrElse("")
 
     <ChRISEnvelope xmlns="http://www.hmrc.gov.uk/ChRIS/Envelope/2">
       <EnvelopeVersion>2.0</EnvelopeVersion>
       <Header>
-        <MessageClass>HMRC-NDDS-DDI</MessageClass>
-        <Qualifier>request</Qualifier>
-        <Function>submit</Function>
+        <MessageClass>{ChrisEnvelopeConstants.MessageClass}</MessageClass>
+        <Qualifier>{ChrisEnvelopeConstants.Qualifier}</Qualifier>
+        <Function>{ChrisEnvelopeConstants.Function}</Function>
         <Sender>
-          <System>Portal</System>
+          <System>{ChrisEnvelopeConstants.SenderSystem}</System>
           <CorrelatingID>{correlatingId}</CorrelatingID>
           <ReceiptDate>{receiptDate}</ReceiptDate>
         </Sender>
       </Header>
       <Body>
-        <IRenvelope xmlns="add ask for value">
+        <IRenvelope>  // xmlns="" was removed from here
           <IRheader>
             <Keys>
               <Key Type={knownFactCfg.factType}>{knownFactCfg.factName}</Key>
@@ -112,7 +109,7 @@ class ChrisService @Inject()(chrisConnector: ChrisConnector)(implicit ec: Execut
               <value>{knownFactCfg.factName}</value>
             </knownFact>
             <directDebitInstruction>
-              <actionType>01</actionType>
+              <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
               <ddiReferenceNo>{request.ddiReferenceNo}</ddiReferenceNo>
               <bankSortCode>{request.yourBankDetailsWithAuddisStatus.sortCode}</bankSortCode>
               <bankAccountNo>{request.yourBankDetailsWithAuddisStatus.accountNumber}</bankAccountNo>
@@ -144,8 +141,8 @@ class ChrisService @Inject()(chrisConnector: ChrisConnector)(implicit ec: Execut
     request.serviceType match {
       case DirectDebitSource.TC if request.paymentPlanType == PaymentPlanType.TaxCreditRepaymentPlan  =>
         <paymentPlan>
-          <actionType>01</actionType>
-          <pPType>03</pPType>
+          <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
+          <pPType>{ChrisEnvelopeConstants.PPType_3}</pPType>
           <paymentReference>{request.paymentReference.getOrElse("")}</paymentReference>
           <hodService>{hodService}</hodService>
           <paymentCurrency>GBP</paymentCurrency>
@@ -160,8 +157,8 @@ class ChrisService @Inject()(chrisConnector: ChrisConnector)(implicit ec: Execut
 
       case DirectDebitSource.MGD if request.paymentPlanType == PaymentPlanType.VariablePaymentPlan =>
         <paymentPlan>
-          <actionType>01</actionType>
-          <pPType>04</pPType>
+          <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
+          <pPType>{ChrisEnvelopeConstants.PPType_4}</pPType>
           <paymentReference>{request.paymentReference.getOrElse("")}</paymentReference>
           <hodService>{hodService}</hodService>
           <paymentCurrency>GBP</paymentCurrency>
@@ -170,8 +167,8 @@ class ChrisService @Inject()(chrisConnector: ChrisConnector)(implicit ec: Execut
 
       case DirectDebitSource.SA if request.paymentPlanType == PaymentPlanType.BudgetPaymentPlan =>
         <paymentPlan>
-          <actionType>01</actionType>
-          <pPType>02</pPType>
+          <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
+          <pPType>{ChrisEnvelopeConstants.PPType_2}</pPType>
           <paymentReference>{request.paymentReference.getOrElse("")}</paymentReference>
           <hodService>{hodService}</hodService>
           <paymentCurrency>GBP</paymentCurrency>
@@ -183,8 +180,8 @@ class ChrisService @Inject()(chrisConnector: ChrisConnector)(implicit ec: Execut
 
       case _ => // single payment
         <paymentPlan>
-          <actionType>01</actionType>
-          <pPType>01</pPType>
+          <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
+          <pPType>{ChrisEnvelopeConstants.PPType_1}</pPType>
           <paymentReference>{request.paymentReference.getOrElse("")}</paymentReference>
           <hodService>{hodService}</hodService>
           <paymentCurrency>GBP</paymentCurrency>
