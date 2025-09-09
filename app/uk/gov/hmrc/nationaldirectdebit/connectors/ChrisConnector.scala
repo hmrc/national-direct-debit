@@ -29,8 +29,7 @@ class ChrisConnector @Inject()(
                                 config: ServicesConfig
                               )(implicit ec: ExecutionContext) extends Logging {
 
-  // Construct base URL like your RDS connector
-  private val chrisBaseUrl: String = config.baseUrl("chris") + "/ChRIS/NDDS/Filing/async/HMRC-NDDS-DDI"
+  private val chrisBaseUrl: String = config.baseUrl("chris") + "/submission/ChRIS/NDDS/Filing/async/HMRC-NDDS-DDI"
 
   def submitEnvelope(envelope: Elem): Future[String] = {
     ws.url(chrisBaseUrl)
