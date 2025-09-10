@@ -16,6 +16,11 @@
 
 package uk.gov.hmrc.nationaldirectdebit.services
 
+import play.api.Logging
+import uk.gov.hmrc.auth.core.AuthConnector
+import uk.gov.hmrc.auth.core.authorise.EmptyPredicate
+import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
 import uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.{DirectDebitSource, PaymentPlanType, PaymentsFrequency}
@@ -26,11 +31,6 @@ import java.util.UUID
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 import scala.xml.Elem
-import play.api.Logging
-import uk.gov.hmrc.auth.core.AuthConnector
-import uk.gov.hmrc.auth.core.authorise.EmptyPredicate
-import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
-import uk.gov.hmrc.http.HeaderCarrier
 
 class ChrisService @Inject()(chrisConnector: ChrisConnector,
                              authConnector: AuthConnector
@@ -71,6 +71,7 @@ class ChrisService @Inject()(chrisConnector: ChrisConnector,
       hodServices <- getEligibleHodServices()
       _ = logger.info(s"Eligible HOD services***************************: $hodServices")
       envelopeXml = buildEnvelopeXml(request, credId, affinityGroup)
+      _ = logger.info(s"xml envelop ***************************: $envelopeXml")
       result <- chrisConnector.submitEnvelope(envelopeXml)
     } yield result
   }

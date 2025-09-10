@@ -20,13 +20,12 @@ import com.google.inject.Inject
 import play.api.Logging
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import uk.gov.hmrc.auth.core.AuthorisedFunctions
 import uk.gov.hmrc.nationaldirectdebit.actions.AuthAction
 import uk.gov.hmrc.nationaldirectdebit.models.requests.{ChrisSubmissionRequest, CreateDirectDebitRequest, GenerateDdiRefRequest, WorkingDaysOffsetRequest}
 import uk.gov.hmrc.nationaldirectdebit.services.{ChrisService, DirectDebitService}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 class DirectDebitController @Inject()(
                                        authorise: AuthAction,
@@ -84,8 +83,8 @@ class DirectDebitController @Inject()(
               |""".stripMargin
         )
 
-        val affinityGroup: String = "Individual"
-        val credId: String = request.internalId
+        val affinityGroup: String = request.affinityGroup
+        val credId: String = request.credId
 
 
         chrisService.submitToChris(chrisRequest, credId, affinityGroup).map { response =>

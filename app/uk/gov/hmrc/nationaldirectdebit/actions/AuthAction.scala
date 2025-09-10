@@ -20,8 +20,9 @@ import play.api.Logging
 import play.api.mvc.*
 import play.api.mvc.Results.Unauthorized
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
+import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisationException, AuthorisedFunctions}
-import uk.gov.hmrc.http.{HeaderCarrier, UnauthorizedException}
+import uk.gov.hmrc.http.{HeaderCarrier, SessionId, UnauthorizedException}
 import uk.gov.hmrc.nationaldirectdebit.models.requests.AuthenticatedRequest
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
 
@@ -34,21 +35,43 @@ class DefaultAuthAction @Inject()(
                                  )(implicit val executionContext: ExecutionContext)
   extends AuthAction with AuthorisedFunctions with Logging:
 
-  override def invokeBlock[A](request: Request[A], block: AuthenticatedRequest[A] => Future[Result]): Future[Result] =
+  override def invokeBlock[A](
+                               request: Request[A],
+                               block: AuthenticatedRequest[A] => Future[Result]
+                             ): Future[Result] =
     given hc: HeaderCarrier = HeaderCarrierConverter.fromRequest(request)
 
-    val sessionId = hc.sessionId.getOrElse(throw new UnauthorizedException("Unable to retrieve session ID from headers"))
+    val sessionId: SessionId = hc.sessionId
+      .getOrElse(throw new UnauthorizedException("Unable to retrieve session ID from headers"))
 
-    authorised().retrieve(Retrievals.internalId) {
-      _.map:
-        internalId => block(AuthenticatedRequest(request, internalId, sessionId))
-      .getOrElse(throw new UnauthorizedException("Unable to retrieve internal ID from headers"))
-      .recover:
-        case _: AuthorisationException =>
-          val error = "Failed to authorise requests"
-          logger.warn(error)
-          Unauthorized(error)
-    }(using hc)
+    val retrievals = Retrievals.internalId and Retrievals.credentials and Retrievals.affinityGroup
+
+    authorised().retrieve(retrievals) {
+      case maybeInternalId ~ maybeCreds ~ maybeAffinity =>
+        (maybeInternalId, maybeCreds, maybeAffinity) match
+          case (Some(internalId), Some(credentials), Some(affinity)) =>
+            val credId = credentials.providerId
+            val affinityName = affinity.toString
+            block(
+              AuthenticatedRequest(
+                request,
+                internalId,
+                sessionId,
+                credId,
+                affinityName
+              )
+            )
+
+          case _ =>
+            throw new UnauthorizedException("Unable to retrieve required auth values")
+    }.recover {
+      case _: AuthorisationException =>
+        val error = "Failed to authorise request"
+        logger.warn(error)
+        Unauthorized(error)
+    }
+
 
 trait AuthAction
-  extends ActionBuilder[AuthenticatedRequest, AnyContent] with ActionFunction[Request, AuthenticatedRequest]
+  extends ActionBuilder[AuthenticatedRequest, AnyContent]
+    with ActionFunction[Request, AuthenticatedRequest]
