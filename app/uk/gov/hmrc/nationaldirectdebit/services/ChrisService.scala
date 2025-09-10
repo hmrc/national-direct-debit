@@ -27,34 +27,65 @@ import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 import scala.xml.Elem
 import play.api.Logging
+import uk.gov.hmrc.auth.core.AuthConnector
+import uk.gov.hmrc.auth.core.authorise.EmptyPredicate
+import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
+import uk.gov.hmrc.http.HeaderCarrier
 
-class ChrisService @Inject()(chrisConnector: ChrisConnector)(implicit ec: ExecutionContext) extends Logging {
+class ChrisService @Inject()(chrisConnector: ChrisConnector,
+                             authConnector: AuthConnector
+                            )(implicit ec: ExecutionContext) extends Logging {
+
+
+  def getEligibleHodServices()(implicit hc: HeaderCarrier): Future[Seq[String]] = {
+    authConnector.authorise(EmptyPredicate, Retrievals.allEnrolments).flatMap { enrolments =>
+      val activeEnrolments: Set[String] = enrolments.enrolments.collect {
+        case e if e.isActivated => e.key
+      }
+
+      // map active enrolments to HOD services
+      val candidateHodServices: Seq[String] = serviceToHod.collect {
+        case (source, hod) if activeEnrolments.contains(source.toString) => hod
+      }.toSeq
+
+      // filter only DD-enabled ones (stubbed for now)
+      Future.sequence(candidateHodServices.map { hod =>
+        isDirectDebitEnabled(hod).map {
+          case true  => Some(hod)
+          case false => None
+        }
+      }).map(_.flatten)
+    }
+  }
+
+  private def isDirectDebitEnabled(hod: String): Future[Boolean] = {
+    // TODO: add connector check to real HOD/DD eligibility
+    Future.successful(true)
+  }
 
   private val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS")
 
-  def submitToChris(request: ChrisSubmissionRequest, credId: String, affinityGroup: String): Future[String] = {
-    val envelopeXml = buildEnvelopeXml(request, credId, affinityGroup)
-
-    logger.info(
-      s"""|
-        |Chris Submission Request received:
-          |${envelopeXml})
-          |""".stripMargin
-    )
-
-    chrisConnector.submitEnvelope(envelopeXml)
+  def submitToChris(request: ChrisSubmissionRequest, credId: String, affinityGroup: String)
+                   (implicit hc: HeaderCarrier): Future[String] = {
+    for {
+      hodServices <- getEligibleHodServices()
+      _ = logger.info(s"Eligible HOD services***************************: $hodServices")
+      envelopeXml = buildEnvelopeXml(request, credId, affinityGroup)
+      result <- chrisConnector.submitEnvelope(envelopeXml)
+    } yield result
   }
+
 
   //Lookups for HOD service & known facts
   private val serviceToHod: Map[DirectDebitSource, String] = Map(
-    DirectDebitSource.CT   -> "COTA",
+    DirectDebitSource.CT -> "COTA",
     DirectDebitSource.PAYE -> "PAYE",
-    DirectDebitSource.SA   -> "CESA",
-    DirectDebitSource.TC   -> "NTC",
-    DirectDebitSource.VAT  -> "VAT",
-    DirectDebitSource.MGD  -> "MGD",
-    DirectDebitSource.NIC  -> "NIDN",
-    DirectDebitSource.OL   -> "SAFE",
+    DirectDebitSource.SA -> "CESA",
+    DirectDebitSource.TC -> "NTC",
+    DirectDebitSource.VAT -> "VAT",
+    DirectDebitSource.MGD -> "MGD",
+    DirectDebitSource.NIC -> "NIDN",
+    DirectDebitSource.OL -> "SAFE",
     DirectDebitSource.SDLT -> "SDLT"
   )
 
@@ -64,10 +95,10 @@ class ChrisService @Inject()(chrisConnector: ChrisConnector)(implicit ec: Execut
     "COTA" -> KnownFactConfig("UTR", "CTUTR"),
     "PAYE" -> KnownFactConfig("employerReference", "EMPREF"),
     "CESA" -> KnownFactConfig("UTR", "UTR"),
-    "NTC"  -> KnownFactConfig("NINO", "NINO"),
-    "MGD"  -> KnownFactConfig("HMRCMGDRN", "MGDRN"),
+    "NTC" -> KnownFactConfig("NINO", "NINO"),
+    "MGD" -> KnownFactConfig("HMRCMGDRN", "MGDRN"),
     "TPSS" -> KnownFactConfig("PSAID", "PSAID"),
-    "CIS"  -> KnownFactConfig("employerReference", "EMPREF")
+    "CIS" -> KnownFactConfig("employerReference", "EMPREF")
   )
 
   private def buildEnvelopeXml(request: ChrisSubmissionRequest, credId: String, affinityGroup: String): Elem = {
@@ -83,40 +114,74 @@ class ChrisService @Inject()(chrisConnector: ChrisConnector)(implicit ec: Execut
     <ChRISEnvelope xmlns="http://www.hmrc.gov.uk/ChRIS/Envelope/2">
       <EnvelopeVersion>2.0</EnvelopeVersion>
       <Header>
-        <MessageClass>{ChrisEnvelopeConstants.MessageClass}</MessageClass>
-        <Qualifier>{ChrisEnvelopeConstants.Qualifier}</Qualifier>
-        <Function>{ChrisEnvelopeConstants.Function}</Function>
+        <MessageClass>
+          {ChrisEnvelopeConstants.MessageClass}
+        </MessageClass>
+        <Qualifier>
+          {ChrisEnvelopeConstants.Qualifier}
+        </Qualifier>
+        <Function>
+          {ChrisEnvelopeConstants.Function}
+        </Function>
         <Sender>
-          <System>{ChrisEnvelopeConstants.SenderSystem}</System>
-          <CorrelatingID>{correlatingId}</CorrelatingID>
-          <ReceiptDate>{receiptDate}</ReceiptDate>
+          <System>
+            {ChrisEnvelopeConstants.SenderSystem}
+          </System>
+          <CorrelatingID>
+            {correlatingId}
+          </CorrelatingID>
+          <ReceiptDate>
+            {receiptDate}
+          </ReceiptDate>
         </Sender>
       </Header>
       <Body>
-        <IRenvelope>  // xmlns="" was removed from here
+        <IRenvelope>// xmlns="" was removed from here
           <IRheader>
             <Keys>
-              <Key Type={knownFactCfg.factType}>{knownFactCfg.factName}</Key>
+              <Key Type={knownFactCfg.factType}>
+                {knownFactCfg.factName}
+              </Key>
             </Keys>
-            <PeriodEnd>{periodEnd}</PeriodEnd>
-            <Sender>{senderType}</Sender>
+            <PeriodEnd>
+              {periodEnd}
+            </PeriodEnd>
+            <Sender>
+              {senderType}
+            </Sender>
           </IRheader>
           <dDIPPDetails>
-            <submissionDateTime>{submissionDateTime}</submissionDateTime>
-            <credentialID>{credId}</credentialID>
+            <submissionDateTime>
+              {submissionDateTime}
+            </submissionDateTime>
+            <credentialID>
+              {credId}
+            </credentialID>
             <knownFact>
-              <service>{hodService}</service>
-              <value>{knownFactCfg.factName}</value>
+              <service>
+                {hodService}
+              </service>
+              <value>
+                {knownFactCfg.factName}
+              </value>
             </knownFact>
             <directDebitInstruction>
-              <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
-              <ddiReferenceNo>{request.ddiReferenceNo}</ddiReferenceNo>
-              <bankSortCode>{request.yourBankDetailsWithAuddisStatus.sortCode}</bankSortCode>
-              <bankAccountNo>{request.yourBankDetailsWithAuddisStatus.accountNumber}</bankAccountNo>
-              <bankAccountName>{request.bankName}</bankAccountName>
-              {if (request.yourBankDetailsWithAuddisStatus.auddisStatus) <paperAuddisFlag>01</paperAuddisFlag> else scala.xml.Null}
-            </directDebitInstruction>
-            {buildPaymentPlanXml(request, hodService)}
+              <actionType>
+                {ChrisEnvelopeConstants.ActionType_1}
+              </actionType>
+              <ddiReferenceNo>
+                {request.ddiReferenceNo}
+              </ddiReferenceNo>
+              <bankSortCode>
+                {request.yourBankDetailsWithAuddisStatus.sortCode}
+              </bankSortCode>
+              <bankAccountNo>
+                {request.yourBankDetailsWithAuddisStatus.accountNumber}
+              </bankAccountNo>
+              <bankAccountName>
+                {request.bankName}
+              </bankAccountName>{if (request.yourBankDetailsWithAuddisStatus.auddisStatus) <paperAuddisFlag>01</paperAuddisFlag> else scala.xml.Null}
+            </directDebitInstruction>{buildPaymentPlanXml(request, hodService)}
           </dDIPPDetails>
         </IRenvelope>
       </Body>
@@ -133,61 +198,121 @@ class ChrisService @Inject()(chrisConnector: ChrisConnector)(implicit ec: Execut
 
   private def buildPaymentPlanXml(request: ChrisSubmissionRequest, hodService: String): Elem =
     val frequencyCode = request.paymentFrequency match {
-      case Some(PaymentsFrequency.Weekly)  => "02"
+      case Some(PaymentsFrequency.Weekly) => "02"
       case Some(PaymentsFrequency.Monthly) => "05"
-      case _                               => ""
+      case _ => ""
     }
 
     request.serviceType match {
-      case DirectDebitSource.TC if request.paymentPlanType == PaymentPlanType.TaxCreditRepaymentPlan  =>
+      case DirectDebitSource.TC if request.paymentPlanType == PaymentPlanType.TaxCreditRepaymentPlan =>
         <paymentPlan>
-          <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
-          <pPType>{ChrisEnvelopeConstants.PPType_3}</pPType>
-          <paymentReference>{request.paymentReference.getOrElse("")}</paymentReference>
-          <hodService>{hodService}</hodService>
+          <actionType>
+            {ChrisEnvelopeConstants.ActionType_1}
+          </actionType>
+          <pPType>
+            {ChrisEnvelopeConstants.PPType_3}
+          </pPType>
+          <paymentReference>
+            {request.paymentReference.getOrElse("")}
+          </paymentReference>
+          <hodService>
+            {hodService}
+          </hodService>
           <paymentCurrency>GBP</paymentCurrency>
-          <scheduledPaymentAmount>{request.calculation.flatMap(a => a.regularPaymentAmount).getOrElse("")}</scheduledPaymentAmount>
-          <scheduledPaymentStartDate>{request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
-          <scheduledPaymentEndDate>{request.calculation.flatMap( a => a.finalPaymentDate).getOrElse("")}</scheduledPaymentEndDate> // check plane end date is available in this journey
+          <scheduledPaymentAmount>
+            {request.calculation.flatMap(a => a.regularPaymentAmount).getOrElse("")}
+          </scheduledPaymentAmount>
+          <scheduledPaymentStartDate>
+            {request.planStartDate.map(_.enteredDate).getOrElse("")}
+          </scheduledPaymentStartDate>
+          <scheduledPaymentEndDate>
+            {request.calculation.flatMap(a => a.finalPaymentDate).getOrElse("")}
+          </scheduledPaymentEndDate>
+          // check plane end date is available in this journey
           <scheduledPaymentFrequency>05</scheduledPaymentFrequency>
-          <balancingPaymentAmount>{request.calculation.flatMap(a => a.finalPaymentAmount).getOrElse(BigDecimal(0))}</balancingPaymentAmount>
-          <balancingPaymentDate>{request.calculation.flatMap(a => a.finalPaymentDate).getOrElse("")}</balancingPaymentDate>
-          <totalLiability>{request.totalAmountDue.getOrElse(BigDecimal(0))}</totalLiability>
+          <balancingPaymentAmount>
+            {request.calculation.flatMap(a => a.finalPaymentAmount).getOrElse(BigDecimal(0))}
+          </balancingPaymentAmount>
+          <balancingPaymentDate>
+            {request.calculation.flatMap(a => a.finalPaymentDate).getOrElse("")}
+          </balancingPaymentDate>
+          <totalLiability>
+            {request.totalAmountDue.getOrElse(BigDecimal(0))}
+          </totalLiability>
         </paymentPlan>
 
       case DirectDebitSource.MGD if request.paymentPlanType == PaymentPlanType.VariablePaymentPlan =>
         <paymentPlan>
-          <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
-          <pPType>{ChrisEnvelopeConstants.PPType_4}</pPType>
-          <paymentReference>{request.paymentReference.getOrElse("")}</paymentReference>
-          <hodService>{hodService}</hodService>
+          <actionType>
+            {ChrisEnvelopeConstants.ActionType_1}
+          </actionType>
+          <pPType>
+            {ChrisEnvelopeConstants.PPType_4}
+          </pPType>
+          <paymentReference>
+            {request.paymentReference.getOrElse("")}
+          </paymentReference>
+          <hodService>
+            {hodService}
+          </hodService>
           <paymentCurrency>GBP</paymentCurrency>
-          <scheduledPaymentStartDate>{request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
+          <scheduledPaymentStartDate>
+            {request.planStartDate.map(_.enteredDate).getOrElse("")}
+          </scheduledPaymentStartDate>
         </paymentPlan>
 
       case DirectDebitSource.SA if request.paymentPlanType == PaymentPlanType.BudgetPaymentPlan =>
         <paymentPlan>
-          <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
-          <pPType>{ChrisEnvelopeConstants.PPType_2}</pPType>
-          <paymentReference>{request.paymentReference.getOrElse("")}</paymentReference>
-          <hodService>{hodService}</hodService>
+          <actionType>
+            {ChrisEnvelopeConstants.ActionType_1}
+          </actionType>
+          <pPType>
+            {ChrisEnvelopeConstants.PPType_2}
+          </pPType>
+          <paymentReference>
+            {request.paymentReference.getOrElse("")}
+          </paymentReference>
+          <hodService>
+            {hodService}
+          </hodService>
           <paymentCurrency>GBP</paymentCurrency>
-          <scheduledPaymentAmount>{request.regularPaymentAmount.getOrElse(BigDecimal(0))}</scheduledPaymentAmount>
-          <scheduledPaymentStartDate>{request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
-          <scheduledPaymentEndDate>{request.planEndDate.getOrElse("")}</scheduledPaymentEndDate>
-          { if (frequencyCode.nonEmpty) <scheduledPaymentFrequency>{frequencyCode}</scheduledPaymentFrequency> else scala.xml.Null }
+          <scheduledPaymentAmount>
+            {request.regularPaymentAmount.getOrElse(BigDecimal(0))}
+          </scheduledPaymentAmount>
+          <scheduledPaymentStartDate>
+            {request.planStartDate.map(_.enteredDate).getOrElse("")}
+          </scheduledPaymentStartDate>
+          <scheduledPaymentEndDate>
+            {request.planEndDate.getOrElse("")}
+          </scheduledPaymentEndDate>{if (frequencyCode.nonEmpty) <scheduledPaymentFrequency>
+          {frequencyCode}
+        </scheduledPaymentFrequency> else scala.xml.Null}
         </paymentPlan>
 
       case _ => // single payment
         <paymentPlan>
-          <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
-          <pPType>{ChrisEnvelopeConstants.PPType_1}</pPType>
-          <paymentReference>{request.paymentReference.getOrElse("")}</paymentReference>
-          <hodService>{hodService}</hodService>
+          <actionType>
+            {ChrisEnvelopeConstants.ActionType_1}
+          </actionType>
+          <pPType>
+            {ChrisEnvelopeConstants.PPType_1}
+          </pPType>
+          <paymentReference>
+            {request.paymentReference.getOrElse("")}
+          </paymentReference>
+          <hodService>
+            {hodService}
+          </hodService>
           <paymentCurrency>GBP</paymentCurrency>
-          <scheduledPaymentAmount>{request.paymentAmount.getOrElse(BigDecimal(0))}</scheduledPaymentAmount>
-          <scheduledPaymentStartDate>{request.paymentDate.map(psd => psd.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
-          <totalLiability>{request.paymentAmount.getOrElse(BigDecimal(0))}</totalLiability>
+          <scheduledPaymentAmount>
+            {request.paymentAmount.getOrElse(BigDecimal(0))}
+          </scheduledPaymentAmount>
+          <scheduledPaymentStartDate>
+            {request.paymentDate.map(psd => psd.enteredDate).getOrElse("")}
+          </scheduledPaymentStartDate>
+          <totalLiability>
+            {request.paymentAmount.getOrElse(BigDecimal(0))}
+          </totalLiability>
         </paymentPlan>
     }
 }
