@@ -17,12 +17,13 @@
 package uk.gov.hmrc.nationaldirectdebit.connectors
 
 import com.google.inject.Inject
+import play.api.Logging
+import play.api.libs.ws.DefaultBodyWritables.*
 import play.api.libs.ws.ahc.StandaloneAhcWSClient
-import play.api.libs.ws.DefaultBodyWritables._
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+
 import scala.concurrent.{ExecutionContext, Future}
 import scala.xml.Elem
-import play.api.Logging
 
 class ChrisConnector @Inject()(
                                 ws: StandaloneAhcWSClient,

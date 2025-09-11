@@ -17,9 +17,9 @@
 package uk.gov.hmrc.nationaldirectdebit.services
 
 import play.api.Logging
-import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.auth.core.authorise.EmptyPredicate
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
+import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
 import uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest
@@ -37,31 +37,27 @@ class ChrisService @Inject()(chrisConnector: ChrisConnector,
                             )(implicit ec: ExecutionContext) extends Logging {
 
 
-  def getEligibleHodServices()(implicit hc: HeaderCarrier): Future[Seq[String]] = {
-    authConnector.authorise(EmptyPredicate, Retrievals.allEnrolments).flatMap { enrolments =>
-      val activeEnrolments: Set[String] = enrolments.enrolments.collect {
-        case e if e.isActivated => e.key
+  private def getEligibleHodServices()
+                                    (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Seq[Map[String, String]]] = {
+    authConnector.authorise(EmptyPredicate, Retrievals.allEnrolments).map { enrolments =>
+
+      logger.info(s"Retrieved enrolments: ${enrolments.enrolments.map(_.key).mkString(", ")}")
+
+      // Step 1: Filter active enrolments
+      val activeEnrolments: Seq[Enrolment] = enrolments.enrolments.toSeq.filter(_.isActivated)
+
+      // Step 2: Build Seq[Map(enrolmentKey -> identifierString)]
+      val enrolmentMaps: Seq[Map[String, String]] = activeEnrolments.map { e =>
+        val identifierString = e.identifiers.map(_.value).mkString("/") // join values like 222/CC222
+        logger.info(s"Active enrolment: ${e.key} -> $identifierString")
+        Map(e.key -> identifierString)
       }
 
-      // map active enrolments to HOD services
-      val candidateHodServices: Seq[String] = serviceToHod.collect {
-        case (source, hod) if activeEnrolments.contains(source.toString) => hod
-      }.toSeq
-
-      // filter only DD-enabled ones (stubbed for now)
-      Future.sequence(candidateHodServices.map { hod =>
-        isDirectDebitEnabled(hod).map {
-          case true  => Some(hod)
-          case false => None
-        }
-      }).map(_.flatten)
+      logger.info(s"Final enrolment maps: ${enrolmentMaps.mkString(", ")}")
+      enrolmentMaps
     }
   }
 
-  private def isDirectDebitEnabled(hod: String): Future[Boolean] = {
-    // TODO: add connector check to real HOD/DD eligibility
-    Future.successful(true)
-  }
 
   private val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS")
 
@@ -70,47 +66,19 @@ class ChrisService @Inject()(chrisConnector: ChrisConnector,
     for {
       hodServices <- getEligibleHodServices()
       _ = logger.info(s"Eligible HOD services***************************: $hodServices")
-      envelopeXml = buildEnvelopeXml(request, credId, affinityGroup)
+      envelopeXml = buildEnvelopeXml(request, credId, affinityGroup, hodServices)
       _ = logger.info(s"xml envelop ***************************: $envelopeXml")
       result <- chrisConnector.submitEnvelope(envelopeXml)
     } yield result
   }
 
-
-  //Lookups for HOD service & known facts
-  private val serviceToHod: Map[DirectDebitSource, String] = Map(
-    DirectDebitSource.CT -> "COTA",
-    DirectDebitSource.PAYE -> "PAYE",
-    DirectDebitSource.SA -> "CESA",
-    DirectDebitSource.TC -> "NTC",
-    DirectDebitSource.VAT -> "VAT",
-    DirectDebitSource.MGD -> "MGD",
-    DirectDebitSource.NIC -> "NIDN",
-    DirectDebitSource.OL -> "SAFE",
-    DirectDebitSource.SDLT -> "SDLT"
-  )
-
-  private case class KnownFactConfig(factName: String, factType: String)
-
-  private val hodToKnownFact: Map[String, KnownFactConfig] = Map(
-    "COTA" -> KnownFactConfig("UTR", "CTUTR"),
-    "PAYE" -> KnownFactConfig("employerReference", "EMPREF"),
-    "CESA" -> KnownFactConfig("UTR", "UTR"),
-    "NTC" -> KnownFactConfig("NINO", "NINO"),
-    "MGD" -> KnownFactConfig("HMRCMGDRN", "MGDRN"),
-    "TPSS" -> KnownFactConfig("PSAID", "PSAID"),
-    "CIS" -> KnownFactConfig("employerReference", "EMPREF")
-  )
-
-  private def buildEnvelopeXml(request: ChrisSubmissionRequest, credId: String, affinityGroup: String): Elem = {
+  private def buildEnvelopeXml(request: ChrisSubmissionRequest, credId: String, affinityGroup: String, hodServices: Seq[Map[String, String]]): Elem = {
     val correlatingId = UUID.randomUUID().toString.replace("-", "")
     val receiptDate = LocalDateTime.now(ZoneOffset.UTC).format(dateTimeFormatter)
     val submissionDateTime = LocalDateTime.now(ZoneOffset.UTC).format(dateTimeFormatter)
     val periodEnd = calculatePeriodEnd()
     val senderType = if (affinityGroup == "agent") "Agent" else "Individual"
-
-    val hodService = serviceToHod(request.serviceType)
-    val knownFactCfg = hodToKnownFact.getOrElse(hodService, KnownFactConfig("UNKNOWN", "UNKNOWN"))
+  
 
     <ChRISEnvelope xmlns="http://www.hmrc.gov.uk/ChRIS/Envelope/2">
       <EnvelopeVersion>2.0</EnvelopeVersion>
@@ -140,9 +108,13 @@ class ChrisService @Inject()(chrisConnector: ChrisConnector,
         <IRenvelope>// xmlns="" was removed from here
           <IRheader>
             <Keys>
-              <Key Type={knownFactCfg.factType}>
-                {knownFactCfg.factName}
-              </Key>
+              {hodServices.flatMap(_.map { case (hodKey, hodValue) =>
+              scala.xml.Utility.trim(
+                <Key Type={hodKey}>
+                  {hodValue}
+                </Key>
+              )
+            })}
             </Keys>
             <PeriodEnd>
               {periodEnd}
@@ -157,32 +129,34 @@ class ChrisService @Inject()(chrisConnector: ChrisConnector,
             </submissionDateTime>
             <credentialID>
               {credId}
-            </credentialID>
-            <knownFact>
-              <service>
-                {hodService}
-              </service>
-              <value>
-                {knownFactCfg.factName}
-              </value>
-            </knownFact>
-            <directDebitInstruction>
-              <actionType>
-                {ChrisEnvelopeConstants.ActionType_1}
-              </actionType>
-              <ddiReferenceNo>
-                {request.ddiReferenceNo}
-              </ddiReferenceNo>
-              <bankSortCode>
-                {request.yourBankDetailsWithAuddisStatus.sortCode}
-              </bankSortCode>
-              <bankAccountNo>
-                {request.yourBankDetailsWithAuddisStatus.accountNumber}
-              </bankAccountNo>
-              <bankAccountName>
-                {request.bankName}
-              </bankAccountName>{if (request.yourBankDetailsWithAuddisStatus.auddisStatus) <paperAuddisFlag>01</paperAuddisFlag> else scala.xml.Null}
-            </directDebitInstruction>{buildPaymentPlanXml(request, hodService)}
+            </credentialID>{hodServices.flatMap(_.map { case (hodKey, hodValue) =>
+            scala.xml.Utility.trim(
+              <knownFact>
+                <service>
+                  {hodKey}
+                </service>
+                <value>
+                  {hodValue}
+                </value>
+              </knownFact>
+            )
+          })}<directDebitInstruction>
+            <actionType>
+              {ChrisEnvelopeConstants.ActionType_1}
+            </actionType>
+            <ddiReferenceNo>
+              {request.ddiReferenceNo}
+            </ddiReferenceNo>
+            <bankSortCode>
+              {request.yourBankDetailsWithAuddisStatus.sortCode}
+            </bankSortCode>
+            <bankAccountNo>
+              {request.yourBankDetailsWithAuddisStatus.accountNumber}
+            </bankAccountNo>
+            <bankAccountName>
+              {request.bankName}
+            </bankAccountName>{if (request.yourBankDetailsWithAuddisStatus.auddisStatus) <paperAuddisFlag>01</paperAuddisFlag> else scala.xml.Null}
+          </directDebitInstruction>{buildPaymentPlanXml(request, "hodService")}
           </dDIPPDetails>
         </IRenvelope>
       </Body>
