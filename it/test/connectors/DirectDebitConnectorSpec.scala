@@ -21,11 +21,11 @@ import itutil.ApplicationWithWiremock
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.matchers.must.Matchers.mustBe
-import play.api.http.Status.{CREATED, INTERNAL_SERVER_ERROR, OK}
+import play.api.http.Status.{INTERNAL_SERVER_ERROR, OK}
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.DirectDebitConnector
-import uk.gov.hmrc.nationaldirectdebit.models.requests.{CreateDirectDebitRequest, GenerateDdiRefRequest, WorkingDaysOffsetRequest}
+import uk.gov.hmrc.nationaldirectdebit.models.requests.{GenerateDdiRefRequest, WorkingDaysOffsetRequest}
 import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDatacacheResponse, RDSDirectDebitDetails}
 
 import java.time.{LocalDate, LocalDateTime}
@@ -58,7 +58,7 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock
             )
         )
 
-        val result = connector.retrieveDirectDebits(2).futureValue
+        val result = connector.retrieveDirectDebits().futureValue
 
         result mustBe testDataCacheResponse
       }
@@ -73,7 +73,7 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock
             )
         )
 
-        val result = connector.retrieveDirectDebits(0).futureValue
+        val result = connector.retrieveDirectDebits().futureValue
 
         result mustBe testEmptyDataCacheResponse
       }
@@ -88,7 +88,7 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock
             )
         )
 
-        val result = intercept[Exception](connector.retrieveDirectDebits(2).futureValue)
+        val result = intercept[Exception](connector.retrieveDirectDebits().futureValue)
 
         result.getMessage must include("returned 500. Response body: 'test error'")
       }
@@ -102,62 +102,13 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock
             )
         )
 
-        val result = intercept[Exception](connector.retrieveDirectDebits(2).futureValue)
+        val result = intercept[Exception](connector.retrieveDirectDebits().futureValue)
 
         result.getMessage must include("The future returned an exception")
       }
     }
 
-    "createDirectDebit" should {
-      "successfully create a direct debit" in {
-        stubFor(
-          post(urlPathMatching("/rds-datacache-proxy/direct-debits"))
-            .willReturn(
-              aResponse()
-                .withStatus(CREATED)
-                .withBody("testReference")
-            )
-        )
-
-        val requestBody = CreateDirectDebitRequest("testReference")
-        val result = connector.createDirectDebit(requestBody).futureValue
-
-        result mustBe "testReference"
-      }
-
-      "must fail when the result is parsed as an UpstreamErrorResponse" in {
-        stubFor(
-          post(urlPathMatching("/rds-datacache-proxy/direct-debits"))
-            .willReturn(
-              aResponse()
-                .withStatus(INTERNAL_SERVER_ERROR)
-                .withBody("test error")
-            )
-        )
-
-        val requestBody = CreateDirectDebitRequest("testReference")
-        val result = intercept[Exception](connector.createDirectDebit(requestBody).futureValue)
-
-        result.getMessage must include("returned 500. Response body: 'test error'")
-      }
-
-      "must fail when the result is a failed future" in {
-        stubFor(
-          post(urlPathMatching("/national-direct-debit/direct-debits"))
-            .willReturn(
-              aResponse()
-                .withStatus(0)
-            )
-        )
-
-        val requestBody = CreateDirectDebitRequest("testReference")
-        val result = intercept[Exception](connector.createDirectDebit(requestBody).futureValue)
-
-        result.getMessage must include("The future returned an exception")
-      }
-    }
-
-    "getEarliestPaymentDate" should {
+    "AddFutureWorkingDays" should {
       "successfully retrieve a date" in {
         stubFor(
           post(urlPathMatching("/rds-datacache-proxy/direct-debits/future-working-days"))
