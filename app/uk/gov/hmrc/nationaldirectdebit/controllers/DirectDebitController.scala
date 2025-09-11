@@ -35,23 +35,13 @@ class DirectDebitController @Inject()(
                                      )(implicit ec: ExecutionContext) extends BackendController(cc) with  Logging  {
 
 
-  def retrieveDirectDebits(firstRecordNumber: Option[Int], maxRecords: Option[Int]): Action[AnyContent] =
+  def retrieveDirectDebits(): Action[AnyContent] =
     authorise.async {
       implicit request =>
-        service.retrieveDirectDebits(maxRecords.getOrElse(0)).map { response =>
+        service.retrieveDirectDebits().map { response =>
           Ok(Json.toJson(response))
         }
     }
-
-  def createDirectDebit(): Action[JsValue] =
-    authorise(parse.json).async:
-      implicit request =>
-        withJsonBody[CreateDirectDebitRequest] { request =>
-          service.createDirectDebit(request).map(
-            response =>
-              Ok(response)
-          )
-        }
 
   def getWorkingDaysOffset: Action[JsValue] =
     authorise(parse.json).async:

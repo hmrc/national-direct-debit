@@ -24,10 +24,11 @@ import org.scalatestplus.mockito.MockitoSugar.mock
 import play.api.http.Status.{BAD_REQUEST, OK}
 import play.api.libs.json.Json
 import play.api.mvc.Result
-import play.api.test.Helpers.{contentAsJson, contentAsString, status}
+import play.api.test.Helpers.{contentAsJson, status}
 import uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.*
 import uk.gov.hmrc.nationaldirectdebit.models.requests.{ChrisSubmissionRequest, CreateDirectDebitRequest, GenerateDdiRefRequest, WorkingDaysOffsetRequest}
+import uk.gov.hmrc.nationaldirectdebit.models.requests.{GenerateDdiRefRequest, WorkingDaysOffsetRequest}
 import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDatacacheResponse, RDSDirectDebitDetails}
 import uk.gov.hmrc.nationaldirectdebit.services.{ChrisService, DirectDebitService}
 
@@ -39,139 +40,62 @@ class DirectDebitControllerSpec extends SpecBase {
   "DirectDebitController" - {
 
     "retrieveDirectDebits method" - {
-      "return 200 and a successful response when maxRecords is supplied" in new SetUp {
-        when(mockDirectDebitService.retrieveDirectDebits(any())(any()))
+      "return 200 and a successful response when the max number of records is supplied" in new SetUp {
+        when(mockDirectDebitService.retrieveDirectDebits()(any()))
           .thenReturn(Future.successful(testDataCacheResponse))
 
-        val result: Future[Result] =
-          controller.retrieveDirectDebits(firstRecordNumber = None, maxRecords = Some(2))(fakeRequest)
+        val result: Future[Result] = controller.retrieveDirectDebits()(fakeRequest)
 
         status(result) mustBe OK
         contentAsJson(result) mustBe Json.toJson(testDataCacheResponse)
       }
 
-      "return 200 and empty response when maxRecords is None" in new SetUp {
-        when(mockDirectDebitService.retrieveDirectDebits(any())(any()))
+      "return 200 and a successful response with 0 when the no value of max records is supplied" in new SetUp {
+        when(mockDirectDebitService.retrieveDirectDebits()(any()))
           .thenReturn(Future.successful(testEmptyDataCacheResponse))
 
-        val result: Future[Result] =
-          controller.retrieveDirectDebits(firstRecordNumber = None, maxRecords = None)(fakeRequest)
+        val result: Future[Result] = controller.retrieveDirectDebits()(fakeRequest)
 
         status(result) mustBe OK
         contentAsJson(result) mustBe Json.toJson(testEmptyDataCacheResponse)
       }
     }
 
-    "createDirectDebit method" - {
-      "return 200 when the request is valid" in new SetUp {
-        when(mockDirectDebitService.createDirectDebit(any())(any()))
-          .thenReturn(Future.successful("test-reference"))
-
-        val result: Future[Result] =
-          controller.createDirectDebit()(fakeRequestWithJsonBody(Json.toJson(CreateDirectDebitRequest("some-reference"))))
-
-        status(result) mustBe OK
-        contentAsString(result) mustBe "test-reference"
-      }
-
-      "return 400 when request is invalid" in new SetUp {
-        val result: Future[Result] =
-          controller.createDirectDebit()(fakeRequestWithJsonBody(Json.toJson("bad json")))
-
-        status(result) mustBe BAD_REQUEST
-      }
-    }
-
-    "getWorkingDaysOffset method" - {
-      "return 200 when the request is valid" in new SetUp {
+    "AddFutureWorkingDaysOffset method" - {
+      "return 200 and a successful response when the request is valid" in new SetUp {
         when(mockDirectDebitService.getWorkingDaysOffset(any())(any()))
           .thenReturn(Future.successful(testResponseModel))
 
-        val result: Future[Result] =
-          controller.getWorkingDaysOffset()(fakeRequestWithJsonBody(Json.toJson(testRequestModel)))
+        val result: Future[Result] = controller.getWorkingDaysOffset()(fakeRequestWithJsonBody(Json.toJson(testRequestModel)))
 
         status(result) mustBe OK
         contentAsJson(result) mustBe Json.toJson(testResponseModel)
       }
 
-      "return 400 when the request is invalid" in new SetUp {
-        val result: Future[Result] =
-          controller.getWorkingDaysOffset()(fakeRequestWithJsonBody(Json.toJson("invalid json")))
-
-        status(result) mustBe BAD_REQUEST
-      }
-    }
-
-    "submitToChris method" - {
-      "return 200 and true when request is valid" in new SetUp {
-        when(mockChrisService.submitToChris(any(), any(), any())(any()))
-          .thenReturn(Future.successful("DDI123456789"))
-
-        val chrisSubmissionInstance = ChrisSubmissionRequest(
-          serviceType = DirectDebitSource.TC,
-          paymentPlanType = PaymentPlanType.TaxCreditRepaymentPlan,
-          paymentFrequency = Some(PaymentsFrequency.Monthly),
-          yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
-            accountHolderName = "Test",
-            sortCode = "123456",
-            accountNumber = "12345678",
-            auddisStatus = false,
-            accountVerified = false
-          ),
-          planStartDate = Some(PlanStartDateDetails(LocalDate.of(2025, 9, 1), "2025-09-01")),
-          planEndDate = None,
-          paymentDate = Some(PaymentDateDetails(LocalDate.of(2025, 9, 15), "2025-09-01")),
-          yearEndAndMonth = None,
-          bankDetailsAddress = BankAddress(Seq("line 1"), "Town", Country("UK"), "NE5 2DH"),
-          ddiReferenceNo = "DDI123456789",
-          paymentReference = Some("testReference"),
-          bankName = "Barclays",
-          totalAmountDue = Some(BigDecimal(200)),
-          paymentAmount = Some(BigDecimal(100)),
-          regularPaymentAmount = Some(BigDecimal(90)),
-          calculation = None
-        )
-
-        val chrisSubmissionJson = Json.toJson(chrisSubmissionInstance)
-
-        val result = controller.submitToChris()(fakeRequestWithJsonBody(chrisSubmissionJson))
-
-        status(result) mustBe OK
-        contentAsJson(result) mustBe Json.obj(
-          "success" -> true,
-          "response" -> "DDI123456789"
-        )
-      }
-
-      "return 400 when request JSON is invalid" in new SetUp {
-        val badJson = Json.obj("invalid" -> "data")
-
-        val result = controller.submitToChris()(fakeRequestWithJsonBody(badJson))
+      "return 400 when the request is not valid" in new SetUp {
+        val result: Future[Result] = controller.getWorkingDaysOffset()(fakeRequestWithJsonBody(Json.toJson("invalid json")))
 
         status(result) mustBe BAD_REQUEST
       }
     }
 
     "generateDdiReference method" - {
-      "return 200 when request is valid" in new SetUp {
+      "return 200 and a successful response when the request is valid" in new SetUp {
         when(mockDirectDebitService.generateDdiReference(any())(any()))
           .thenReturn(Future.successful(GenerateDdiRefResponse("123")))
 
-        val result: Future[Result] =
-          controller.generateDdiReference()(fakeRequestWithJsonBody(Json.toJson(testDdiRefRequestModel)))
+        val result: Future[Result] = controller.generateDdiReference()(fakeRequestWithJsonBody(Json.toJson(testDdiRefRequestModel)))
 
         status(result) mustBe OK
         contentAsJson(result) mustBe Json.toJson(GenerateDdiRefResponse("123"))
       }
 
-      "return 400 when request is invalid" in new SetUp {
-        val result: Future[Result] =
-          controller.generateDdiReference()(fakeRequestWithJsonBody(Json.toJson(789)))
+      "return 400 when the request is not valid" in new SetUp {
+        val result: Future[Result] = controller.generateDdiReference()(fakeRequestWithJsonBody(Json.toJson(789)))
 
         status(result) mustBe BAD_REQUEST
       }
     }
-
   }
 
   class SetUp {
