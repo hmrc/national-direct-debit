@@ -68,5 +68,14 @@ class DirectDebitController @Inject()(
             Ok(Json.toJson(response))
           }
         }
-  
+
+  def retrieveDirectDebitPaymentPlans(paymentReference: String,
+                                      firstRecordNumber: Option[Int],
+                                      maxRecords: Option[Int]): Action[AnyContent] =
+    authorise.async {
+      implicit request =>
+        service.retrieveDirectDebitPaymentPlans(paymentReference, maxRecords.getOrElse(0)).map { response =>
+          Ok(Json.toJson(response))
+        }
+    }
 }
