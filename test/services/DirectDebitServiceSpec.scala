@@ -22,7 +22,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.scalatestplus.mockito.MockitoSugar.mock
 import uk.gov.hmrc.nationaldirectdebit.connectors.DirectDebitConnector
-import uk.gov.hmrc.nationaldirectdebit.models.requests.{CreateDirectDebitRequest, GenerateDdiRefRequest, WorkingDaysOffsetRequest}
+import uk.gov.hmrc.nationaldirectdebit.models.requests.{GenerateDdiRefRequest, WorkingDaysOffsetRequest}
 import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDatacacheResponse, RDSDirectDebitDetails}
 import uk.gov.hmrc.nationaldirectdebit.services.DirectDebitService
 
@@ -42,23 +42,14 @@ class DirectDebitServiceSpec extends SpecBase {
   "DirectDebitService" - {
     "retrieveDirectDebits method" - {
       "must return the response from the connector" in {
-        when(mockConnector.retrieveDirectDebits(ArgumentMatchers.eq(2))(any())).thenReturn(Future.successful(testDataCacheResponse))
-        val result = testService.retrieveDirectDebits(2).futureValue
+        when(mockConnector.retrieveDirectDebits()(any())).thenReturn(Future.successful(testDataCacheResponse))
+        val result = testService.retrieveDirectDebits().futureValue
 
         result mustBe testDataCacheResponse
       }
     }
 
-    "createDirectDebit method" - {
-      "must return the response from the connector" in {
-        when(mockConnector.createDirectDebit(any())(any())).thenReturn(Future.successful("testRef"))
-        val result = testService.createDirectDebit(CreateDirectDebitRequest(paymentReference = "testRef")).futureValue
-
-        result mustBe "testRef"
-      }
-    }
-
-    "getWorkingDaysOffset method" - {
+    "AddWorkingDaysOffset method" - {
       "must return the response from the connector" in {
         when(mockConnector.getWorkingDaysOffset(any())(any())).thenReturn(Future.successful(EarliestPaymentDateResponse(LocalDate.of(2025, 12, 12))))
         val result = testService.getWorkingDaysOffset(WorkingDaysOffsetRequest(baseDate = LocalDate.of(2025, 12, 12), offsetWorkingDays = 10)).futureValue
