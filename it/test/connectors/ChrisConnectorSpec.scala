@@ -16,8 +16,8 @@
 
 package connectors
 
-import com.github.tomakehurst.wiremock.client.WireMock._
-import itutil.ApplicationWithWiremock
+import com.github.tomakehurst.wiremock.client.WireMock.*
+import itutil.{ApplicationWithWiremock, WireMockConstants}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -30,6 +30,11 @@ class ChrisConnectorSpec extends AnyWordSpec
   with ScalaFutures
   with IntegrationPatience
   with ApplicationWithWiremock {
+
+  override lazy val extraConfig: Map[String, Any] = super.extraConfig ++ Map(
+    "microservice.services.chris.host" -> WireMockConstants.stubHost,
+    "microservice.services.chris.port" -> WireMockConstants.stubPort
+  )
 
   val connector: ChrisConnector = app.injector.instanceOf[ChrisConnector]
 
@@ -78,7 +83,6 @@ class ChrisConnectorSpec extends AnyWordSpec
               .withFault(com.github.tomakehurst.wiremock.http.Fault.CONNECTION_RESET_BY_PEER)
           )
       )
-
       intercept[Exception] {
         connector.submitEnvelope(testEnvelope).futureValue
       }.getMessage must include("The future returned an exception")
