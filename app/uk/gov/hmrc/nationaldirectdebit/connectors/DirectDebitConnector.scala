@@ -17,12 +17,11 @@
 package uk.gov.hmrc.nationaldirectdebit.connectors
 
 import com.google.inject.Inject
-import play.api.http.Status.CREATED
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.client.HttpClientV2
-import uk.gov.hmrc.http.{HeaderCarrier, HttpReadsInstances, HttpResponse, StringContextOps, UpstreamErrorResponse}
-import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDDPaymentPlansResponse, RDSDatacacheResponse}
-import uk.gov.hmrc.nationaldirectdebit.models.requests.{CreateDirectDebitRequest, GenerateDdiRefRequest, WorkingDaysOffsetRequest}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpReadsInstances, StringContextOps}
+import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDatacacheResponse}
+import uk.gov.hmrc.nationaldirectdebit.models.requests.{GenerateDdiRefRequest, WorkingDaysOffsetRequest}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 
@@ -35,23 +34,9 @@ class DirectDebitConnector @Inject()(
 
   private val rdsDatacacheProxyBaseUrl: String = config.baseUrl("rds-datacache-proxy") + "/rds-datacache-proxy"
 
-  def retrieveDirectDebits(limit: Int)(implicit hc: HeaderCarrier): Future[RDSDatacacheResponse] = {
-    http.get(url"$rdsDatacacheProxyBaseUrl/direct-debits?maxRecords=$limit")(hc)
+  def retrieveDirectDebits()(implicit hc: HeaderCarrier): Future[RDSDatacacheResponse] = {
+    http.get(url"$rdsDatacacheProxyBaseUrl/direct-debits")(hc)
       .execute[RDSDatacacheResponse]
-  }
-
-  def createDirectDebit(createDirectDebitRequest: CreateDirectDebitRequest)(implicit hc: HeaderCarrier): Future[String] = {
-    http.post(url"$rdsDatacacheProxyBaseUrl/direct-debits")(hc)
-      .withBody(Json.toJson(createDirectDebitRequest))
-      .execute[Either[UpstreamErrorResponse, HttpResponse]]
-      .flatMap {
-        case Right(response) if response.status == CREATED =>
-          Future.successful(response.body)
-        case Left(errorResponse) =>
-          Future.failed(new Exception(s"Unexpected response: ${errorResponse.message}, status code: ${errorResponse.statusCode}"))
-        case Right(response) =>
-          Future.failed(new Exception(s"Unexpected status code: ${response.status}"))
-      }
   }
 
   def getWorkingDaysOffset(getWorkingDaysOffsetRequest: WorkingDaysOffsetRequest)(implicit hc: HeaderCarrier): Future[EarliestPaymentDateResponse] = {

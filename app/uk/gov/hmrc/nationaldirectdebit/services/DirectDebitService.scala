@@ -19,8 +19,8 @@ package uk.gov.hmrc.nationaldirectdebit.services
 import com.google.inject.Inject
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.DirectDebitConnector
-import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDDPaymentPlansResponse, RDSDatacacheResponse}
-import uk.gov.hmrc.nationaldirectdebit.models.requests.{CreateDirectDebitRequest, GenerateDdiRefRequest, WorkingDaysOffsetRequest}
+import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDatacacheResponse}
+import uk.gov.hmrc.nationaldirectdebit.models.requests.{GenerateDdiRefRequest, WorkingDaysOffsetRequest}
 
 import scala.concurrent.Future
 
@@ -28,12 +28,8 @@ class DirectDebitService @Inject()(
                                     connector: DirectDebitConnector
                                   ) {
 
-  def retrieveDirectDebits(limit: Int)(implicit hc: HeaderCarrier): Future[RDSDatacacheResponse] = {
-    connector.retrieveDirectDebits(limit = limit)
-  }
-
-  def createDirectDebit(createDirectDebitRequest: CreateDirectDebitRequest)(implicit hc: HeaderCarrier): Future[String] = {
-    connector.createDirectDebit(createDirectDebitRequest)
+  def retrieveDirectDebits()(implicit hc: HeaderCarrier): Future[RDSDatacacheResponse] = {
+    connector.retrieveDirectDebits()
   }
 
   def getWorkingDaysOffset(getWorkingDaysOffsetRequest: WorkingDaysOffsetRequest)(implicit hc: HeaderCarrier): Future[EarliestPaymentDateResponse] = {
