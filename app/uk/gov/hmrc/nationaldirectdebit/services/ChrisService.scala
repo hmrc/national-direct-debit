@@ -23,15 +23,10 @@ import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
 import uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest
-import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.{DirectDebitSource, PaymentPlanType, PaymentsFrequency}
 import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.ChrisEnvelopeBuilder
 
-import java.time.format.DateTimeFormatter
-import java.time.{LocalDate, LocalDateTime, ZoneOffset}
-import java.util.UUID
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
-import scala.xml.Elem
 
 class ChrisService @Inject()(chrisConnector: ChrisConnector,
                              authConnector: AuthConnector

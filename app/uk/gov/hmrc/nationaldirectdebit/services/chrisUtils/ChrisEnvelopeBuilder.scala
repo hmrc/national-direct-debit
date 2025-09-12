@@ -20,7 +20,7 @@ import uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest
 import uk.gov.hmrc.nationaldirectdebit.services.ChrisEnvelopeConstants
 
 import java.time.format.DateTimeFormatter
-import java.time.{LocalDate, LocalDateTime, ZoneOffset}
+import java.time.{LocalDateTime, ZoneOffset}
 import java.util.UUID
 import scala.xml.Elem
 

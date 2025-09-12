@@ -16,12 +16,21 @@
 
 package uk.gov.hmrc.nationaldirectdebit.services.chrisUtils
 
+import java.time.format.DateTimeFormatter
 import java.time.LocalDate
 
 object DateUtils {
+
+  private val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+
   def calculatePeriodEnd(now: LocalDate = LocalDate.now()): String = {
-    val yearStart = LocalDate.of(now.getYear, 4, 6)
-    val periodEnd = if (now.isBefore(yearStart)) yearStart else yearStart.plusYears(1)
-    periodEnd.toString
+    val currentYear = now.getYear
+    val taxYearStart = LocalDate.of(currentYear, 4, 6)
+
+    val periodDate =
+      if (!now.isBefore(taxYearStart)) taxYearStart.plusYears(1)
+      else taxYearStart
+
+    periodDate.format(formatter)
   }
 }

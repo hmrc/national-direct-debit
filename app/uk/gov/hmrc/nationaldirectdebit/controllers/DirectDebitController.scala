@@ -21,7 +21,7 @@ import play.api.Logging
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.nationaldirectdebit.actions.AuthAction
-import uk.gov.hmrc.nationaldirectdebit.models.requests.{ChrisSubmissionRequest, CreateDirectDebitRequest, GenerateDdiRefRequest, WorkingDaysOffsetRequest}
+import uk.gov.hmrc.nationaldirectdebit.models.requests.{ChrisSubmissionRequest, GenerateDdiRefRequest, WorkingDaysOffsetRequest}
 import uk.gov.hmrc.nationaldirectdebit.services.{ChrisService, DirectDebitService}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -32,9 +32,8 @@ class DirectDebitController @Inject()(
                                        service: DirectDebitService,
                                        chrisService: ChrisService,
                                        val cc: ControllerComponents
-                                     )(implicit ec: ExecutionContext) extends BackendController(cc) with  Logging  {
-
-
+                                     )(implicit ec: ExecutionContext) extends BackendController(cc) with Logging {
+  
   def retrieveDirectDebits(): Action[AnyContent] =
     authorise.async {
       implicit request =>
