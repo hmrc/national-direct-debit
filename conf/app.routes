@@ -2,7 +2,7 @@
 
 GET      /direct-debits                                     uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.retrieveDirectDebits()
 
-GET     /direct-debits/:paymentReference/payment-plans      uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.retrieveDirectDebitPaymentPlans(paymentReference: String, firstRecordNumber: Option[Int], maxRecords: Option[Int])
+GET     /direct-debits/:paymentReference/payment-plans      uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.retrieveDirectDebitPaymentPlans(paymentReference: String)
 POST     /direct-debit-reference                            uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.generateDdiReference()
 
 POST     /direct-debits/future-working-days                 uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.getWorkingDaysOffset()

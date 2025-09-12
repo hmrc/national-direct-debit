@@ -20,7 +20,7 @@ import com.google.inject.Inject
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.{HeaderCarrier, HttpReadsInstances, StringContextOps}
-import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDatacacheResponse}
+import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDDPaymentPlansResponse, RDSDatacacheResponse}
 import uk.gov.hmrc.nationaldirectdebit.models.requests.{GenerateDdiRefRequest, WorkingDaysOffsetRequest}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
@@ -51,8 +51,8 @@ class DirectDebitConnector @Inject()(
       .execute[GenerateDdiRefResponse]
   }
 
-  def retrieveDirectDebitPaymentPlans(paymentReference: String, limit: Int)(implicit hc: HeaderCarrier): Future[RDSDDPaymentPlansResponse] = {
-    http.get(url"$rdsDatacacheProxyBaseUrl/direct-debit-reference?paymentReference=$paymentReference&maxRecords=$limit")(hc)
+  def retrieveDirectDebitPaymentPlans(paymentReference: String)(implicit hc: HeaderCarrier): Future[RDSDDPaymentPlansResponse] = {
+    http.get(url"$rdsDatacacheProxyBaseUrl/direct-debit-reference?paymentReference=$paymentReference")(hc)
       .execute[RDSDDPaymentPlansResponse]
   }
 }
