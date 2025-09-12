@@ -98,7 +98,7 @@ class DirectDebitControllerSpec extends SpecBase {
         when(mockDirectDebitService.retrieveDirectDebitPaymentPlans(any())(any()))
           .thenReturn(Future.successful(testDDPaymentPlansCacheResponse))
 
-        val result: Future[Result] = controller.retrieveDirectDebitPaymentPlans("test reference")(fakeRequest)
+        val result: Future[Result] = controller.retrieveDirectDebitPaymentPlans("test directDebitReference")(fakeRequest)
 
         status(result) mustBe OK
         contentAsJson(result) mustBe Json.toJson(testDDPaymentPlansCacheResponse)
@@ -108,7 +108,7 @@ class DirectDebitControllerSpec extends SpecBase {
         when(mockDirectDebitService.retrieveDirectDebitPaymentPlans(any())(any()))
           .thenReturn(Future.successful(testDDPaymentPlansEmptyResponse))
 
-        val result: Future[Result] = controller.retrieveDirectDebitPaymentPlans("test reference")(fakeRequest)
+        val result: Future[Result] = controller.retrieveDirectDebitPaymentPlans("test directDebitReference")(fakeRequest)
 
         status(result) mustBe OK
         contentAsJson(result) mustBe Json.toJson(testDDPaymentPlansEmptyResponse)

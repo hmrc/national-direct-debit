@@ -51,8 +51,8 @@ class DirectDebitConnector @Inject()(
       .execute[GenerateDdiRefResponse]
   }
 
-  def retrieveDirectDebitPaymentPlans(paymentReference: String)(implicit hc: HeaderCarrier): Future[RDSDDPaymentPlansResponse] = {
-    http.get(url"$rdsDatacacheProxyBaseUrl/direct-debit-reference?paymentReference=$paymentReference")(hc)
+  def retrieveDirectDebitPaymentPlans(directDebitReference: String)(implicit hc: HeaderCarrier): Future[RDSDDPaymentPlansResponse] = {
+    http.get(url"$rdsDatacacheProxyBaseUrl/direct-debits/$directDebitReference/payment-plans")(hc)
       .execute[RDSDDPaymentPlansResponse]
   }
 }

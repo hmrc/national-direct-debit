@@ -40,8 +40,8 @@ class DirectDebitService @Inject()(
     connector.generateDdiReference(request)
   }
 
-  def retrieveDirectDebitPaymentPlans(paymentReference: String)(implicit hc: HeaderCarrier): Future[RDSDDPaymentPlansResponse] = {
-    connector.retrieveDirectDebitPaymentPlans(paymentReference)
+  def retrieveDirectDebitPaymentPlans(directDebitReference: String)(implicit hc: HeaderCarrier): Future[RDSDDPaymentPlansResponse] = {
+    connector.retrieveDirectDebitPaymentPlans(directDebitReference)
   }
 
 }
