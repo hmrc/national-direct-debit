@@ -17,7 +17,7 @@
 package uk.gov.hmrc.nationaldirectdebit.models.requests
 
 import play.api.libs.json.{Json, OFormat}
-import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.{BankAddress, DirectDebitSource, PaymentDateDetails, PaymentPlanCalculation, PaymentPlanType, PaymentsFrequency, PlanStartDateDetails, YearEndAndMonth, YourBankDetails, YourBankDetailsWithAuddisStatus}
+import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.*
 
 import java.time.LocalDate
 

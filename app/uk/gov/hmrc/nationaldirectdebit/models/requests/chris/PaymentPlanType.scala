@@ -16,8 +16,6 @@
 
 package uk.gov.hmrc.nationaldirectdebit.models.requests.chris
 
-import play.api.i18n.Messages
-
 sealed trait PaymentPlanType
 
 object PaymentPlanType extends Enumerable.Implicits {

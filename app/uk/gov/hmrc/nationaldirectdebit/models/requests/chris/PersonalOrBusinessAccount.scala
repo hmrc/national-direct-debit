@@ -16,19 +16,18 @@
 
 package uk.gov.hmrc.nationaldirectdebit.models.requests.chris
 
-import play.api.i18n.Messages
-
 sealed trait PersonalOrBusinessAccount
 
 object PersonalOrBusinessAccount extends Enumerable.Implicits {
 
   case object Personal extends WithName("personal") with PersonalOrBusinessAccount
+
   case object Business extends WithName("business") with PersonalOrBusinessAccount
 
   val values: Seq[PersonalOrBusinessAccount] = Seq(
     Personal, Business
   )
-  
+
   implicit val enumerable: Enumerable[PersonalOrBusinessAccount] =
     Enumerable(values.map(v => v.toString -> v): _*)
 }

@@ -32,12 +32,11 @@ package actions
  * limitations under the License.
  */
 
-import play.api.mvc.{AnyContent, BodyParser, BodyParsers, PlayBodyParsers, Request, Result}
+import play.api.mvc.{PlayBodyParsers, Request, Result}
 import uk.gov.hmrc.http.SessionId
 import uk.gov.hmrc.nationaldirectdebit.actions.AuthAction
 import uk.gov.hmrc.nationaldirectdebit.models.requests.AuthenticatedRequest
 
-import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 class FakeAuthAction(
