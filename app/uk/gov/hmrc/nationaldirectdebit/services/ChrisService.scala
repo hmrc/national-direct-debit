@@ -22,7 +22,7 @@ import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
-import uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest
+import uk.gov.hmrc.nationaldirectdebit.models.requests.{AuthenticatedRequest, ChrisSubmissionRequest}
 import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.ChrisEnvelopeBuilder
 
 import javax.inject.Inject
@@ -45,7 +45,7 @@ class ChrisService @Inject()(chrisConnector: ChrisConnector,
       // Step 2: Build Seq[Map(enrolmentKey -> identifierString)]
       val enrolmentMaps: Seq[Map[String, String]] = activeEnrolments.map { e =>
         val identifierString = e.identifiers.map(_.value).mkString("/") // join values like 222/CC222
-        logger.info(s"*****Active enrolment: ${e.key} -> $identifierString")
+        logger.info(s"*****Active enrolment: ${e.key} ${} -> $identifierString")
         Map(e.key -> identifierString)
       }
 
@@ -54,11 +54,11 @@ class ChrisService @Inject()(chrisConnector: ChrisConnector,
     }
   }
 
-  def submitToChris(request: ChrisSubmissionRequest, credId: String, affinityGroup: String)
+  def submitToChris(request: ChrisSubmissionRequest, credId: String, affinityGroup: String, authRequest: AuthenticatedRequest[_])
                    (implicit hc: HeaderCarrier): Future[String] =
     for {
       hodServices <- getEligibleHodServices()
-      envelopeXml = ChrisEnvelopeBuilder.build(request, credId, affinityGroup, hodServices)
+      envelopeXml = ChrisEnvelopeBuilder.build(request, credId, affinityGroup, hodServices, authRequest)
       result <- chrisConnector.submitEnvelope(envelopeXml)
     } yield result
 

@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.nationaldirectdebit.services.chrisUtils
 
-import uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest
+import uk.gov.hmrc.nationaldirectdebit.models.requests.{AuthenticatedRequest, ChrisSubmissionRequest}
 import uk.gov.hmrc.nationaldirectdebit.services.ChrisEnvelopeConstants
 
 import java.time.format.DateTimeFormatter
@@ -28,16 +28,30 @@ object ChrisEnvelopeBuilder {
 
   private val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS")
 
-  def build(request: ChrisSubmissionRequest,
-            credId: String,
-            affinityGroup: String,
-            hodServices: Seq[Map[String, String]]): Elem = {
+  def build(
+             request: ChrisSubmissionRequest,
+             credId: String,
+             affinityGroup: String,
+             hodServices: Seq[Map[String, String]],
+             authRequest: AuthenticatedRequest[_]
+           ): Elem = {
 
     val correlatingId = UUID.randomUUID().toString.replace("-", "")
     val receiptDate = LocalDateTime.now(ZoneOffset.UTC).format(dateTimeFormatter)
     val submissionDateTime = LocalDateTime.now(ZoneOffset.UTC).format(dateTimeFormatter)
     val periodEnd = DateUtils.calculatePeriodEnd()
     val senderType = if (affinityGroup == "agent") "Agent" else "Individual"
+
+    // Clean hodServices: replace "NINO" placeholders with truncated NINO, remove duplicates
+    val cleanedHodServices: Seq[Map[String, String]] = hodServices.map { serviceMap =>
+      serviceMap.flatMap { case (k, v) =>
+        v match {
+          case "NINO" => authRequest.nino.map(n => k -> n.take(8)) // NTC key replaced by first 8 chars of NINO
+          case _ if k == "HMRC-NI" => None // remove duplicate full NINO
+          case _ => Some(k -> v)
+        }
+      }
+    }
 
     <ChRISEnvelope xmlns="http://www.hmrc.gov.uk/ChRIS/Envelope/2">
       <EnvelopeVersion>2.0</EnvelopeVersion>
@@ -55,7 +69,7 @@ object ChrisEnvelopeBuilder {
         <IRenvelope>
           <IRheader>
             <Keys>
-              {XmlUtils.formatKeys(hodServices, "               ")}
+              {XmlUtils.formatKeys(cleanedHodServices, "               ", authRequest)}
             </Keys>
             <PeriodEnd>{periodEnd}</PeriodEnd>
             <Sender>{senderType}</Sender>
@@ -63,7 +77,9 @@ object ChrisEnvelopeBuilder {
           <dDIPPDetails>
             <submissionDateTime>{submissionDateTime}</submissionDateTime>
             <credentialID>{credId}</credentialID>
-            {XmlUtils.formatKnownFacts(hodServices, "             ")}
+            <knownFact>
+              {XmlUtils.formatKnownFacts(cleanedHodServices, "           ", authRequest)}
+            </knownFact>
             <directDebitInstruction>
               <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
               <ddiReferenceNo>{request.ddiReferenceNo}</ddiReferenceNo>

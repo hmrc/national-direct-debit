@@ -43,11 +43,11 @@ class DefaultAuthAction @Inject()(
 
     val sessionId: SessionId = hc.sessionId
       .getOrElse(throw new UnauthorizedException("Unable to retrieve session ID from headers"))
-
-    val retrievals = Retrievals.internalId and Retrievals.credentials and Retrievals.affinityGroup
+    
+    val retrievals = Retrievals.internalId and Retrievals.credentials and Retrievals.affinityGroup and Retrievals.nino
 
     authorised().retrieve(retrievals) {
-      case maybeInternalId ~ maybeCreds ~ maybeAffinity =>
+      case maybeInternalId ~ maybeCreds ~ maybeAffinity ~ maybeNino =>
         (maybeInternalId, maybeCreds, maybeAffinity) match
           case (Some(internalId), Some(credentials), Some(affinity)) =>
             val credId = credentials.providerId
@@ -58,7 +58,8 @@ class DefaultAuthAction @Inject()(
                 internalId,
                 sessionId,
                 credId,
-                affinityName
+                affinityName,
+                nino = maybeNino
               )
             )
 
@@ -70,7 +71,6 @@ class DefaultAuthAction @Inject()(
         logger.warn(error)
         Unauthorized(error)
     }
-
 
 trait AuthAction
   extends ActionBuilder[AuthenticatedRequest, AnyContent]

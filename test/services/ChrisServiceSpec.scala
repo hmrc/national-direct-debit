@@ -17,13 +17,14 @@
 package services
 
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito._
+import org.mockito.Mockito.*
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatestplus.mockito.MockitoSugar
+import play.api.test.FakeRequest
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, Enrolments}
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.{HeaderCarrier, SessionId}
 import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
 import uk.gov.hmrc.nationaldirectdebit.models.requests.*
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.*
@@ -206,6 +207,15 @@ class ChrisServiceSpec
     )
   )
 
+  val fakeAuthRequest = AuthenticatedRequest(
+    request = FakeRequest(), // just a placeholder
+    internalId = "internalId-123",
+    sessionId = SessionId("session-123"),
+    credId = "credId123",
+    affinityGroup = "Organisation",
+    nino = Some("AB123456C")
+  )
+  
   "ChrisService.submitToChris" should {
 
     // Run a test for each submissionRequest
@@ -220,7 +230,7 @@ class ChrisServiceSpec
         when(mockConnector.submitEnvelope(any[Elem]))
           .thenReturn(Future.successful("<Confirmation>Message received</Confirmation>"))
 
-        service.submitToChris(req, "credId123", "Organisation").map { result =>
+        service.submitToChris(req, "credId123", "Organisation", fakeAuthRequest).map { result =>
           result must include("Message received")
         }
       }
@@ -235,7 +245,7 @@ class ChrisServiceSpec
       when(mockConnector.submitEnvelope(any[Elem]))
         .thenReturn(Future.successful("<Confirmation>No enrolments</Confirmation>"))
 
-      service.submitToChris(submissionRequests.head, "credId456", "Individual").map { result =>
+      service.submitToChris(submissionRequests.head, "credId456", "Individual", fakeAuthRequest).map { result =>
         result must include("No enrolments")
       }
     }
@@ -250,7 +260,7 @@ class ChrisServiceSpec
         .thenReturn(Future.failed(new RuntimeException("Boom")))
 
       recoverToSucceededIf[RuntimeException] {
-        service.submitToChris(submissionRequests.head, "credId789", "Organisation")
+        service.submitToChris(submissionRequests.head, "credId789", "Organisation", fakeAuthRequest)
       }
     }
   }

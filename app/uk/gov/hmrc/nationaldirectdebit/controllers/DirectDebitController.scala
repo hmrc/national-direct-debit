@@ -76,7 +76,7 @@ class DirectDebitController @Inject()(
         val credId: String = request.credId
 
 
-        chrisService.submitToChris(chrisRequest, credId, affinityGroup).map { response =>
+        chrisService.submitToChris(chrisRequest, credId, affinityGroup, request).map { response =>
           Ok(Json.obj("success" -> true, "response" -> response))
         }.recover { case ex =>
           logger.error("ChRIS submission failed", ex)
