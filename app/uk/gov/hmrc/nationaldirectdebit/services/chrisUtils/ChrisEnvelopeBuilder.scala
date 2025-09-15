@@ -16,71 +16,101 @@
 
 package uk.gov.hmrc.nationaldirectdebit.services.chrisUtils
 
-import uk.gov.hmrc.nationaldirectdebit.models.requests.{AuthenticatedRequest, ChrisSubmissionRequest}
+import play.api.Logging
 import uk.gov.hmrc.nationaldirectdebit.services.ChrisEnvelopeConstants
 
-import java.time.format.DateTimeFormatter
-import java.time.{LocalDateTime, ZoneOffset}
-import java.util.UUID
-import scala.xml.Elem
+import scala.xml.{Elem, PrettyPrinter, XML}
 
-object ChrisEnvelopeBuilder {
+object ChrisEnvelopeBuilder extends Logging {
 
-  private val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS")
+  private val dateTimeFormatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS")
+  private val prettyPrinter = new PrettyPrinter(120, 4)
 
   def build(
-             request: ChrisSubmissionRequest,
+             request: uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest,
              credId: String,
              affinityGroup: String,
              hodServices: Seq[Map[String, String]],
-             authRequest: AuthenticatedRequest[_]
+             authRequest: uk.gov.hmrc.nationaldirectdebit.models.requests.AuthenticatedRequest[_]
            ): Elem = {
 
-    val correlatingId = UUID.randomUUID().toString.replace("-", "")
-    val receiptDate = LocalDateTime.now(ZoneOffset.UTC).format(dateTimeFormatter)
-    val submissionDateTime = LocalDateTime.now(ZoneOffset.UTC).format(dateTimeFormatter)
+    val correlatingId = java.util.UUID.randomUUID().toString.replace("-", "")
+    val receiptDate = java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).format(dateTimeFormatter)
+    val submissionDateTime = java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).format(dateTimeFormatter)
     val periodEnd = DateUtils.calculatePeriodEnd()
     val senderType = if (affinityGroup == "agent") "Agent" else "Individual"
 
-    <ChRISEnvelope xmlns="http://www.hmrc.gov.uk/ChRIS/Envelope/2">
-      <EnvelopeVersion>2.0</EnvelopeVersion>
-      <Header>
-        <MessageClass>{ChrisEnvelopeConstants.MessageClass}</MessageClass>
-        <Qualifier>{ChrisEnvelopeConstants.Qualifier}</Qualifier>
-        <Function>{ChrisEnvelopeConstants.Function}</Function>
-        <Sender>
-          <System>{ChrisEnvelopeConstants.SenderSystem}</System>
-          <CorrelatingID>{correlatingId}</CorrelatingID>
-          <ReceiptDate>{receiptDate}</ReceiptDate>
-        </Sender>
-      </Header>
-      <Body>
-        <IRenvelope>
-          <IRheader>
-            <Keys>
-              {XmlUtils.formatKeys(hodServices, "               ")}
-            </Keys>
-            <PeriodEnd>{periodEnd}</PeriodEnd>
-            <Sender>{senderType}</Sender>
-          </IRheader>
-          <dDIPPDetails>
-            <submissionDateTime>{submissionDateTime}</submissionDateTime>
-            <credentialID>{credId}</credentialID>
-            <knownFact>
-              {XmlUtils.formatKnownFacts(hodServices, "           ")}
-            </knownFact>
-            <directDebitInstruction>
-              <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
-              <ddiReferenceNo>{request.ddiReferenceNo}</ddiReferenceNo>
-              <bankSortCode>{request.yourBankDetailsWithAuddisStatus.sortCode}</bankSortCode>
-              <bankAccountNo>{request.yourBankDetailsWithAuddisStatus.accountNumber}</bankAccountNo>
-              <bankAccountName>{request.bankName}</bankAccountName>
-              { if (request.yourBankDetailsWithAuddisStatus.auddisStatus) <paperAuddisFlag>01</paperAuddisFlag> else scala.xml.Null }
-            </directDebitInstruction>
-            { PaymentPlanBuilder.build(request, request.serviceType.toString) }
-          </dDIPPDetails>
-        </IRenvelope>
-      </Body>
-    </ChRISEnvelope>
+    val envelopeXml: Elem =
+      <ChRISEnvelope xmlns="http://www.hmrc.gov.uk/ChRIS/Envelope/2">
+        <EnvelopeVersion>2.0</EnvelopeVersion>
+        <Header>
+          <MessageClass>
+            {ChrisEnvelopeConstants.MessageClass}
+          </MessageClass>
+          <Qualifier>
+            {ChrisEnvelopeConstants.Qualifier}
+          </Qualifier>
+          <Function>
+            {ChrisEnvelopeConstants.Function}
+          </Function>
+          <Sender>
+            <System>
+              {ChrisEnvelopeConstants.SenderSystem}
+            </System>
+            <CorrelatingID>
+              {correlatingId}
+            </CorrelatingID>
+            <ReceiptDate>
+              {receiptDate}
+            </ReceiptDate>
+          </Sender>
+        </Header>
+        <Body>
+          <IRenvelope>
+            <IRheader>
+              <Keys>
+                {XmlUtils.formatKeys(hodServices, "               ")}
+              </Keys>
+              <PeriodEnd>
+                {periodEnd}
+              </PeriodEnd>
+              <Sender>
+                {senderType}
+              </Sender>
+            </IRheader>
+            <dDIPPDetails>
+              <submissionDateTime>
+                {submissionDateTime}
+              </submissionDateTime>
+              <credentialID>
+                {credId}
+              </credentialID>
+              <knownFact>
+                {XmlUtils.formatKnownFacts(hodServices, "           ")}
+              </knownFact>
+              <directDebitInstruction>
+                <actionType>
+                  {ChrisEnvelopeConstants.ActionType_1}
+                </actionType>
+                <ddiReferenceNo>
+                  {request.ddiReferenceNo}
+                </ddiReferenceNo>
+                <bankSortCode>
+                  {request.yourBankDetailsWithAuddisStatus.sortCode}
+                </bankSortCode>
+                <bankAccountNo>
+                  {request.yourBankDetailsWithAuddisStatus.accountNumber}
+                </bankAccountNo>
+                <bankAccountName>
+                  {request.bankName}
+                </bankAccountName>{if (request.yourBankDetailsWithAuddisStatus.auddisStatus) <paperAuddisFlag>01</paperAuddisFlag> else scala.xml.Null}
+              </directDebitInstruction>{PaymentPlanBuilder.build(request, request.serviceType.toString)}
+            </dDIPPDetails>
+          </IRenvelope>
+        </Body>
+      </ChRISEnvelope>
+    val prettyXmlString = prettyPrinter.format(envelopeXml)
+    logger.info(s"Chris Envelope XML:\n$prettyXmlString")
+    XML.loadString(prettyXmlString)
   }
 }
