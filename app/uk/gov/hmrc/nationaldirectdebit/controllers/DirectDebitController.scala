@@ -72,17 +72,28 @@ class DirectDebitController @Inject()(
               |""".stripMargin
         )
 
-        val affinityGroup: String = request.affinityGroup
-        val credId: String = request.credId
+        chrisService.submitToChris(chrisRequest, request.credId, request.affinityGroup, request)
+          .map { response =>
+            // Success: return 200 with response
+            logger.info(s"ChRIS submission successful for request: ${chrisRequest.ddiReferenceNo}")
+            Ok(Json.obj(
+              "success" -> true,
+              "response" -> response
+            ))
+          }
+          .recover { case ex =>
+            // Log full stack trace
+            logger.error(s"ChRIS submission failed for request: ${chrisRequest.ddiReferenceNo}", ex)
 
-
-        chrisService.submitToChris(chrisRequest, credId, affinityGroup, request).map { response =>
-          Ok(Json.obj("success" -> true, "response" -> response))
-        }.recover { case ex =>
-          logger.error("ChRIS submission failed", ex)
-          InternalServerError(Json.obj("success" -> false, "message" -> ex.getMessage))
-        }
+            // Return structured error JSON to frontend
+            InternalServerError(Json.obj(
+              "success" -> false,
+              "message" -> s"CHRIS submission failed: ${ex.getMessage}",
+              "exception" -> ex.getClass.getSimpleName
+            ))
+          }
       }
     }
+
 
 }

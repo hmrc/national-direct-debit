@@ -36,15 +36,16 @@ class ChrisConnector @Inject()(
     ws.url(chrisBaseUrl)
       .withHttpHeaders("Content-Type" -> "application/xml")
       .post(envelope.toString())
-      .map { response =>
+      .flatMap { response =>
         if (response.status >= 200 && response.status < 300) {
           logger.info(s"ChRIS submission successful: ${response.status}")
-          response.body
+          Future.successful(response.body)
         } else {
           val msg = s"ChRIS submission failed with status ${response.status}: ${response.body}"
           logger.error(msg)
-          throw new RuntimeException(msg)
+          Future.failed(new RuntimeException(msg)) // throws to calling service
         }
       }
   }
+
 }
