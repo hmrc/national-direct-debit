@@ -16,47 +16,41 @@
 
 package uk.gov.hmrc.nationaldirectdebit.services.chrisUtils
 
-import uk.gov.hmrc.nationaldirectdebit.models.requests.AuthenticatedRequest
-
 import scala.xml.{Node, Text}
 
 object XmlUtils {
 
-  private def formatValue(value: String, request: AuthenticatedRequest[_]): String =
-    if (value == "NINO") request.nino.getOrElse("").take(8)
-    else value
+  private def formatValue(key: String, value: String): String =
+    if (key.contains("NTC")) {
+      value.take(8)
+    } else {
+      value
+    }
 
   def formatKeys(
                   hodServices: Seq[Map[String, String]],
-                  indent: String,
-                  request: AuthenticatedRequest[_]
+                  indent: String
                 ): Seq[scala.xml.Node] =
     hodServices.zipWithIndex.flatMap { case (serviceMap, idx) =>
       serviceMap.flatMap { case (k, v) =>
-        val prefix = if (idx >= 0) "" else s"\n$indent"
+        val prefix = if (idx > 0) s"\n$indent" else ""
         Seq(
           scala.xml.Text(prefix),
-          <Key Type={k.trim}>{formatValue(v, request).trim}</Key>
+          <Key Type={k.trim}>{formatValue(k, v).trim}</Key>
         )
       }
     }
 
-
   def formatKnownFacts(
                         hodServices: Seq[Map[String, String]],
-                        indent: String,
-                        request: AuthenticatedRequest[_]
+                        indent: String
                       ): Seq[Node] =
     hodServices.flatMap { serviceMap =>
       serviceMap.toList.flatMap { case (k, v) =>
         Seq(
-          <service>
-            {k.trim}
-          </service>,
+          <service>{k.trim}</service>,
           Text(s"\n$indent"),
-          <value>
-            {formatValue(v, request).trim}
-          </value>
+          <value>{formatValue(k, v).trim}</value>
         )
       }
     }

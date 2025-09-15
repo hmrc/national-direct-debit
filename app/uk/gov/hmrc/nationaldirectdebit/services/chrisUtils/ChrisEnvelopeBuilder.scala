@@ -42,17 +42,6 @@ object ChrisEnvelopeBuilder {
     val periodEnd = DateUtils.calculatePeriodEnd()
     val senderType = if (affinityGroup == "agent") "Agent" else "Individual"
 
-    // Clean hodServices: replace "NINO" placeholders with truncated NINO, remove duplicates
-    val cleanedHodServices: Seq[Map[String, String]] = hodServices.map { serviceMap =>
-      serviceMap.flatMap { case (k, v) =>
-        v match {
-          case "NINO" => authRequest.nino.map(n => k -> n.take(8)) // NTC key replaced by first 8 chars of NINO
-          case _ if k == "HMRC-NI" => None // remove duplicate full NINO
-          case _ => Some(k -> v)
-        }
-      }
-    }
-
     <ChRISEnvelope xmlns="http://www.hmrc.gov.uk/ChRIS/Envelope/2">
       <EnvelopeVersion>2.0</EnvelopeVersion>
       <Header>
@@ -69,7 +58,7 @@ object ChrisEnvelopeBuilder {
         <IRenvelope>
           <IRheader>
             <Keys>
-              {XmlUtils.formatKeys(cleanedHodServices, "               ", authRequest)}
+              {XmlUtils.formatKeys(hodServices, "               ")}
             </Keys>
             <PeriodEnd>{periodEnd}</PeriodEnd>
             <Sender>{senderType}</Sender>
@@ -78,7 +67,7 @@ object ChrisEnvelopeBuilder {
             <submissionDateTime>{submissionDateTime}</submissionDateTime>
             <credentialID>{credId}</credentialID>
             <knownFact>
-              {XmlUtils.formatKnownFacts(cleanedHodServices, "           ", authRequest)}
+              {XmlUtils.formatKnownFacts(hodServices, "           ")}
             </knownFact>
             <directDebitInstruction>
               <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
