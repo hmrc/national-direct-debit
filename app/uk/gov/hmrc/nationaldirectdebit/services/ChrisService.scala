@@ -22,6 +22,7 @@ import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
+import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.DirectDebitSource
 import uk.gov.hmrc.nationaldirectdebit.models.requests.{AuthenticatedRequest, ChrisSubmissionRequest}
 import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.ChrisEnvelopeBuilder
 
@@ -33,11 +34,27 @@ class ChrisService @Inject()(chrisConnector: ChrisConnector,
                             )(implicit ec: ExecutionContext) extends Logging {
 
 
-  private def getEligibleHodServices()
+  private def getEligibleHodServices(request: ChrisSubmissionRequest)
                                     (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Seq[Map[String, String]]] = {
     authConnector.authorise(EmptyPredicate, Retrievals.allEnrolments).map { enrolments =>
 
       logger.info(s"Retrieved enrolments: ${enrolments.enrolments.map(_.key).mkString(", ")}")
+
+      val serviceType = request.serviceType
+      val listHodServices: Map[DirectDebitSource, String] = Map(
+        DirectDebitSource.CT -> "COTA",
+        DirectDebitSource.PAYE -> "PAYE",
+        DirectDebitSource.SA -> "CESA",
+        DirectDebitSource.TC -> "NTC",
+        DirectDebitSource.VAT -> "VAT",
+        DirectDebitSource.MGD -> "MGD",
+        DirectDebitSource.NIC -> "NIDN",
+        DirectDebitSource.OL -> "SAFE",
+        DirectDebitSource.SDLT -> "SDLT"
+      )
+
+      val expectedHodService: Option[String] = listHodServices.get(serviceType)
+      logger.info(s"Expected HOD service for [$serviceType] = ${expectedHodService.getOrElse("not found")}")
 
       // Step 1: Filter active enrolments
       val activeEnrolments: Seq[Enrolment] = enrolments.enrolments.toSeq.filter(_.isActivated)
@@ -45,19 +62,32 @@ class ChrisService @Inject()(chrisConnector: ChrisConnector,
       // Step 2: Build Seq[Map(enrolmentKey -> identifierString)]
       val enrolmentMaps: Seq[Map[String, String]] = activeEnrolments.map { e =>
         val identifierString = e.identifiers.map(_.value).mkString("/") // join values like 222/CC222
-        logger.info(s"*****Active enrolment: ${e.key} ${} -> $identifierString")
+        logger.info(s"***** Active enrolment: ${e.key} -> $identifierString")
         Map(e.key -> identifierString)
       }
 
-      logger.info(s"***Final enrolment maps: ${enrolmentMaps.mkString(", ")}")
-      enrolmentMaps
+      // Step 3: Reorder maps so enrolments whose key contains expected HOD service come first
+      val (matching, others) = expectedHodService match {
+        case Some(hodKey) =>
+          enrolmentMaps.partition { m =>
+            m.keys.exists(_.contains(hodKey))
+          }
+        case None =>
+          (Seq.empty[Map[String, String]], enrolmentMaps)
+      }
+
+      val reordered = matching ++ others
+
+      logger.info(s"*** Final enrolment maps (reordered): ${reordered.mkString(", ")}")
+      reordered
     }
   }
+
 
   def submitToChris(request: ChrisSubmissionRequest, credId: String, affinityGroup: String, authRequest: AuthenticatedRequest[_])
                    (implicit hc: HeaderCarrier): Future[String] =
     for {
-      hodServices <- getEligibleHodServices()
+      hodServices <- getEligibleHodServices(request: ChrisSubmissionRequest)
       envelopeXml = ChrisEnvelopeBuilder.build(request, credId, affinityGroup, hodServices, authRequest)
       result <- chrisConnector.submitEnvelope(envelopeXml)
     } yield result
