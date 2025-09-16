@@ -20,42 +20,67 @@ import scala.xml.{Node, Text}
 
 object XmlUtils {
 
-  private def formatValue(key: String, value: String): String =
-    if (key.contains("NTC")) {
-      value.take(8)
-    } else {
-      value
-    }
 
   def formatKeys(
                   hodServices: Seq[Map[String, String]],
                   indent: String
                 ): Seq[scala.xml.Node] =
     hodServices.zipWithIndex.flatMap { case (serviceMap, idx) =>
-      serviceMap.flatMap { case (k, v) =>
-        val prefix = if (idx > 0) s"\n$indent" else ""
+      val prefix = if (idx > 0) s"\n$indent" else ""
+
+      (for {
+        service <- serviceMap.get("service")
+        idName <- serviceMap.get("identifierName")
+        idValue <- serviceMap.get("identifierValue")
+      } yield {
+        val valueToUse =
+          if (service.equalsIgnoreCase("NTC") && idName.equalsIgnoreCase("NINO"))
+            idValue.take(8)
+          else
+            idValue.trim
+
         Seq(
           scala.xml.Text(prefix),
-          <Key Type={k.trim}>{formatValue(k, v).trim}</Key>
+          <Key Type={idName.trim}>
+            {valueToUse}
+          </Key>
         )
-      }
+      }).getOrElse(Seq.empty)
     }
 
   def formatKnownFacts(
                         hodServices: Seq[Map[String, String]],
                         indent: String
-                      ): Seq[Node] =
-    hodServices.flatMap { serviceMap =>
-      serviceMap.toList.map { case (k, v) =>
-        <knownFact>
-          <service>
-            {k.trim}
-          </service>
-          <value>
-            {formatValue(k, v).trim}
-          </value>
-        </knownFact>
+                      ): Seq[scala.xml.Node] =
+    hodServices.zipWithIndex.flatMap { case (serviceMap, idx) =>
+      val prefix = if (idx > 0) s"\n$indent" else ""
+
+      for {
+        service <- serviceMap.get("service")
+        idNames <- serviceMap.get("identifierName")
+        idValues <- serviceMap.get("identifierValue")
+      } yield {
+        val names = idNames.split("/").map(_.trim)
+        val values = idValues.split("/").map(_.trim)
+
+        val processedValues = names.zip(values).map { case (name, value) =>
+          if (service.equalsIgnoreCase("NTC") && name.equalsIgnoreCase("NINO")) value.take(8)
+          else value
+        }
+        val finalValues = processedValues.mkString("/")
+        Seq(
+          scala.xml.Text(prefix),
+          <knownFact>
+            <service>
+              {service.trim}
+            </service>
+            <value>
+              {finalValues}
+            </value>
+          </knownFact>
+        )
       }
-    }
+    }.flatten
+
 
 }

@@ -22,7 +22,6 @@ import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
-import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.DirectDebitSource
 import uk.gov.hmrc.nationaldirectdebit.models.requests.{AuthenticatedRequest, ChrisSubmissionRequest}
 import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.ChrisEnvelopeBuilder
 
@@ -34,35 +33,46 @@ class ChrisService @Inject()(chrisConnector: ChrisConnector,
                             )(implicit ec: ExecutionContext) extends Logging {
 
 
-  private def getEligibleHodServices(request: ChrisSubmissionRequest)
-                                    (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Seq[Map[String, String]]] = {
+  private def getEligibleHodServices(
+                                      request: ChrisSubmissionRequest
+                                    )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Seq[Map[String, String]]] = {
     authConnector.authorise(EmptyPredicate, Retrievals.allEnrolments).map { enrolments =>
 
       logger.info(s"Retrieved enrolments: ${enrolments.enrolments.map(_.key).mkString(", ")}")
 
       val serviceType = request.serviceType
       val expectedHodService: Option[String] = ChrisEnvelopeConstants.listHodServices.get(serviceType)
-      
+
       logger.info(s"Expected HOD service for [$serviceType] = ${expectedHodService.getOrElse("not found")}")
 
       // Step 1: Filter active enrolments
       val activeEnrolments: Seq[Enrolment] = enrolments.enrolments.toSeq.filter(_.isActivated)
 
-      // Step 2: Build Seq[Map(enrolmentKey -> identifierString)]
-      val enrolmentMaps: Seq[Map[String, String]] = activeEnrolments.map { e =>
-        val identifierString = e.identifiers.map(_.value).mkString("/") // join values like 222/CC222
-        logger.info(s"***** Active enrolment: ${e.key} -> $identifierString")
-        Map(e.key -> identifierString)
-      }
+      // Step 2: Group identifiers by service
+      val grouped: Map[String, Seq[(String, String)]] =
+        activeEnrolments.groupBy(_.key).view.mapValues { enrols =>
+          enrols.flatMap(_.identifiers.map(i => i.key -> i.value))
+        }.toMap
 
-      // Step 3: Reorder maps so enrolments whose key contains expected HOD service come first
+      // Step 3: Build final Seq[Map(service, identifierName, identifierValue)]
+      val enrolmentMaps: Seq[Map[String, String]] = grouped.map { case (service, identifiers) =>
+        val concatenatedNames = identifiers.map(_._1).mkString("/")
+        val concatenatedValues = identifiers.map { case (name, value) =>
+          if (service == "NTS" && name == "NINO") value.take(8) else value
+        }.mkString("/")
+
+        Map(
+          "service" -> service,
+          "identifierName" -> concatenatedNames,
+          "identifierValue" -> concatenatedValues
+        )
+      }.toSeq
+
+      // Step 4: Reorder so expected HOD service comes first
       val (matching, others) = expectedHodService match {
         case Some(hodKey) =>
-          enrolmentMaps.partition { m =>
-            m.keys.exists(_.contains(hodKey))
-          }
-        case None =>
-          (Seq.empty[Map[String, String]], enrolmentMaps)
+          enrolmentMaps.partition(_.get("service").exists(_.contains(hodKey)))
+        case None => (Seq.empty, enrolmentMaps)
       }
 
       val reordered = matching ++ others

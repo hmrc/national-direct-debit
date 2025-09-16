@@ -87,9 +87,7 @@ object ChrisEnvelopeBuilder extends Logging {
               <credentialID>
                 {credId}
               </credentialID>
-              <knownFacts>
                 {XmlUtils.formatKnownFacts(hodServices, "           ")}
-              </knownFacts>
               <directDebitInstruction>
                 <actionType>
                   {ChrisEnvelopeConstants.ActionType_1}
