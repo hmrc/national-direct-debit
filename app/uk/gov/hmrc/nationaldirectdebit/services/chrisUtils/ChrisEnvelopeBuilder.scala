@@ -39,6 +39,8 @@ object ChrisEnvelopeBuilder extends Logging {
     val submissionDateTime = java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).format(dateTimeFormatter)
     val periodEnd = DateUtils.calculatePeriodEnd()
     val senderType = if (affinityGroup == "agent") "Agent" else "Individual"
+    val serviceType = request.serviceType
+    val expectedHodService: Option[String] = ChrisEnvelopeConstants.listHodServices.get(serviceType)
 
     val envelopeXml: Elem =
       <ChRISEnvelope xmlns="http://www.hmrc.gov.uk/ChRIS/Envelope/2">
@@ -85,15 +87,15 @@ object ChrisEnvelopeBuilder extends Logging {
               <credentialID>
                 {credId}
               </credentialID>
-              <knownFact>
+              <knownFacts>
                 {XmlUtils.formatKnownFacts(hodServices, "           ")}
-              </knownFact>
+              </knownFacts>
               <directDebitInstruction>
                 <actionType>
                   {ChrisEnvelopeConstants.ActionType_1}
                 </actionType>
                 <ddiReferenceNo>
-                  {request.ddiReferenceNo}
+                  {request.paymentReference}
                 </ddiReferenceNo>
                 <bankSortCode>
                   {request.yourBankDetailsWithAuddisStatus.sortCode}
@@ -104,7 +106,7 @@ object ChrisEnvelopeBuilder extends Logging {
                 <bankAccountName>
                   {request.bankName}
                 </bankAccountName>{if (request.yourBankDetailsWithAuddisStatus.auddisStatus) <paperAuddisFlag>01</paperAuddisFlag> else scala.xml.Null}
-              </directDebitInstruction>{PaymentPlanBuilder.build(request, request.serviceType.toString)}
+              </directDebitInstruction>{PaymentPlanBuilder.build(request, expectedHodService)}
             </dDIPPDetails>
           </IRenvelope>
         </Body>

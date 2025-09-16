@@ -41,19 +41,8 @@ class ChrisService @Inject()(chrisConnector: ChrisConnector,
       logger.info(s"Retrieved enrolments: ${enrolments.enrolments.map(_.key).mkString(", ")}")
 
       val serviceType = request.serviceType
-      val listHodServices: Map[DirectDebitSource, String] = Map(
-        DirectDebitSource.CT -> "COTA",
-        DirectDebitSource.PAYE -> "PAYE",
-        DirectDebitSource.SA -> "CESA",
-        DirectDebitSource.TC -> "NTC",
-        DirectDebitSource.VAT -> "VAT",
-        DirectDebitSource.MGD -> "MGD",
-        DirectDebitSource.NIC -> "NIDN",
-        DirectDebitSource.OL -> "SAFE",
-        DirectDebitSource.SDLT -> "SDLT"
-      )
-
-      val expectedHodService: Option[String] = listHodServices.get(serviceType)
+      val expectedHodService: Option[String] = ChrisEnvelopeConstants.listHodServices.get(serviceType)
+      
       logger.info(s"Expected HOD service for [$serviceType] = ${expectedHodService.getOrElse("not found")}")
 
       // Step 1: Filter active enrolments

@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.nationaldirectdebit.services
 
+import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.DirectDebitSource
+
 object ChrisEnvelopeConstants {
   val MessageClass = "HMRC-NDDS-DDI"
   val Qualifier    = "request"
@@ -26,4 +28,15 @@ object ChrisEnvelopeConstants {
   val PPType_2 = 2
   val PPType_3 = 3
   val PPType_4 = 4
+  val listHodServices: Map[DirectDebitSource, String] = Map(
+    DirectDebitSource.CT -> "COTA",
+    DirectDebitSource.PAYE -> "PAYE",
+    DirectDebitSource.SA -> "CESA",
+    DirectDebitSource.TC -> "NTC",
+    DirectDebitSource.VAT -> "VAT",
+    DirectDebitSource.MGD -> "MGD",
+    DirectDebitSource.NIC -> "NIDN",
+    DirectDebitSource.OL -> "SAFE",
+    DirectDebitSource.SDLT -> "SDLT"
+  )
 }

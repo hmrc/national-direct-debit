@@ -24,7 +24,7 @@ import scala.xml.{Elem, Null}
 
 object PaymentPlanBuilder {
 
-  def build(request: ChrisSubmissionRequest, hodService: String): Elem = {
+  def build(request: ChrisSubmissionRequest, hodService: Option[String]): Elem = {
     request.serviceType match {
       case DirectDebitSource.TC if request.paymentPlanType == PaymentPlanType.TaxCreditRepaymentPlan =>
         buildTcPlan(request, hodService)
@@ -44,12 +44,12 @@ object PaymentPlanBuilder {
       case _                               => ""
     }
 
-  private def buildTcPlan(request: ChrisSubmissionRequest, hodService: String): Elem =
+  private def buildTcPlan(request: ChrisSubmissionRequest, hodService: Option[String]): Elem =
     <paymentPlan>
       <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
       <pPType>{ChrisEnvelopeConstants.PPType_3}</pPType>
       <paymentReference>{request.paymentReference.getOrElse("")}</paymentReference>
-      <hodService>{hodService}</hodService>
+      <hodService>{hodService.getOrElse("")}</hodService>
       <paymentCurrency>GBP</paymentCurrency>
       <scheduledPaymentAmount>{request.calculation.flatMap(_.regularPaymentAmount).getOrElse("")}</scheduledPaymentAmount>
       <scheduledPaymentStartDate>{request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
@@ -60,23 +60,23 @@ object PaymentPlanBuilder {
       <totalLiability>{request.totalAmountDue.getOrElse(BigDecimal(0))}</totalLiability>
     </paymentPlan>
 
-  private def buildMgdPlan(request: ChrisSubmissionRequest, hodService: String): Elem =
+  private def buildMgdPlan(request: ChrisSubmissionRequest, hodService: Option[String]): Elem =
     <paymentPlan>
       <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
       <pPType>{ChrisEnvelopeConstants.PPType_4}</pPType>
       <paymentReference>{request.paymentReference.getOrElse("")}</paymentReference>
-      <hodService>{hodService}</hodService>
+      <hodService>{hodService.getOrElse("")}</hodService>
       <paymentCurrency>GBP</paymentCurrency>
       <scheduledPaymentStartDate>{request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
     </paymentPlan>
 
-  private def buildSaPlan(request: ChrisSubmissionRequest, hodService: String): Elem = {
+  private def buildSaPlan(request: ChrisSubmissionRequest, hodService: Option[String]): Elem = {
     val freqCode = frequencyCode(request)
     <paymentPlan>
       <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
       <pPType>{ChrisEnvelopeConstants.PPType_2}</pPType>
       <paymentReference>{request.paymentReference.getOrElse("")}</paymentReference>
-      <hodService>{hodService}</hodService>
+      <hodService>{hodService.getOrElse("")}</hodService>
       <paymentCurrency>GBP</paymentCurrency>
       <scheduledPaymentAmount>{request.regularPaymentAmount.getOrElse(BigDecimal(0))}</scheduledPaymentAmount>
       <scheduledPaymentStartDate>{request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
@@ -85,12 +85,12 @@ object PaymentPlanBuilder {
     </paymentPlan>
   }
 
-  private def buildSinglePlan(request: ChrisSubmissionRequest, hodService: String): Elem =
+  private def buildSinglePlan(request: ChrisSubmissionRequest, hodService: Option[String]): Elem =
     <paymentPlan>
       <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
       <pPType>{ChrisEnvelopeConstants.PPType_1}</pPType>
       <paymentReference>{request.paymentReference.getOrElse("")}</paymentReference>
-      <hodService>{hodService}</hodService>
+      <hodService>{hodService.getOrElse("")}</hodService>
       <paymentCurrency>GBP</paymentCurrency>
       <scheduledPaymentAmount>{request.paymentAmount.getOrElse(BigDecimal(0))}</scheduledPaymentAmount>
       <scheduledPaymentStartDate>{request.paymentDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>

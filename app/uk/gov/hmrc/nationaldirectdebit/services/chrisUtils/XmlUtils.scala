@@ -46,12 +46,16 @@ object XmlUtils {
                         indent: String
                       ): Seq[Node] =
     hodServices.flatMap { serviceMap =>
-      serviceMap.toList.flatMap { case (k, v) =>
-        Seq(
-          <service>{k.trim}</service>,
-          Text(s"\n$indent"),
-          <value>{formatValue(k, v).trim}</value>
-        )
+      serviceMap.toList.map { case (k, v) =>
+        <knownFact>
+          <service>
+            {k.trim}
+          </service>
+          <value>
+            {formatValue(k, v).trim}
+          </value>
+        </knownFact>
       }
     }
+
 }
