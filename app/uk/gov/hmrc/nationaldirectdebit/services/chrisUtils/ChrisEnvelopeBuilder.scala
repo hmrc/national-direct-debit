@@ -95,7 +95,7 @@ object ChrisEnvelopeBuilder extends Logging {
                   {ChrisEnvelopeConstants.ActionType_1}
                 </actionType>
                 <ddiReferenceNo>
-                  {request.paymentReference}
+                  {request.ddiReferenceNo}
                 </ddiReferenceNo>
                 <bankSortCode>
                   {request.yourBankDetailsWithAuddisStatus.sortCode}
