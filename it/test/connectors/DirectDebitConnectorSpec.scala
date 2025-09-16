@@ -26,7 +26,7 @@ import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.DirectDebitConnector
 import uk.gov.hmrc.nationaldirectdebit.models.requests.{GenerateDdiRefRequest, WorkingDaysOffsetRequest}
-import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDatacacheResponse, RDSDirectDebitDetails}
+import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDDPaymentPlansResponse, RDSDatacacheResponse, RDSDirectDebitDetails, RDSPaymentPlan}
 
 import java.time.{LocalDate, LocalDateTime}
 
@@ -45,6 +45,39 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock
       RDSDirectDebitDetails(ddiRefNumber = "testRef", submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12), bankSortCode = "testCode", bankAccountNumber = "testNumber", bankAccountName = "testName", auDdisFlag = true, numberOfPayPlans = 1),
       RDSDirectDebitDetails(ddiRefNumber = "testRef", submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12), bankSortCode = "testCode", bankAccountNumber = "testNumber", bankAccountName = "testName", auDdisFlag = true, numberOfPayPlans = 1)
     ))
+
+  val testDDPaymentPlansCacheResponse: RDSDDPaymentPlansResponse = RDSDDPaymentPlansResponse(
+    bankSortCode = "sort code",
+    bankAccountNumber = "account number",
+    bankAccountName = "account name",
+    auDdisFlag = "dd",
+    paymentPlanCount = 2,
+    paymentPlanList = Seq(
+      RDSPaymentPlan(
+        scheduledPaymentAmount = 100,
+        planRefNumber = "ref number 1",
+        planType = "type 1",
+        paymentReference = "payment ref 1",
+        hodService = "service 1",
+        submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12)),
+      RDSPaymentPlan(
+        scheduledPaymentAmount = 100,
+        planRefNumber = "ref number 1",
+        planType = "type 1",
+        paymentReference = "payment ref 1",
+        hodService = "service 1",
+        submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12))
+    )
+  )
+
+  val testEmptyDDPaymentPlansCacheResponse: RDSDDPaymentPlansResponse = RDSDDPaymentPlansResponse(
+    bankSortCode = "sort code",
+    bankAccountNumber = "account number",
+    bankAccountName = "account name",
+    auDdisFlag = "dd",
+    paymentPlanCount = 2,
+    paymentPlanList = Seq.empty
+  )
 
   "DirectDebtConnector" should {
     "retrieveDirectDebits" should {
@@ -201,6 +234,67 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock
 
         val requestBody = GenerateDdiRefRequest(paymentReference = "123456")
         val result = intercept[Exception](connector.generateDdiReference(requestBody).futureValue)
+
+        result.getMessage must include("The future returned an exception")
+      }
+    }
+
+    "retrieveDirectDebitPaymentPlans" should {
+      "successfully retrieve a direct debit payment plans" in {
+        stubFor(
+          get(urlPathMatching("/rds-datacache-proxy/direct-debits/testRef/payment-plans"))
+            .willReturn(
+              aResponse()
+                .withStatus(OK)
+                .withBody(Json.toJson(testDDPaymentPlansCacheResponse).toString)
+            )
+        )
+
+        val result = connector.retrieveDirectDebitPaymentPlans("testRef").futureValue
+
+        result mustBe testDDPaymentPlansCacheResponse
+      }
+
+      "successfully retrieve empty direct debits payment plans" in {
+        stubFor(
+          get(urlPathMatching("/rds-datacache-proxy/direct-debits/testRef/payment-plans"))
+            .willReturn(
+              aResponse()
+                .withStatus(OK)
+                .withBody(Json.toJson(testEmptyDDPaymentPlansCacheResponse).toString)
+            )
+        )
+
+        val result = connector.retrieveDirectDebitPaymentPlans("testRef").futureValue
+
+        result mustBe testEmptyDDPaymentPlansCacheResponse
+      }
+
+      "must fail when the result is parsed as an UpstreamErrorResponse" in {
+        stubFor(
+          get(urlPathMatching("/rds-datacache-proxy/direct-debits/testRef/payment-plans"))
+            .willReturn(
+              aResponse()
+                .withStatus(INTERNAL_SERVER_ERROR)
+                .withBody("test error")
+            )
+        )
+
+        val result = intercept[Exception](connector.retrieveDirectDebitPaymentPlans("testRef").futureValue)
+
+        result.getMessage must include("returned 500. Response body: 'test error'")
+      }
+
+      "must fail when the result is a failed future" in {
+        stubFor(
+          get(urlPathMatching("/rds-datacache-proxy/direct-debits/testRef/payment-plans"))
+            .willReturn(
+              aResponse()
+                .withStatus(0)
+            )
+        )
+
+        val result = intercept[Exception](connector.retrieveDirectDebitPaymentPlans("testRef").futureValue)
 
         result.getMessage must include("The future returned an exception")
       }
