@@ -14,16 +14,23 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.nationaldirectdebit.models.requests
+package uk.gov.hmrc.nationaldirectdebit.services.chrisUtils
 
-import play.api.mvc.{Request, WrappedRequest}
-import uk.gov.hmrc.http.SessionId
+import java.time.format.DateTimeFormatter
+import java.time.LocalDate
 
-case class AuthenticatedRequest[A](
-                                    private val request: Request[A],
-                                    internalId: String,
-                                    sessionId: SessionId,
-                                    credId: String,
-                                    affinityGroup: String,
-                                    nino: Option[String]
-                                  ) extends WrappedRequest[A](request)
+object DateUtils {
+
+  private val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+
+  def calculatePeriodEnd(now: LocalDate = LocalDate.now()): String = {
+    val currentYear = now.getYear
+    val taxYearStart = LocalDate.of(currentYear, 4, 6)
+
+    val periodDate =
+      if (!now.isBefore(taxYearStart)) taxYearStart.plusYears(1)
+      else taxYearStart
+
+    periodDate.format(formatter)
+  }
+}

@@ -14,16 +14,12 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.nationaldirectdebit.models.requests
+package uk.gov.hmrc.nationaldirectdebit.models.requests.chris
 
-import play.api.mvc.{Request, WrappedRequest}
-import uk.gov.hmrc.http.SessionId
+import play.api.libs.json.*
 
-case class AuthenticatedRequest[A](
-                                    private val request: Request[A],
-                                    internalId: String,
-                                    sessionId: SessionId,
-                                    credId: String,
-                                    affinityGroup: String,
-                                    nino: Option[String]
-                                  ) extends WrappedRequest[A](request)
+case class DirectDebitDetails (directDebitReference: String, setupDate: String, sortCode: String, accountNumber:String, paymentPlans: String)
+
+object DirectDebitDetails {
+  implicit val format: OFormat[DirectDebitDetails] = Json.format
+}

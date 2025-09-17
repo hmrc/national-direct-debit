@@ -16,6 +16,7 @@
 
 package controllers
 
+import actions.FakeAuthAction
 import base.SpecBase
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
@@ -24,10 +25,12 @@ import play.api.http.Status.{BAD_REQUEST, OK}
 import play.api.libs.json.Json
 import play.api.mvc.Result
 import play.api.test.Helpers.{contentAsJson, status}
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController
-import uk.gov.hmrc.nationaldirectdebit.models.requests.{GenerateDdiRefRequest, WorkingDaysOffsetRequest}
-import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDDPaymentPlansResponse, RDSDatacacheResponse, RDSDirectDebitDetails, RDSPaymentPlan}
-import uk.gov.hmrc.nationaldirectdebit.services.DirectDebitService
+import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.*
+import uk.gov.hmrc.nationaldirectdebit.models.requests.{ChrisSubmissionRequest, GenerateDdiRefRequest, WorkingDaysOffsetRequest}
+import uk.gov.hmrc.nationaldirectdebit.models.responses.*
+import uk.gov.hmrc.nationaldirectdebit.services.{ChrisService, DirectDebitService}
 
 import java.time.{LocalDate, LocalDateTime}
 import scala.concurrent.Future
@@ -114,20 +117,111 @@ class DirectDebitControllerSpec extends SpecBase {
         contentAsJson(result) mustBe Json.toJson(testDDPaymentPlansEmptyResponse)
       }
     }
+
+
+    "submitToChris method for SA submissions" - {
+
+      "return 200 and success response when submission succeeds" in new SetUp {
+        implicit val hc: HeaderCarrier = HeaderCarrier()
+
+        when(
+          mockChrisService.submitToChris(
+            any[ChrisSubmissionRequest](),
+            any[String](),
+            any[String](),
+            any()
+          )(any[HeaderCarrier]()) // <-- add matcher for the implicit too
+        ).thenReturn(Future.successful("<Confirmation>Success</Confirmation>"))
+
+        val result = controller.submitToChris()(fakeRequestWithJsonBody(Json.toJson(testChrisRequestSAMonthly)))
+
+        status(result) mustBe OK
+        (contentAsJson(result) \ "success").as[Boolean] mustBe true
+        (contentAsJson(result) \ "response").as[String] must include("Success")
+      }
+
+      "return 500 and error response when submission fails" in new SetUp {
+        implicit val hc: HeaderCarrier = HeaderCarrier()
+
+        when(
+          mockChrisService.submitToChris(
+            any[ChrisSubmissionRequest](),
+            any[String](),
+            any[String](),
+            any()
+          )(any[HeaderCarrier]()) // <-- same fix here
+        ).thenReturn(Future.failed(new RuntimeException("Boom!")))
+
+        val result = controller.submitToChris()(fakeRequestWithJsonBody(Json.toJson(testChrisRequestSAMonthly)))
+
+        status(result) mustBe 500
+        (contentAsJson(result) \ "success").as[Boolean] mustBe false
+        (contentAsJson(result) \ "message").as[String] must include("Boom")
+      }
+    }
+
+
   }
 
   class SetUp {
     val mockDirectDebitService: DirectDebitService = mock[DirectDebitService]
+    val mockChrisService: ChrisService = mock[ChrisService]
 
     val testResponseModel: EarliestPaymentDateResponse = EarliestPaymentDateResponse(LocalDate.of(2025, 12, 13))
     val testRequestModel: WorkingDaysOffsetRequest = WorkingDaysOffsetRequest(LocalDate.of(2025, 12, 5), 8)
     val testDdiRefRequestModel: GenerateDdiRefRequest = GenerateDdiRefRequest("12345")
-    val testEmptyDataCacheResponse: RDSDatacacheResponse = RDSDatacacheResponse(directDebitCount = 0, directDebitList = Seq.empty)
-    val testDataCacheResponse: RDSDatacacheResponse = RDSDatacacheResponse(directDebitCount = 2,
-      directDebitList = Seq(
-        RDSDirectDebitDetails(ddiRefNumber = "testRef", submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12), bankSortCode = "testCode", bankAccountNumber = "testNumber", bankAccountName = "testName", auDdisFlag = true, numberOfPayPlans = 1),
-        RDSDirectDebitDetails(ddiRefNumber = "testRef", submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12), bankSortCode = "testCode", bankAccountNumber = "testNumber", bankAccountName = "testName", auDdisFlag = true, numberOfPayPlans = 1)
-      ))
+    val testEmptyDataCacheResponse: RDSDatacacheResponse = RDSDatacacheResponse(0, Seq.empty)
+    val testDataCacheResponse: RDSDatacacheResponse = RDSDatacacheResponse(
+      2,
+      Seq(
+        RDSDirectDebitDetails("testRef", LocalDateTime.of(2025, 12, 12, 12, 12), "testCode", "testNumber", "testName", true, 1),
+        RDSDirectDebitDetails("testRef", LocalDateTime.of(2025, 12, 12, 12, 12), "testCode", "testNumber", "testName", true, 1)
+      )
+    )
+
+    val fakeAuthAction = new FakeAuthAction(
+      bodyParsers = bodyParsers,
+      testCredId = "cred-123",
+      testAffinity = "Individual"
+    )
+
+    // --- Add these Chris request test data here ---
+    val baseChrisRequest: ChrisSubmissionRequest = ChrisSubmissionRequest(
+      serviceType = DirectDebitSource.TC,
+      paymentPlanType = PaymentPlanType.TaxCreditRepaymentPlan,
+      paymentFrequency = Some(PaymentsFrequency.Monthly),
+      yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
+        accountHolderName = "Test",
+        sortCode = "123456",
+        accountNumber = "12345678",
+        auddisStatus = false,
+        accountVerified = false
+      ),
+      planStartDate = Some(PlanStartDateDetails(LocalDate.of(2025, 9, 1), "2025-09-01")),
+      planEndDate = None,
+      paymentDate = Some(PaymentDateDetails(LocalDate.of(2025, 9, 15), "2025-09-01")),
+      yearEndAndMonth = None,
+      bankDetailsAddress = BankAddress(Seq("line 1"), "Town", Country("UK"), "NE5 2DH"),
+      ddiReferenceNo = "DDI123456789",
+      paymentReference = Some("testReference"),
+      bankName = "Barclays",
+      totalAmountDue = Some(BigDecimal(200)),
+      paymentAmount = Some(BigDecimal(100.00)),
+      regularPaymentAmount = Some(BigDecimal(90.00)),
+      calculation = None
+    )
+
+    val testChrisRequestSAMonthly: ChrisSubmissionRequest = baseChrisRequest.copy(
+      serviceType = DirectDebitSource.SA,
+      paymentPlanType = PaymentPlanType.BudgetPaymentPlan,
+      paymentFrequency = Some(PaymentsFrequency.Monthly)
+    )
+
+    val testChrisRequestSAWeekly: ChrisSubmissionRequest = baseChrisRequest.copy(
+      serviceType = DirectDebitSource.SA,
+      paymentPlanType = PaymentPlanType.BudgetPaymentPlan,
+      paymentFrequency = Some(PaymentsFrequency.Weekly)
+    )
 
     val testDDPaymentPlansEmptyResponse: RDSDDPaymentPlansResponse = RDSDDPaymentPlansResponse(
       bankSortCode = "sort code",
@@ -144,23 +238,23 @@ class DirectDebitControllerSpec extends SpecBase {
       auDdisFlag = "dd",
       paymentPlanCount = 2,
       paymentPlanList = Seq(
-          RDSPaymentPlan(
-            scheduledPaymentAmount = 100,
-            planRefNumber = "ref number 1",
-            planType = "type 1",
-            paymentReference = "payment ref 1",
-            hodService = "service 1",
-            submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12)),
-          RDSPaymentPlan(
-            scheduledPaymentAmount = 100,
-            planRefNumber = "ref number 1",
-            planType = "type 1",
-            paymentReference = "payment ref 1",
-            hodService = "service 1",
-            submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12))
-        )
+        RDSPaymentPlan(
+          scheduledPaymentAmount = 100,
+          planRefNumber = "ref number 1",
+          planType = "type 1",
+          paymentReference = "payment ref 1",
+          hodService = "service 1",
+          submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12)),
+        RDSPaymentPlan(
+          scheduledPaymentAmount = 100,
+          planRefNumber = "ref number 1",
+          planType = "type 1",
+          paymentReference = "payment ref 1",
+          hodService = "service 1",
+          submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12))
       )
+    )
 
-    val controller = new DirectDebitController(fakeAuthAction, mockDirectDebitService, cc)
+    val controller = new DirectDebitController(fakeAuthAction, mockDirectDebitService, mockChrisService, cc)
   }
 }

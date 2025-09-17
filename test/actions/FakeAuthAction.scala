@@ -16,23 +16,34 @@
 
 package actions
 
-import play.api.mvc.{AnyContent, BodyParser, PlayBodyParsers, Request, Result}
+import play.api.mvc.{PlayBodyParsers, Request, Result}
 import uk.gov.hmrc.http.SessionId
 import uk.gov.hmrc.nationaldirectdebit.actions.AuthAction
 import uk.gov.hmrc.nationaldirectdebit.models.requests.AuthenticatedRequest
 
-import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class FakeAuthAction @Inject()(bodyParsers: PlayBodyParsers) extends AuthAction {
+class FakeAuthAction(
+                      bodyParsers: PlayBodyParsers,
+                      testCredId: String = "cred-123",
+                      testAffinity: String = "Individual",
+                      testNino: Option[String] = Some("AB123456C")
+                    ) extends AuthAction {
 
-  override def parser: BodyParser[AnyContent] = bodyParsers.defaultBodyParser
+  override def parser = bodyParsers.default
 
   override def invokeBlock[A](request: Request[A], block: AuthenticatedRequest[A] => Future[Result]): Future[Result] =
     block(
-      AuthenticatedRequest(request, "internalId", SessionId("sessionId"))
+      AuthenticatedRequest(
+        request,
+        internalId = "internalId-123",
+        sessionId = SessionId("sessionId-123"),
+        credId = testCredId,
+        affinityGroup = testAffinity,
+        nino = testNino
+      )
     )
 
-  override protected def executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
-
+  override protected def executionContext: ExecutionContext =
+    scala.concurrent.ExecutionContext.Implicits.global
 }

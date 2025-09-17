@@ -14,16 +14,8 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.nationaldirectdebit.models.requests
+package uk.gov.hmrc.nationaldirectdebit.models.requests.chris
 
-import play.api.mvc.{Request, WrappedRequest}
-import uk.gov.hmrc.http.SessionId
-
-case class AuthenticatedRequest[A](
-                                    private val request: Request[A],
-                                    internalId: String,
-                                    sessionId: SessionId,
-                                    credId: String,
-                                    affinityGroup: String,
-                                    nino: Option[String]
-                                  ) extends WrappedRequest[A](request)
+class WithName(string: String) {
+  override val toString: String = string
+}

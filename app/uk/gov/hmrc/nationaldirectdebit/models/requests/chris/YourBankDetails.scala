@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.nationaldirectdebit.models.requests
+package uk.gov.hmrc.nationaldirectdebit.models.requests.chris
 
-import play.api.mvc.{Request, WrappedRequest}
-import uk.gov.hmrc.http.SessionId
+import play.api.libs.json.*
 
-case class AuthenticatedRequest[A](
-                                    private val request: Request[A],
-                                    internalId: String,
-                                    sessionId: SessionId,
-                                    credId: String,
-                                    affinityGroup: String,
-                                    nino: Option[String]
-                                  ) extends WrappedRequest[A](request)
+case class YourBankDetails(accountHolderName: String, sortCode: String, accountNumber: String) {
+
+  val sortCodeNoSpaces: String = sortCode.replaceAll("\\s", "")
+
+}
+
+object YourBankDetails {
+
+  implicit val format: OFormat[YourBankDetails] = Json.format
+}

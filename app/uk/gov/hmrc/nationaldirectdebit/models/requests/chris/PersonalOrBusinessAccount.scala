@@ -14,16 +14,20 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.nationaldirectdebit.models.requests
+package uk.gov.hmrc.nationaldirectdebit.models.requests.chris
 
-import play.api.mvc.{Request, WrappedRequest}
-import uk.gov.hmrc.http.SessionId
+sealed trait PersonalOrBusinessAccount
 
-case class AuthenticatedRequest[A](
-                                    private val request: Request[A],
-                                    internalId: String,
-                                    sessionId: SessionId,
-                                    credId: String,
-                                    affinityGroup: String,
-                                    nino: Option[String]
-                                  ) extends WrappedRequest[A](request)
+object PersonalOrBusinessAccount extends Enumerable.Implicits {
+
+  case object Personal extends WithName("personal") with PersonalOrBusinessAccount
+
+  case object Business extends WithName("business") with PersonalOrBusinessAccount
+
+  val values: Seq[PersonalOrBusinessAccount] = Seq(
+    Personal, Business
+  )
+
+  implicit val enumerable: Enumerable[PersonalOrBusinessAccount] =
+    Enumerable(values.map(v => v.toString -> v): _*)
+}

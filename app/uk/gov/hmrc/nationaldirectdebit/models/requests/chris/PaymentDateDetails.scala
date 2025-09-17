@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.nationaldirectdebit.models.requests
+package uk.gov.hmrc.nationaldirectdebit.models.requests.chris
 
-import play.api.mvc.{Request, WrappedRequest}
-import uk.gov.hmrc.http.SessionId
+import play.api.libs.json.{Json, OFormat}
 
-case class AuthenticatedRequest[A](
-                                    private val request: Request[A],
-                                    internalId: String,
-                                    sessionId: SessionId,
-                                    credId: String,
-                                    affinityGroup: String,
-                                    nino: Option[String]
-                                  ) extends WrappedRequest[A](request)
+import java.time.LocalDate
+
+case class PaymentDateDetails(enteredDate: LocalDate, earliestPaymentDate: String)
+
+object PaymentDateDetails {
+  implicit val format: OFormat[PaymentDateDetails] = Json.format
+}
+

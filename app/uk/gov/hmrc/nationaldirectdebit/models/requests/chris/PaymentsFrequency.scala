@@ -14,16 +14,19 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.nationaldirectdebit.models.requests
+package uk.gov.hmrc.nationaldirectdebit.models.requests.chris
 
-import play.api.mvc.{Request, WrappedRequest}
-import uk.gov.hmrc.http.SessionId
+sealed trait PaymentsFrequency
 
-case class AuthenticatedRequest[A](
-                                    private val request: Request[A],
-                                    internalId: String,
-                                    sessionId: SessionId,
-                                    credId: String,
-                                    affinityGroup: String,
-                                    nino: Option[String]
-                                  ) extends WrappedRequest[A](request)
+object PaymentsFrequency extends Enumerable.Implicits {
+
+  case object Weekly extends WithName("weekly") with PaymentsFrequency
+  case object Monthly extends WithName("monthly") with PaymentsFrequency
+
+  val values: Seq[PaymentsFrequency] = Seq(
+    Weekly, Monthly
+  )
+
+  implicit val enumerable: Enumerable[PaymentsFrequency] =
+    Enumerable(values.map(v => v.toString -> v): _*)
+}
