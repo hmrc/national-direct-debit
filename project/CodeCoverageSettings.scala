@@ -5,18 +5,18 @@ object CodeCoverageSettings {
 
   private val excludedPackages: Seq[String] = Seq(
     "<empty>",
-    "Reverse*.*",
+    "Reverse.*",
     "uk.gov.hmrc.BuildInfo",
     "app.*",
     "prod.*",
-    "Routes*.*",
+    ".*Routes.*",
     "testOnly.*",
     "testOnlyDoNotUseInAppConf.*"
   )
 
   val settings: Seq[Setting[_]] = Seq(
     ScoverageKeys.coverageExcludedPackages := excludedPackages.mkString(";"),
-    ScoverageKeys.coverageMinimumStmtTotal := 65,
+    ScoverageKeys.coverageMinimumStmtTotal := 80,
     ScoverageKeys.coverageFailOnMinimum := false,
     ScoverageKeys.coverageHighlighting := true
   )

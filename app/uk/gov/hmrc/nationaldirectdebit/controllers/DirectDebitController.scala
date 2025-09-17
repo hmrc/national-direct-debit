@@ -33,7 +33,7 @@ class DirectDebitController @Inject()(
                                        chrisService: ChrisService,
                                        val cc: ControllerComponents
                                      )(implicit ec: ExecutionContext) extends BackendController(cc) with Logging {
-  
+
   def retrieveDirectDebits(): Action[AnyContent] =
     authorise.async {
       implicit request =>
@@ -59,6 +59,14 @@ class DirectDebitController @Inject()(
             Ok(Json.toJson(response))
           }
         }
+
+  def retrieveDirectDebitPaymentPlans(directDebitReference: String): Action[AnyContent] =
+    authorise.async {
+      implicit request =>
+        service.retrieveDirectDebitPaymentPlans(directDebitReference).map { response =>
+          Ok(Json.toJson(response))
+        }
+    }
 
 
   def submitToChris(): Action[JsValue] =

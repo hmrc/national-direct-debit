@@ -29,7 +29,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.*
 import uk.gov.hmrc.nationaldirectdebit.models.requests.{ChrisSubmissionRequest, GenerateDdiRefRequest, WorkingDaysOffsetRequest}
-import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDatacacheResponse, RDSDirectDebitDetails}
+import uk.gov.hmrc.nationaldirectdebit.models.responses.*
 import uk.gov.hmrc.nationaldirectdebit.services.{ChrisService, DirectDebitService}
 
 import java.time.{LocalDate, LocalDateTime}
@@ -38,7 +38,6 @@ import scala.concurrent.Future
 class DirectDebitControllerSpec extends SpecBase {
 
   "DirectDebitController" - {
-
     "retrieveDirectDebits method" - {
       "return 200 and a successful response when the max number of records is supplied" in new SetUp {
         when(mockDirectDebitService.retrieveDirectDebits()(any()))
@@ -94,6 +93,28 @@ class DirectDebitControllerSpec extends SpecBase {
         val result: Future[Result] = controller.generateDdiReference()(fakeRequestWithJsonBody(Json.toJson(789)))
 
         status(result) mustBe BAD_REQUEST
+      }
+    }
+
+    "retrieveDirectDebitPaymentPlans method" - {
+      "return 200 and a successful response when payment plans exist" in new SetUp {
+        when(mockDirectDebitService.retrieveDirectDebitPaymentPlans(any())(any()))
+          .thenReturn(Future.successful(testDDPaymentPlansCacheResponse))
+
+        val result: Future[Result] = controller.retrieveDirectDebitPaymentPlans("test directDebitReference")(fakeRequest)
+
+        status(result) mustBe OK
+        contentAsJson(result) mustBe Json.toJson(testDDPaymentPlansCacheResponse)
+      }
+
+      "return 200 and a successful response with 0 when no payment plans" in new SetUp {
+        when(mockDirectDebitService.retrieveDirectDebitPaymentPlans(any())(any()))
+          .thenReturn(Future.successful(testDDPaymentPlansEmptyResponse))
+
+        val result: Future[Result] = controller.retrieveDirectDebitPaymentPlans("test directDebitReference")(fakeRequest)
+
+        status(result) mustBe OK
+        contentAsJson(result) mustBe Json.toJson(testDDPaymentPlansEmptyResponse)
       }
     }
 
@@ -153,8 +174,8 @@ class DirectDebitControllerSpec extends SpecBase {
     val testDataCacheResponse: RDSDatacacheResponse = RDSDatacacheResponse(
       2,
       Seq(
-        RDSDirectDebitDetails("testRef", LocalDateTime.of(2025,12,12,12,12),"testCode","testNumber","testName",true,1),
-        RDSDirectDebitDetails("testRef", LocalDateTime.of(2025,12,12,12,12),"testCode","testNumber","testName",true,1)
+        RDSDirectDebitDetails("testRef", LocalDateTime.of(2025, 12, 12, 12, 12), "testCode", "testNumber", "testName", true, 1),
+        RDSDirectDebitDetails("testRef", LocalDateTime.of(2025, 12, 12, 12, 12), "testCode", "testNumber", "testName", true, 1)
       )
     )
 
@@ -202,8 +223,38 @@ class DirectDebitControllerSpec extends SpecBase {
       paymentFrequency = Some(PaymentsFrequency.Weekly)
     )
 
+    val testDDPaymentPlansEmptyResponse: RDSDDPaymentPlansResponse = RDSDDPaymentPlansResponse(
+      bankSortCode = "sort code",
+      bankAccountNumber = "account number",
+      bankAccountName = "account name",
+      auDdisFlag = "dd",
+      paymentPlanCount = 0,
+      paymentPlanList = Seq.empty)
+
+    val testDDPaymentPlansCacheResponse: RDSDDPaymentPlansResponse = RDSDDPaymentPlansResponse(
+      bankSortCode = "sort code",
+      bankAccountNumber = "account number",
+      bankAccountName = "account name",
+      auDdisFlag = "dd",
+      paymentPlanCount = 2,
+      paymentPlanList = Seq(
+        RDSPaymentPlan(
+          scheduledPaymentAmount = 100,
+          planRefNumber = "ref number 1",
+          planType = "type 1",
+          paymentReference = "payment ref 1",
+          hodService = "service 1",
+          submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12)),
+        RDSPaymentPlan(
+          scheduledPaymentAmount = 100,
+          planRefNumber = "ref number 1",
+          planType = "type 1",
+          paymentReference = "payment ref 1",
+          hodService = "service 1",
+          submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12))
+      )
+    )
 
     val controller = new DirectDebitController(fakeAuthAction, mockDirectDebitService, mockChrisService, cc)
   }
-
 }
