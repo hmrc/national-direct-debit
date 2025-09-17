@@ -176,7 +176,7 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock
 
       "must fail when the result is a failed future" in {
         stubFor(
-          post(urlPathMatching("/national-direct-debit/direct-debits/future-working-days"))
+          post(urlPathMatching("/rds-datacache-proxy/direct-debits/future-working-days"))
             .willReturn(
               aResponse()
                 .withStatus(0)
