@@ -1,7 +1,8 @@
 # microservice specific routes
 
-GET      /direct-debits                         uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.retrieveDirectDebits()
+GET      /direct-debits                                     uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.retrieveDirectDebits()
 
-POST     /direct-debit-reference                uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.generateDdiReference()
+GET     /direct-debits/:directDebitReference/payment-plans      uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.retrieveDirectDebitPaymentPlans(directDebitReference: String)
+POST     /direct-debit-reference                            uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.generateDdiReference()
 
-POST     /direct-debits/future-working-days     uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.getWorkingDaysOffset()
+POST     /direct-debits/future-working-days                 uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.getWorkingDaysOffset()

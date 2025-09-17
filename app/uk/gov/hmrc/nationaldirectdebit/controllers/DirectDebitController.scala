@@ -20,7 +20,7 @@ import com.google.inject.Inject
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.nationaldirectdebit.actions.AuthAction
-import uk.gov.hmrc.nationaldirectdebit.models.requests.{CreateDirectDebitRequest, GenerateDdiRefRequest, WorkingDaysOffsetRequest}
+import uk.gov.hmrc.nationaldirectdebit.models.requests.{GenerateDdiRefRequest, WorkingDaysOffsetRequest}
 import uk.gov.hmrc.nationaldirectdebit.services.DirectDebitService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -58,5 +58,12 @@ class DirectDebitController @Inject()(
             Ok(Json.toJson(response))
           }
         }
-  
+
+  def retrieveDirectDebitPaymentPlans(directDebitReference: String): Action[AnyContent] =
+    authorise.async {
+      implicit request =>
+        service.retrieveDirectDebitPaymentPlans(directDebitReference).map { response =>
+          Ok(Json.toJson(response))
+        }
+    }
 }

@@ -23,7 +23,7 @@ import org.mockito.Mockito.when
 import org.scalatestplus.mockito.MockitoSugar.mock
 import uk.gov.hmrc.nationaldirectdebit.connectors.DirectDebitConnector
 import uk.gov.hmrc.nationaldirectdebit.models.requests.{GenerateDdiRefRequest, WorkingDaysOffsetRequest}
-import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDatacacheResponse, RDSDirectDebitDetails}
+import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDDPaymentPlansResponse, RDSDatacacheResponse, RDSDirectDebitDetails, RDSPaymentPlan}
 import uk.gov.hmrc.nationaldirectdebit.services.DirectDebitService
 
 import java.time.{LocalDate, LocalDateTime}
@@ -38,6 +38,30 @@ class DirectDebitServiceSpec extends SpecBase {
       RDSDirectDebitDetails(ddiRefNumber = "testRef", submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12), bankSortCode = "testCode", bankAccountNumber = "testNumber", bankAccountName = "testName", auDdisFlag = true, numberOfPayPlans = 1),
       RDSDirectDebitDetails(ddiRefNumber = "testRef", submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12), bankSortCode = "testCode", bankAccountNumber = "testNumber", bankAccountName = "testName", auDdisFlag = true, numberOfPayPlans = 1)
     ))
+
+  val testDDPaymentPlansCacheResponse: RDSDDPaymentPlansResponse = RDSDDPaymentPlansResponse(
+    bankSortCode = "sort code",
+    bankAccountNumber = "account number",
+    bankAccountName = "account name",
+    auDdisFlag = "dd",
+    paymentPlanCount = 2,
+    paymentPlanList = Seq(
+      RDSPaymentPlan(
+        scheduledPaymentAmount = 100,
+        planRefNumber = "ref number 1",
+        planType = "type 1",
+        paymentReference = "payment ref 1",
+        hodService = "service 1",
+        submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12)),
+      RDSPaymentPlan(
+        scheduledPaymentAmount = 100,
+        planRefNumber = "ref number 1",
+        planType = "type 1",
+        paymentReference = "payment ref 1",
+        hodService = "service 1",
+        submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12))
+    )
+  )
 
   "DirectDebitService" - {
     "retrieveDirectDebits method" - {
@@ -64,6 +88,15 @@ class DirectDebitServiceSpec extends SpecBase {
         val result = testService.generateDdiReference(GenerateDdiRefRequest("12345")).futureValue
 
         result mustBe GenerateDdiRefResponse("12345")
+      }
+    }
+
+    "retrieveDirectDebitPaymentPlans method" - {
+      "must return the response from the connector" in {
+        when(mockConnector.retrieveDirectDebitPaymentPlans(any())(any())).thenReturn(Future.successful(testDDPaymentPlansCacheResponse))
+        val result = testService.retrieveDirectDebitPaymentPlans("directDebitReference").futureValue
+
+        result mustBe testDDPaymentPlansCacheResponse
       }
     }
   }

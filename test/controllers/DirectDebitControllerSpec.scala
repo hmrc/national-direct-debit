@@ -26,7 +26,7 @@ import play.api.mvc.Result
 import play.api.test.Helpers.{contentAsJson, status}
 import uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController
 import uk.gov.hmrc.nationaldirectdebit.models.requests.{GenerateDdiRefRequest, WorkingDaysOffsetRequest}
-import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDatacacheResponse, RDSDirectDebitDetails}
+import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDDPaymentPlansResponse, RDSDatacacheResponse, RDSDirectDebitDetails, RDSPaymentPlan}
 import uk.gov.hmrc.nationaldirectdebit.services.DirectDebitService
 
 import java.time.{LocalDate, LocalDateTime}
@@ -92,6 +92,28 @@ class DirectDebitControllerSpec extends SpecBase {
         status(result) mustBe BAD_REQUEST
       }
     }
+
+    "retrieveDirectDebitPaymentPlans method" - {
+      "return 200 and a successful response when payment plans exist" in new SetUp {
+        when(mockDirectDebitService.retrieveDirectDebitPaymentPlans(any())(any()))
+          .thenReturn(Future.successful(testDDPaymentPlansCacheResponse))
+
+        val result: Future[Result] = controller.retrieveDirectDebitPaymentPlans("test directDebitReference")(fakeRequest)
+
+        status(result) mustBe OK
+        contentAsJson(result) mustBe Json.toJson(testDDPaymentPlansCacheResponse)
+      }
+
+      "return 200 and a successful response with 0 when no payment plans" in new SetUp {
+        when(mockDirectDebitService.retrieveDirectDebitPaymentPlans(any())(any()))
+          .thenReturn(Future.successful(testDDPaymentPlansEmptyResponse))
+
+        val result: Future[Result] = controller.retrieveDirectDebitPaymentPlans("test directDebitReference")(fakeRequest)
+
+        status(result) mustBe OK
+        contentAsJson(result) mustBe Json.toJson(testDDPaymentPlansEmptyResponse)
+      }
+    }
   }
 
   class SetUp {
@@ -106,6 +128,38 @@ class DirectDebitControllerSpec extends SpecBase {
         RDSDirectDebitDetails(ddiRefNumber = "testRef", submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12), bankSortCode = "testCode", bankAccountNumber = "testNumber", bankAccountName = "testName", auDdisFlag = true, numberOfPayPlans = 1),
         RDSDirectDebitDetails(ddiRefNumber = "testRef", submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12), bankSortCode = "testCode", bankAccountNumber = "testNumber", bankAccountName = "testName", auDdisFlag = true, numberOfPayPlans = 1)
       ))
+
+    val testDDPaymentPlansEmptyResponse: RDSDDPaymentPlansResponse = RDSDDPaymentPlansResponse(
+      bankSortCode = "sort code",
+      bankAccountNumber = "account number",
+      bankAccountName = "account name",
+      auDdisFlag = "dd",
+      paymentPlanCount = 0,
+      paymentPlanList = Seq.empty)
+
+    val testDDPaymentPlansCacheResponse: RDSDDPaymentPlansResponse = RDSDDPaymentPlansResponse(
+      bankSortCode = "sort code",
+      bankAccountNumber = "account number",
+      bankAccountName = "account name",
+      auDdisFlag = "dd",
+      paymentPlanCount = 2,
+      paymentPlanList = Seq(
+          RDSPaymentPlan(
+            scheduledPaymentAmount = 100,
+            planRefNumber = "ref number 1",
+            planType = "type 1",
+            paymentReference = "payment ref 1",
+            hodService = "service 1",
+            submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12)),
+          RDSPaymentPlan(
+            scheduledPaymentAmount = 100,
+            planRefNumber = "ref number 1",
+            planType = "type 1",
+            paymentReference = "payment ref 1",
+            hodService = "service 1",
+            submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12))
+        )
+      )
 
     val controller = new DirectDebitController(fakeAuthAction, mockDirectDebitService, cc)
   }
