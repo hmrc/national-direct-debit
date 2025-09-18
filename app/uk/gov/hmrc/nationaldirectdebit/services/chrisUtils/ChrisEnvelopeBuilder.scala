@@ -38,7 +38,7 @@ object ChrisEnvelopeBuilder extends Logging {
     val receiptDate = java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).format(dateTimeFormatter)
     val submissionDateTime = java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).format(dateTimeFormatter)
     val periodEnd = DateUtils.calculatePeriodEnd()
-    val senderType = if (affinityGroup == "agent") "Agent" else "Individual"
+    val senderType = if (affinityGroup == "Agent") "Agent" else "Individual"
     val serviceType = request.serviceType
     val expectedHodService: Option[String] = ChrisEnvelopeConstants.listHodServices.get(serviceType)
 
