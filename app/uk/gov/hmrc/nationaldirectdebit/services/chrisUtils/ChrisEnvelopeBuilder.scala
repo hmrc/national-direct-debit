@@ -46,64 +46,33 @@ object ChrisEnvelopeBuilder extends Logging {
       <ChRISEnvelope xmlns="http://www.hmrc.gov.uk/ChRIS/Envelope/2">
         <EnvelopeVersion>2.0</EnvelopeVersion>
         <Header>
-          <MessageClass>
-            {ChrisEnvelopeConstants.MessageClass}
-          </MessageClass>
-          <Qualifier>
-            {ChrisEnvelopeConstants.Qualifier}
-          </Qualifier>
-          <Function>
-            {ChrisEnvelopeConstants.Function}
-          </Function>
+          <MessageClass>{ChrisEnvelopeConstants.MessageClass}</MessageClass>
+          <Qualifier>{ChrisEnvelopeConstants.Qualifier}</Qualifier>
+          <Function>{ChrisEnvelopeConstants.Function}</Function>
           <Sender>
-            <System>
-              {ChrisEnvelopeConstants.SenderSystem}
-            </System>
-            <CorrelatingID>
-              {correlatingId}
-            </CorrelatingID>
-            <ReceiptDate>
-              {receiptDate}
-            </ReceiptDate>
+            <System>{ChrisEnvelopeConstants.SenderSystem}</System>
+            <CorrelatingID>{correlatingId}</CorrelatingID>
+            <ReceiptDate>{receiptDate}</ReceiptDate>
           </Sender>
         </Header>
         <Body>
           <IRenvelope>
             <IRheader>
-              <Keys>
-                {XmlUtils.formatKeys(hodServices, "               ")}
-              </Keys>
-              <PeriodEnd>
-                {periodEnd}
-              </PeriodEnd>
-              <Sender>
-                {senderType}
-              </Sender>
+              <Keys>{XmlUtils.formatKeys(hodServices, "               ")}</Keys>
+              <PeriodEnd>{periodEnd}</PeriodEnd>
+              <Sender>{senderType}</Sender>
             </IRheader>
             <dDIPPDetails>
-              <submissionDateTime>
-                {submissionDateTime}
-              </submissionDateTime>
-              <credentialID>
-                {credId}
-              </credentialID>
+              <submissionDateTime>{submissionDateTime}</submissionDateTime>
+              <credentialID>{credId}</credentialID>
                 {XmlUtils.formatKnownFacts(hodServices, "           ")}
               <directDebitInstruction>
-                <actionType>
-                  {ChrisEnvelopeConstants.ActionType_1}
-                </actionType>
-                <ddiReferenceNo>
-                  {request.ddiReferenceNo}
-                </ddiReferenceNo>
-                <bankSortCode>
-                  {request.yourBankDetailsWithAuddisStatus.sortCode}
-                </bankSortCode>
-                <bankAccountNo>
-                  {request.yourBankDetailsWithAuddisStatus.accountNumber}
-                </bankAccountNo>
-                <bankAccountName>
-                  {request.bankName}
-                </bankAccountName>{if (request.yourBankDetailsWithAuddisStatus.auddisStatus) <paperAuddisFlag>01</paperAuddisFlag> else scala.xml.Null}
+                <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
+                <ddiReferenceNo>{request.ddiReferenceNo}</ddiReferenceNo>
+                <bankSortCode>{request.yourBankDetailsWithAuddisStatus.sortCode}</bankSortCode>
+                <bankAccountNo>{request.yourBankDetailsWithAuddisStatus.accountNumber}</bankAccountNo>
+                <bankAccountName>{request.bankName}</bankAccountName>
+                {if (request.yourBankDetailsWithAuddisStatus.auddisStatus) <paperAuddisFlag>01</paperAuddisFlag> else scala.xml.Null}
               </directDebitInstruction>{PaymentPlanBuilder.build(request, expectedHodService)}
             </dDIPPDetails>
           </IRenvelope>

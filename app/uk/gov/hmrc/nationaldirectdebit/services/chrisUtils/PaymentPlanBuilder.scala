@@ -48,7 +48,7 @@ object PaymentPlanBuilder {
     <paymentPlan>
       <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
       <pPType>{ChrisEnvelopeConstants.PPType_3}</pPType>
-      <paymentReference>{request.paymentReference.getOrElse("")}</paymentReference>
+      <paymentReference>{request.paymentReference}</paymentReference>
       <hodService>{hodService.getOrElse("")}</hodService>
       <paymentCurrency>GBP</paymentCurrency>
       <scheduledPaymentAmount>{request.calculation.flatMap(_.regularPaymentAmount).getOrElse("")}</scheduledPaymentAmount>
@@ -64,7 +64,7 @@ object PaymentPlanBuilder {
     <paymentPlan>
       <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
       <pPType>{ChrisEnvelopeConstants.PPType_4}</pPType>
-      <paymentReference>{request.paymentReference.getOrElse("")}</paymentReference>
+      <paymentReference>{request.paymentReference}</paymentReference>
       <hodService>{hodService.getOrElse("")}</hodService>
       <paymentCurrency>GBP</paymentCurrency>
       <scheduledPaymentStartDate>{request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
@@ -75,7 +75,7 @@ object PaymentPlanBuilder {
     <paymentPlan>
       <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
       <pPType>{ChrisEnvelopeConstants.PPType_2}</pPType>
-      <paymentReference>{request.paymentReference.getOrElse("")}</paymentReference>
+      <paymentReference>{request.paymentReference}</paymentReference>
       <hodService>{hodService.getOrElse("")}</hodService>
       <paymentCurrency>GBP</paymentCurrency>
       <scheduledPaymentAmount>{request.regularPaymentAmount.getOrElse(BigDecimal(0))}</scheduledPaymentAmount>
@@ -89,7 +89,7 @@ object PaymentPlanBuilder {
     <paymentPlan>
       <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
       <pPType>{ChrisEnvelopeConstants.PPType_1}</pPType>
-      <paymentReference>{request.paymentReference.getOrElse("")}</paymentReference>
+      <paymentReference>{request.paymentReference}</paymentReference>
       <hodService>{hodService.getOrElse("")}</hodService>
       <paymentCurrency>GBP</paymentCurrency>
       <scheduledPaymentAmount>{request.paymentAmount.getOrElse(BigDecimal(0))}</scheduledPaymentAmount>

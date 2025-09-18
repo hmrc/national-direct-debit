@@ -41,9 +41,7 @@ object XmlUtils {
 
         Seq(
           scala.xml.Text(prefix),
-          <Key Type={idName.trim}>
-            {valueToUse}
-          </Key>
+          <Key Type={idName.trim}>{valueToUse}</Key>
         )
       }).getOrElse(Seq.empty)
     }
@@ -71,12 +69,8 @@ object XmlUtils {
         Seq(
           scala.xml.Text(prefix),
           <knownFact>
-            <service>
-              {service.trim}
-            </service>
-            <value>
-              {finalValues}
-            </value>
+            <service>{service.trim}</service>
+            <value>{finalValues}</value>
           </knownFact>
         )
       }
