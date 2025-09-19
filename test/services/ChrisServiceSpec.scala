@@ -23,7 +23,7 @@ import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.test.FakeRequest
-import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, Enrolments}
+import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.{HeaderCarrier, SessionId}
 import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
 import uk.gov.hmrc.nationaldirectdebit.models.requests.*
@@ -58,209 +58,313 @@ class ChrisServiceSpec
     earliestPaymentDate = "2025-09-01"
   )
 
-  // All test ChrisSubmissionRequests
-  private val submissionRequests: Seq[ChrisSubmissionRequest] = Seq(
-    ChrisSubmissionRequest(
-      serviceType = DirectDebitSource.TC,
-      paymentPlanType = PaymentPlanType.TaxCreditRepaymentPlan,
-      paymentFrequency = Some(PaymentsFrequency.Monthly),
-      yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
-        accountHolderName = "Test",
-        sortCode = "123456",
-        accountNumber = "12345678",
-        auddisStatus = false,
-        accountVerified = false
-      ),
-      planStartDate = Some(planStartDateDetails),
-      planEndDate = None,
-      paymentDate = Some(paymentDateDetails),
-      yearEndAndMonth = None,
-      bankDetailsAddress = BankAddress(
-        lines = Seq("line 1"),
-        town = "Town",
-        country = Country("UK"),
-        postCode = "NE5 2DH"
-      ),
-      ddiReferenceNo = "DDI123456789",
-      paymentReference = "testReference",
-      bankName = "Barclays",
-      totalAmountDue = Some(BigDecimal(200)),
-      paymentAmount = Some(BigDecimal(100.00)),
-      regularPaymentAmount = Some(BigDecimal(90.00)),
-      calculation = None
+  // Distinct requests for each service type
+  private val tcRequest = ChrisSubmissionRequest(
+    serviceType = DirectDebitSource.TC,
+    paymentPlanType = PaymentPlanType.TaxCreditRepaymentPlan,
+    paymentFrequency = Some(PaymentsFrequency.Monthly),
+    yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
+      accountHolderName = "TC User",
+      sortCode = "11-22-33",
+      accountNumber = "12345678",
+      auddisStatus = true,
+      accountVerified = true
     ),
-    ChrisSubmissionRequest(
-      serviceType = DirectDebitSource.SA,
-      paymentPlanType = PaymentPlanType.BudgetPaymentPlan,
-      paymentFrequency = Some(PaymentsFrequency.Monthly),
-      yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
-        accountHolderName = "Test",
-        sortCode = "123456",
-        accountNumber = "12345678",
-        auddisStatus = false,
-        accountVerified = false
-      ),
-      planStartDate = Some(planStartDateDetails),
-      planEndDate = None,
-      paymentDate = Some(paymentDateDetails),
-      yearEndAndMonth = None,
-      bankDetailsAddress = BankAddress(
-        lines = Seq("line 1"),
-        town = "Town",
-        country = Country("UK"),
-        postCode = "NE5 2DH"
-      ),
-      ddiReferenceNo = "DDI123456789",
-      paymentReference = "testReference",
-      bankName = "Barclays",
-      totalAmountDue = Some(BigDecimal(200)),
-      paymentAmount = Some(BigDecimal(100.00)),
-      regularPaymentAmount = Some(BigDecimal(90.00)),
-      calculation = None
+    planStartDate = Some(planStartDateDetails),
+    planEndDate = None,
+    paymentDate = Some(paymentDateDetails),
+    yearEndAndMonth = None,
+    bankDetailsAddress = BankAddress(Seq("TC Line 1"), "TC Town", Country("UK"), "TC1 1AA"),
+    ddiReferenceNo = "TC-DDI-123",
+    paymentReference = "TCRef",
+    bankName = "TC Bank",
+    totalAmountDue = Some(BigDecimal(100)),
+    paymentAmount = Some(BigDecimal(50)),
+    regularPaymentAmount = Some(BigDecimal(25)),
+    calculation = None
+  )
+
+  private val saMonthlyRequest = ChrisSubmissionRequest(
+    serviceType = DirectDebitSource.SA,
+    paymentPlanType = PaymentPlanType.BudgetPaymentPlan,
+    paymentFrequency = Some(PaymentsFrequency.Monthly),
+    yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
+      accountHolderName = "SA Monthly User",
+      sortCode = "22-33-44",
+      accountNumber = "23456789",
+      auddisStatus = false,
+      accountVerified = false
     ),
-    ChrisSubmissionRequest(
-      serviceType = DirectDebitSource.SA,
-      paymentPlanType = PaymentPlanType.BudgetPaymentPlan,
-      paymentFrequency = Some(PaymentsFrequency.Weekly),
-      yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
-        accountHolderName = "Test",
-        sortCode = "123456",
-        accountNumber = "12345678",
-        auddisStatus = false,
-        accountVerified = false
-      ),
-      planStartDate = Some(planStartDateDetails),
-      planEndDate = None,
-      paymentDate = Some(paymentDateDetails),
-      yearEndAndMonth = None,
-      bankDetailsAddress = BankAddress(
-        lines = Seq("line 1"),
-        town = "Town",
-        country = Country("UK"),
-        postCode = "NE5 2DH"
-      ),
-      ddiReferenceNo = "DDI123456789",
-      paymentReference = "testReference",
-      bankName = "Barclays",
-      totalAmountDue = Some(BigDecimal(200)),
-      paymentAmount = Some(BigDecimal(100.00)),
-      regularPaymentAmount = Some(BigDecimal(90.00)),
-      calculation = None
+    planStartDate = Some(planStartDateDetails),
+    planEndDate = None,
+    paymentDate = Some(paymentDateDetails),
+    yearEndAndMonth = None,
+    bankDetailsAddress = BankAddress(Seq("SA Line 1"), "SA Town", Country("UK"), "SA1 2BB"),
+    ddiReferenceNo = "SA-DDI-456",
+    paymentReference = "SARef",
+    bankName = "SA Bank",
+    totalAmountDue = Some(BigDecimal(200)),
+    paymentAmount = Some(BigDecimal(100)),
+    regularPaymentAmount = Some(BigDecimal(50)),
+    calculation = None
+  )
+
+  private val saWeeklyRequest = saMonthlyRequest.copy(
+    paymentFrequency = Some(PaymentsFrequency.Weekly),
+    yourBankDetailsWithAuddisStatus = saMonthlyRequest.yourBankDetailsWithAuddisStatus.copy(accountHolderName = "SA Weekly User")
+  )
+
+  private val ctRequest = ChrisSubmissionRequest(
+    serviceType = DirectDebitSource.CT,
+    paymentPlanType = PaymentPlanType.SinglePayment,
+    paymentFrequency = Some(PaymentsFrequency.Monthly),
+    yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
+      accountHolderName = "CT User",
+      sortCode = "33-44-55",
+      accountNumber = "34567890",
+      auddisStatus = true,
+      accountVerified = true
     ),
-    ChrisSubmissionRequest(
-      serviceType = DirectDebitSource.CT,
-      paymentPlanType = PaymentPlanType.SinglePayment,
-      paymentFrequency = Some(PaymentsFrequency.Monthly),
-      yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
-        accountHolderName = "Test",
-        sortCode = "123456",
-        accountNumber = "12345678",
-        auddisStatus = false,
-        accountVerified = false
-      ),
-      planStartDate = Some(planStartDateDetails),
-      planEndDate = None,
-      paymentDate = Some(paymentDateDetails),
-      yearEndAndMonth = None,
-      bankDetailsAddress = BankAddress(
-        lines = Seq("line 1"),
-        town = "Town",
-        country = Country("UK"),
-        postCode = "NE5 2DH"
-      ),
-      ddiReferenceNo = "DDI123456789",
-      paymentReference = "testReference",
-      bankName = "Barclays",
-      totalAmountDue = Some(BigDecimal(200)),
-      paymentAmount = Some(BigDecimal(100.00)),
-      regularPaymentAmount = Some(BigDecimal(90.00)),
-      calculation = None
+    planStartDate = Some(planStartDateDetails),
+    planEndDate = None,
+    paymentDate = Some(paymentDateDetails),
+    yearEndAndMonth = None,
+    bankDetailsAddress = BankAddress(Seq("CT Line 1"), "CT Town", Country("UK"), "CT1 3CC"),
+    ddiReferenceNo = "CT-DDI-789",
+    paymentReference = "CTRef",
+    bankName = "CT Bank",
+    totalAmountDue = Some(BigDecimal(300)),
+    paymentAmount = Some(BigDecimal(150)),
+    regularPaymentAmount = Some(BigDecimal(75)),
+    calculation = None
+  )
+
+  private val mgdRequest = ChrisSubmissionRequest(
+    serviceType = DirectDebitSource.MGD,
+    paymentPlanType = PaymentPlanType.VariablePaymentPlan,
+    paymentFrequency = None,
+    yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
+      accountHolderName = "MGD User",
+      sortCode = "44-55-66",
+      accountNumber = "45678901",
+      auddisStatus = false,
+      accountVerified = false
     ),
-    ChrisSubmissionRequest(
-      serviceType = DirectDebitSource.MGD,
-      paymentPlanType = PaymentPlanType.VariablePaymentPlan,
-      paymentFrequency = None,
-      yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
-        accountHolderName = "Test",
-        sortCode = "123456",
-        accountNumber = "12345678",
-        auddisStatus = false,
-        accountVerified = false
-      ),
-      planStartDate = Some(planStartDateDetails),
-      planEndDate = None,
-      paymentDate = Some(paymentDateDetails),
-      yearEndAndMonth = None,
-      bankDetailsAddress = BankAddress(
-        lines = Seq("line 1"),
-        town = "Town",
-        country = Country("UK"),
-        postCode = "NE5 2DH"
-      ),
-      ddiReferenceNo = "DDI123456789",
-      paymentReference = "testReference",
-      bankName = "Barclays",
-      totalAmountDue = Some(BigDecimal(200)),
-      paymentAmount = Some(BigDecimal(100.00)),
-      regularPaymentAmount = Some(BigDecimal(90.00)),
-      calculation = None
-    )
+    planStartDate = Some(planStartDateDetails),
+    planEndDate = None,
+    paymentDate = Some(paymentDateDetails),
+    yearEndAndMonth = None,
+    bankDetailsAddress = BankAddress(Seq("MGD Line 1"), "MGD Town", Country("UK"), "MGD1 4DD"),
+    ddiReferenceNo = "MGD-DDI-101",
+    paymentReference = "MGDRef",
+    bankName = "MGD Bank",
+    totalAmountDue = Some(BigDecimal(400)),
+    paymentAmount = Some(BigDecimal(200)),
+    regularPaymentAmount = Some(BigDecimal(100)),
+    calculation = None
   )
 
   val fakeAuthRequest = AuthenticatedRequest(
-    request = FakeRequest(), // just a placeholder
+    request = FakeRequest(),
     internalId = "internalId-123",
     sessionId = SessionId("session-123"),
     credId = "credId123",
     affinityGroup = "Organisation",
     nino = Some("AB123456C")
   )
-  
+
   "ChrisService.submitToChris" should {
 
-    // Run a test for each submissionRequest
-    submissionRequests.foreach { req =>
-      val freqStr = req.paymentFrequency.map(_.toString.toLowerCase).getOrElse("none")
-      s"return confirmation when submission succeeds for ${req.serviceType.toString.toLowerCase} ($freqStr)" in {
-        val enrolments = Enrolments(Set(Enrolment("HMRC-NDDS-ORG")))
+    "return confirmation when submission succeeds for TC" in {
+      val enrolments = Enrolments(
+        Set(
+          Enrolment(
+            key = "NTC",
+            identifiers = Seq(EnrolmentIdentifier("Nino", "AB1234567A")),
+            state = "Activated",
+            delegatedAuthRule = None
+          )
+        )
+      )
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
+      when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>TC Message received</Confirmation>"))
 
-        when(mockAuthConnector.authorise(any(), any())(any(), any()))
-          .thenReturn(Future.successful(enrolments))
-
-        when(mockConnector.submitEnvelope(any[Elem]))
-          .thenReturn(Future.successful("<Confirmation>Message received</Confirmation>"))
-
-        service.submitToChris(req, "credId123", "Organisation", fakeAuthRequest).map { result =>
-          result must include("Message received")
-        }
+      service.submitToChris(tcRequest, "credId123", "Organisation", fakeAuthRequest).map { result =>
+        result must include("TC Message received")
       }
     }
 
-    "work when no enrolments are returned" in {
+    "return confirmation when submission succeeds for SA (monthly)" in {
+      val enrolments = Enrolments(
+        Set(
+          Enrolment(
+            key = "IR-SA",
+            identifiers = Seq(EnrolmentIdentifier("TaxId", "1234567890")),
+            state = "Activated",
+            delegatedAuthRule = None
+          )
+        )
+      )
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
+      when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>SA Monthly Message received</Confirmation>"))
+
+      service.submitToChris(saMonthlyRequest, "credId123", "Organisation", fakeAuthRequest).map { result =>
+        result must include("SA Monthly Message received")
+      }
+    }
+
+    "return confirmation when submission succeeds for SA (weekly)" in {
+      val enrolments = Enrolments(
+        Set(
+          Enrolment(
+            key = "CESA",
+            identifiers = Seq(EnrolmentIdentifier("UTR", "1234567890")),
+            state = "Activated",
+            delegatedAuthRule = None
+          )
+        )
+      )
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
+      when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>SA Weekly Message received</Confirmation>"))
+
+      service.submitToChris(saWeeklyRequest, "credId123", "Organisation", fakeAuthRequest).map { result =>
+        result must include("SA Weekly Message received")
+      }
+    }
+
+    "return confirmation when submission succeeds for OTHER_LIABILITY" in {
+      val enrolments = Enrolments(
+        Set(
+          Enrolment(
+            key = "SAFE",
+            identifiers = Seq(EnrolmentIdentifier("UTR", "1234567890")),
+            state = "Activated",
+            delegatedAuthRule = None
+          )
+        )
+      )
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
+      when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>OTHER_LIABILITY Message received</Confirmation>"))
+
+      service.submitToChris(saWeeklyRequest, "credId123", "Individual", fakeAuthRequest).map { result =>
+        result must include("OTHER_LIABILITY Message received")
+      }
+    }
+
+
+    "return confirmation when submission succeeds for CT" in {
+      val enrolments = Enrolments(
+        Set(
+          Enrolment(
+            key = "COTA",
+            identifiers = Seq(EnrolmentIdentifier("UTR", "1234567890")),
+            state = "Activated",
+            delegatedAuthRule = None
+          )
+        )
+      )
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
+      when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>CT Message received</Confirmation>"))
+
+      service.submitToChris(ctRequest, "credId123", "Agent", fakeAuthRequest).map { result =>
+        result must include("CT Message received")
+      }
+    }
+
+    "return confirmation when submission succeeds for VAT" in {
+      val enrolments = Enrolments(
+        Set(
+          Enrolment(
+            key = "VAT",
+            identifiers = Seq(EnrolmentIdentifier("UTR", "1234567890")),
+            state = "Activated",
+            delegatedAuthRule = None
+          )
+        )
+      )
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
+      when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>VAT Message received</Confirmation>"))
+
+      service.submitToChris(ctRequest, "credId123", "Agent", fakeAuthRequest).map { result =>
+        result must include("VAT Message received")
+      }
+    }
+
+    "return confirmation when submission succeeds for SDLT" in {
+      val enrolments = Enrolments(
+        Set(
+          Enrolment(
+            key = "VAT",
+            identifiers = Seq(EnrolmentIdentifier("UTR", "1234567890")),
+            state = "Activated",
+            delegatedAuthRule = None
+          )
+        )
+      )
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
+      when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>SDLT Message received</Confirmation>"))
+
+      service.submitToChris(ctRequest, "credId123", "Agent", fakeAuthRequest).map { result =>
+        result must include("SDLT Message received")
+      }
+    }
+
+
+    "return confirmation when submission succeeds for PAYE" in {
+      val enrolments = Enrolments(
+        Set(
+          Enrolment(
+            key = "IR-PAYE",
+            identifiers = Seq(EnrolmentIdentifier("TaxOfficeNumber", "11111111111"),EnrolmentIdentifier("TaxOfficeReference", "222222222222")),
+            state = "Activated",
+            delegatedAuthRule = None
+          )
+        )
+      )
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
+      when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>PAYE Message received</Confirmation>"))
+
+      service.submitToChris(ctRequest, "credId123", "Agent", fakeAuthRequest).map { result =>
+        result must include("PAYE Message received")
+      }
+    }
+
+    "return confirmation when submission succeeds for MGD (none)" in {
+      val enrolments = Enrolments(
+        Set(
+          Enrolment(
+            key = "MGD",
+            identifiers = Seq(EnrolmentIdentifier("HMRCMGDRN", "MGD4567890")),
+            state = "Activated",
+            delegatedAuthRule = None
+          )
+        )
+      )
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
+      when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>MGD Message received</Confirmation>"))
+
+      service.submitToChris(mgdRequest, "credId123", "Individual", fakeAuthRequest).map { result =>
+        result must include("MGD Message received")
+      }
+    }
+
+    "work when no enrolments are returned for Individual affinity group" in {
       val enrolments = Enrolments(Set.empty)
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
+      when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>No enrolments</Confirmation>"))
 
-      when(mockAuthConnector.authorise(any(), any())(any(), any()))
-        .thenReturn(Future.successful(enrolments))
-
-      when(mockConnector.submitEnvelope(any[Elem]))
-        .thenReturn(Future.successful("<Confirmation>No enrolments</Confirmation>"))
-
-      service.submitToChris(submissionRequests.head, "credId456", "Individual", fakeAuthRequest).map { result =>
+      service.submitToChris(tcRequest, "credId456", "Individual", fakeAuthRequest).map { result =>
         result must include("No enrolments")
       }
     }
 
     "propagate connector failures" in {
       val enrolments = Enrolments(Set(Enrolment("HMRC-NDDS-ORG")))
-
-      when(mockAuthConnector.authorise(any(), any())(any(), any()))
-        .thenReturn(Future.successful(enrolments))
-
-      when(mockConnector.submitEnvelope(any[Elem]))
-        .thenReturn(Future.failed(new RuntimeException("Boom")))
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
+      when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.failed(new RuntimeException("Boom")))
 
       recoverToSucceededIf[RuntimeException] {
-        service.submitToChris(submissionRequests.head, "credId789", "Organisation", fakeAuthRequest)
+        service.submitToChris(tcRequest, "credId789", "Agent", fakeAuthRequest)
       }
     }
   }
