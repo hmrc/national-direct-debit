@@ -163,6 +163,55 @@ class ChrisServiceSpec
     regularPaymentAmount = Some(BigDecimal(100)),
     calculation = None
   )
+  private val vatRequest = ChrisSubmissionRequest(
+    serviceType = DirectDebitSource.MGD,
+    paymentPlanType = PaymentPlanType.VariablePaymentPlan,
+    paymentFrequency = None,
+    yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
+      accountHolderName = "MGD User",
+      sortCode = "44-55-66",
+      accountNumber = "45678901",
+      auddisStatus = false,
+      accountVerified = false
+    ),
+    planStartDate = Some(planStartDateDetails),
+    planEndDate = None,
+    paymentDate = Some(paymentDateDetails),
+    yearEndAndMonth = None,
+    bankDetailsAddress = BankAddress(Seq("MGD Line 1"), "MGD Town", Country("UK"), "MGD1 4DD"),
+    ddiReferenceNo = "MGD-DDI-101",
+    paymentReference = "MGDRef",
+    bankName = "MGD Bank",
+    totalAmountDue = Some(BigDecimal(400)),
+    paymentAmount = Some(BigDecimal(200)),
+    regularPaymentAmount = Some(BigDecimal(100)),
+    calculation = None
+  )
+
+  private val payeRequest = ChrisSubmissionRequest(
+    serviceType = DirectDebitSource.MGD,
+    paymentPlanType = PaymentPlanType.VariablePaymentPlan,
+    paymentFrequency = None,
+    yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
+      accountHolderName = "MGD User",
+      sortCode = "44-55-66",
+      accountNumber = "45678901",
+      auddisStatus = false,
+      accountVerified = false
+    ),
+    planStartDate = Some(planStartDateDetails),
+    planEndDate = None,
+    paymentDate = Some(paymentDateDetails),
+    yearEndAndMonth = None,
+    bankDetailsAddress = BankAddress(Seq("MGD Line 1"), "MGD Town", Country("UK"), "MGD1 4DD"),
+    ddiReferenceNo = "MGD-DDI-101",
+    paymentReference = "MGDRef",
+    bankName = "MGD Bank",
+    totalAmountDue = Some(BigDecimal(400)),
+    paymentAmount = Some(BigDecimal(200)),
+    regularPaymentAmount = Some(BigDecimal(100)),
+    calculation = None
+  )
 
   val fakeAuthRequest = AuthenticatedRequest(
     request = FakeRequest(),
@@ -246,7 +295,7 @@ class ChrisServiceSpec
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
       when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>OTHER_LIABILITY Message received</Confirmation>"))
 
-      service.submitToChris(saWeeklyRequest, "credId123", "Individual", fakeAuthRequest).map { result =>
+      service.submitToChris(ctRequest, "credId123", "Individual", fakeAuthRequest).map { result =>
         result must include("OTHER_LIABILITY Message received")
       }
     }
@@ -285,7 +334,7 @@ class ChrisServiceSpec
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
       when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>VAT Message received</Confirmation>"))
 
-      service.submitToChris(ctRequest, "credId123", "Agent", fakeAuthRequest).map { result =>
+      service.submitToChris(vatRequest, "credId123", "Agent", fakeAuthRequest).map { result =>
         result must include("VAT Message received")
       }
     }
@@ -324,7 +373,7 @@ class ChrisServiceSpec
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
       when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>PAYE Message received</Confirmation>"))
 
-      service.submitToChris(ctRequest, "credId123", "Agent", fakeAuthRequest).map { result =>
+      service.submitToChris(payeRequest, "credId123", "Agent", fakeAuthRequest).map { result =>
         result must include("PAYE Message received")
       }
     }
