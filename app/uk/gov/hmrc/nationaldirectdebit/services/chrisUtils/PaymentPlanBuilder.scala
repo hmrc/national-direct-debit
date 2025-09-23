@@ -52,13 +52,13 @@ object PaymentPlanBuilder {
       <paymentReference>{request.paymentReference}</paymentReference>
       <hodService>{hodService.getOrElse("")}</hodService>
       <paymentCurrency>GBP</paymentCurrency>
-      <scheduledPaymentAmount>{request.calculation.flatMap(_.regularPaymentAmount).getOrElse(BigDecimal(0).setScale(2, RoundingMode.HALF_UP))}</scheduledPaymentAmount>
+      <scheduledPaymentAmount>{f"${request.calculation.flatMap(_.regularPaymentAmount).getOrElse(BigDecimal(0)).toDouble}%.2f"}</scheduledPaymentAmount>
       <scheduledPaymentStartDate>{request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
       <scheduledPaymentEndDate>{request.calculation.flatMap(_.finalPaymentDate).getOrElse("")}</scheduledPaymentEndDate>
       <scheduledPaymentFrequency>05</scheduledPaymentFrequency>
-      <balancingPaymentAmount>{request.calculation.flatMap(_.finalPaymentAmount).getOrElse(BigDecimal(0).setScale(2, RoundingMode.HALF_UP))}</balancingPaymentAmount>
+      <balancingPaymentAmount>{f"${request.calculation.flatMap(_.finalPaymentAmount).getOrElse(BigDecimal(0)).toDouble}%.2f"}</balancingPaymentAmount>
       <balancingPaymentDate>{request.calculation.flatMap(_.finalPaymentDate).getOrElse("")}</balancingPaymentDate>
-      <totalLiability>{request.totalAmountDue.getOrElse(BigDecimal(0)).setScale(2, RoundingMode.HALF_UP)}</totalLiability>
+      <totalLiability>{f"${request.totalAmountDue.getOrElse(BigDecimal(0)).toDouble}%.2f"}</totalLiability>
     </paymentPlan>
 
   private def buildMgdPlan(request: ChrisSubmissionRequest, hodService: Option[String]): Elem =
@@ -79,7 +79,7 @@ object PaymentPlanBuilder {
       <paymentReference>{request.paymentReference}</paymentReference>
       <hodService>{hodService.getOrElse("")}</hodService>
       <paymentCurrency>GBP</paymentCurrency>
-      <scheduledPaymentAmount>{request.regularPaymentAmount.getOrElse(BigDecimal(0).setScale(2, RoundingMode.HALF_UP))}</scheduledPaymentAmount>
+      <scheduledPaymentAmount>{f"${request.regularPaymentAmount.getOrElse(BigDecimal(0)).toDouble}%.2f"}</scheduledPaymentAmount>
       <scheduledPaymentStartDate>{request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
       <scheduledPaymentEndDate>{request.planEndDate.getOrElse("")}</scheduledPaymentEndDate>
       { if (freqCode.nonEmpty) <scheduledPaymentFrequency>{freqCode}</scheduledPaymentFrequency> else Null }
@@ -93,8 +93,8 @@ object PaymentPlanBuilder {
       <paymentReference>{request.paymentReference}</paymentReference>
       <hodService>{hodService.getOrElse("")}</hodService>
       <paymentCurrency>GBP</paymentCurrency>
-      <scheduledPaymentAmount>{request.paymentAmount.getOrElse(BigDecimal(0).setScale(2, RoundingMode.HALF_UP)).bigDecimal.toPlainString}</scheduledPaymentAmount>
+      <scheduledPaymentAmount>{f"${request.paymentAmount.getOrElse(BigDecimal(0)).toDouble}%.2f"}</scheduledPaymentAmount>
       <scheduledPaymentStartDate>{request.paymentDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
-      <totalLiability>{request.paymentAmount.getOrElse(BigDecimal(0).setScale(2, RoundingMode.HALF_UP))}</totalLiability>
+      <totalLiability>{f"${request.paymentAmount.getOrElse(BigDecimal(0)).toDouble}%.2f"}</totalLiability>
     </paymentPlan>
 }
