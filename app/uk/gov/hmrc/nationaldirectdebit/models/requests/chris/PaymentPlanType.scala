@@ -20,7 +20,7 @@ sealed trait PaymentPlanType
 
 object PaymentPlanType extends Enumerable.Implicits {
 
-  case object SinglePayment extends WithName("singlePayment") with PaymentPlanType
+  case object SinglePayment extends WithName("singlePaymentPlan") with PaymentPlanType
   case object VariablePaymentPlan extends WithName("variablePaymentPlan") with PaymentPlanType
   case object BudgetPaymentPlan extends WithName("budgetPaymentPlan") with PaymentPlanType
   case object TaxCreditRepaymentPlan extends WithName("taxCreditRepaymentPlan") with PaymentPlanType
