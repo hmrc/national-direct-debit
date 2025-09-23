@@ -20,6 +20,7 @@ import uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.{DirectDebitSource, PaymentPlanType, PaymentsFrequency}
 import uk.gov.hmrc.nationaldirectdebit.services.ChrisEnvelopeConstants
 
+import scala.math.BigDecimal.RoundingMode
 import scala.xml.{Elem, Null}
 
 object PaymentPlanBuilder {
@@ -51,13 +52,13 @@ object PaymentPlanBuilder {
       <paymentReference>{request.paymentReference}</paymentReference>
       <hodService>{hodService.getOrElse("")}</hodService>
       <paymentCurrency>GBP</paymentCurrency>
-      <scheduledPaymentAmount>{request.calculation.flatMap(_.regularPaymentAmount).getOrElse("")}</scheduledPaymentAmount>
+      <scheduledPaymentAmount>{request.calculation.flatMap(_.regularPaymentAmount).getOrElse(BigDecimal(0).setScale(2, RoundingMode.HALF_UP))}</scheduledPaymentAmount>
       <scheduledPaymentStartDate>{request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
       <scheduledPaymentEndDate>{request.calculation.flatMap(_.finalPaymentDate).getOrElse("")}</scheduledPaymentEndDate>
       <scheduledPaymentFrequency>05</scheduledPaymentFrequency>
-      <balancingPaymentAmount>{request.calculation.flatMap(_.finalPaymentAmount).getOrElse(BigDecimal(0))}</balancingPaymentAmount>
+      <balancingPaymentAmount>{request.calculation.flatMap(_.finalPaymentAmount).getOrElse(BigDecimal(0).setScale(2, RoundingMode.HALF_UP))}</balancingPaymentAmount>
       <balancingPaymentDate>{request.calculation.flatMap(_.finalPaymentDate).getOrElse("")}</balancingPaymentDate>
-      <totalLiability>{request.totalAmountDue.getOrElse(BigDecimal(0))}</totalLiability>
+      <totalLiability>{request.totalAmountDue.getOrElse(BigDecimal(0)).setScale(2, RoundingMode.HALF_UP)}</totalLiability>
     </paymentPlan>
 
   private def buildMgdPlan(request: ChrisSubmissionRequest, hodService: Option[String]): Elem =
