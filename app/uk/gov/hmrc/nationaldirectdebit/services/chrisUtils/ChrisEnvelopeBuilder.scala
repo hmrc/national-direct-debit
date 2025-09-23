@@ -71,7 +71,7 @@ object ChrisEnvelopeBuilder extends Logging {
                 <ddiReferenceNo>{request.ddiReferenceNo}</ddiReferenceNo>
                 <bankSortCode>{request.yourBankDetailsWithAuddisStatus.sortCode}</bankSortCode>
                 <bankAccountNo>{request.yourBankDetailsWithAuddisStatus.accountNumber}</bankAccountNo>
-                <bankAccountName>{request.bankName}</bankAccountName>
+                <bankAccountName>{request.yourBankDetailsWithAuddisStatus.accountHolderName}</bankAccountName>
                 {if (request.yourBankDetailsWithAuddisStatus.auddisStatus) <paperAuddisFlag>01</paperAuddisFlag> else scala.xml.Null}
               </directDebitInstruction>{PaymentPlanBuilder.build(request, expectedHodService)}
             </dDIPPDetails>
