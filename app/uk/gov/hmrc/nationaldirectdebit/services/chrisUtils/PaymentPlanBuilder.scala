@@ -79,7 +79,7 @@ object PaymentPlanBuilder {
       <paymentReference>{request.paymentReference}</paymentReference>
       <hodService>{hodService.getOrElse("")}</hodService>
       <paymentCurrency>GBP</paymentCurrency>
-      <scheduledPaymentAmount>{request.regularPaymentAmount.getOrElse(BigDecimal(0))}</scheduledPaymentAmount>
+      <scheduledPaymentAmount>{request.regularPaymentAmount.getOrElse(BigDecimal(0).setScale(2, RoundingMode.HALF_UP))}</scheduledPaymentAmount>
       <scheduledPaymentStartDate>{request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
       <scheduledPaymentEndDate>{request.planEndDate.getOrElse("")}</scheduledPaymentEndDate>
       { if (freqCode.nonEmpty) <scheduledPaymentFrequency>{freqCode}</scheduledPaymentFrequency> else Null }
@@ -93,8 +93,8 @@ object PaymentPlanBuilder {
       <paymentReference>{request.paymentReference}</paymentReference>
       <hodService>{hodService.getOrElse("")}</hodService>
       <paymentCurrency>GBP</paymentCurrency>
-      <scheduledPaymentAmount>{request.paymentAmount.getOrElse(BigDecimal(0))}</scheduledPaymentAmount>
+      <scheduledPaymentAmount>{request.paymentAmount.getOrElse(BigDecimal(0).setScale(2, RoundingMode.HALF_UP))}</scheduledPaymentAmount>
       <scheduledPaymentStartDate>{request.paymentDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
-      <totalLiability>{request.paymentAmount.getOrElse(BigDecimal(0))}</totalLiability>
+      <totalLiability>{request.paymentAmount.getOrElse(BigDecimal(0).setScale(2, RoundingMode.HALF_UP))}</totalLiability>
     </paymentPlan>
 }
