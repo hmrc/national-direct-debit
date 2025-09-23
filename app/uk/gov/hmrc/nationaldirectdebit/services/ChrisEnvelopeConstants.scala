@@ -23,11 +23,12 @@ object ChrisEnvelopeConstants {
   val Qualifier    = "request"
   val Function     = "submit"
   val SenderSystem = "Portal"
-  val ActionType_1 = 1
-  val PPType_1 = 1
-  val PPType_2 = 2
-  val PPType_3 = 3
-  val PPType_4 = 4
+  val ActionType_1 = "01"
+  val PPType_1 = "01"
+  val PPType_2 = "02"
+  val PPType_3 = "03"
+  val PPType_4 = "04"
+
   val listHodServices: Map[DirectDebitSource, String] = Map(
     DirectDebitSource.CT -> "COTA",
     DirectDebitSource.PAYE -> "PAYE",
