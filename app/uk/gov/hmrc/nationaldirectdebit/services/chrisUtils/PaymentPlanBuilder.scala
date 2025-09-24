@@ -20,7 +20,6 @@ import uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.{DirectDebitSource, PaymentPlanType, PaymentsFrequency}
 import uk.gov.hmrc.nationaldirectdebit.services.ChrisEnvelopeConstants
 
-import scala.math.BigDecimal.RoundingMode
 import scala.xml.{Elem, Null}
 
 object PaymentPlanBuilder {
