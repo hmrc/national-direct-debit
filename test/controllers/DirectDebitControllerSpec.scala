@@ -160,7 +160,17 @@ class DirectDebitControllerSpec extends SpecBase {
       }
     }
 
+    "retrievePaymentPlanDetails method" - {
+      "return 200 and a successful response when payment plans exist" in new SetUp {
+        when(mockDirectDebitService.retrievePaymentPlanDetails(any(), any())(any()))
+          .thenReturn(Future.successful(testPaymentPlanResponse))
 
+        val result: Future[Result] = controller.retrievePaymentPlanDetails("test-dd-reference", "test-pp-reference")(fakeRequest)
+
+        status(result) mustBe OK
+        contentAsJson(result) mustBe Json.toJson(testPaymentPlanResponse)
+      }
+    }
   }
 
   class SetUp {
@@ -253,6 +263,34 @@ class DirectDebitControllerSpec extends SpecBase {
           hodService = "service 1",
           submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12))
       )
+    )
+
+    private val currentTime = LocalDateTime.MIN
+
+    val testPaymentPlanResponse: RDSPaymentPlanResponse = RDSPaymentPlanResponse(
+      directDebitDetails = DirectDebitDetail(
+        bankSortCode = "sort code",
+        bankAccountNumber = "account number",
+        bankAccountName = "account name",
+        auDdisFlag = "dd",
+        submissionDateTime = currentTime),
+      paymentPlanDetails = PaymentPlanDetail(
+        hodService = "hod service",
+        planType = "plan Type",
+        paymentReference = "payment reference",
+        submissionDateTime = currentTime,
+        scheduledPaymentAmount = 1000,
+        scheduledPaymentStartDate = currentTime.toLocalDate,
+        initialPaymentStartDate = currentTime.toLocalDate,
+        initialPaymentAmount = 150,
+        scheduledPaymentEndDate = currentTime.toLocalDate,
+        scheduledPaymentFrequency = "monthly",
+        suspensionStartDate = currentTime.toLocalDate,
+        suspensionEndDate = currentTime.toLocalDate,
+        balancingPaymentAmount = 600,
+        balancingPaymentDate = currentTime.toLocalDate,
+        totalLiability = 300,
+        paymentPlanEditable = false)
     )
 
     val controller = new DirectDebitController(fakeAuthAction, mockDirectDebitService, mockChrisService, cc)
