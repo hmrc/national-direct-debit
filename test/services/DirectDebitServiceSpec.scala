@@ -70,7 +70,7 @@ class DirectDebitServiceSpec extends SpecBase {
       bankSortCode = Some("sort code"),
       bankAccountNumber = Some("account number"),
       bankAccountName = None,
-      auDdisFlag = Some("dd"),
+      auDdisFlag = true,
       submissionDateTime = currentTime),
     paymentPlanDetails = PaymentPlanDetail(
       hodService = "hod service",

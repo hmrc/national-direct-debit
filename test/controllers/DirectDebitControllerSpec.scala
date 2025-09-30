@@ -133,7 +133,7 @@ class DirectDebitControllerSpec extends SpecBase {
           )(any[HeaderCarrier]()) // <-- add matcher for the implicit too
         ).thenReturn(Future.successful("<Confirmation>Success</Confirmation>"))
 
-        val result = controller.submitToChris()(fakeRequestWithJsonBody(Json.toJson(testChrisRequestSAMonthly)))
+        val result: Future[Result] = controller.submitToChris()(fakeRequestWithJsonBody(Json.toJson(testChrisRequestSAMonthly)))
 
         status(result) mustBe OK
         (contentAsJson(result) \ "success").as[Boolean] mustBe true
@@ -152,7 +152,7 @@ class DirectDebitControllerSpec extends SpecBase {
           )(any[HeaderCarrier]()) // <-- same fix here
         ).thenReturn(Future.failed(new RuntimeException("Boom!")))
 
-        val result = controller.submitToChris()(fakeRequestWithJsonBody(Json.toJson(testChrisRequestSAMonthly)))
+        val result: Future[Result] = controller.submitToChris()(fakeRequestWithJsonBody(Json.toJson(testChrisRequestSAMonthly)))
 
         status(result) mustBe 500
         (contentAsJson(result) \ "success").as[Boolean] mustBe false
@@ -272,7 +272,7 @@ class DirectDebitControllerSpec extends SpecBase {
         bankSortCode = Some("sort code"),
         bankAccountNumber = Some("account number"),
         bankAccountName = None,
-        auDdisFlag = Some("dd"),
+        auDdisFlag = true,
         submissionDateTime = currentTime),
       paymentPlanDetails = PaymentPlanDetail(
         hodService = "hod service",
