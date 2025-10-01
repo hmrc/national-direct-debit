@@ -24,6 +24,7 @@ object ChrisEnvelopeConstants {
   val Function     = "submit"
   val SenderSystem = "Portal"
   val ActionType_1 = "01"
+  val ActionType_2 = "02"
   val PPType_1 = "01"
   val PPType_2 = "02"
   val PPType_3 = "03"

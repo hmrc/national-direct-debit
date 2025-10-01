@@ -26,6 +26,8 @@ object PaymentPlanBuilder {
 
   def build(request: ChrisSubmissionRequest, hodService: Option[String]): Elem = {
     request.serviceType match {
+      case DirectDebitSource.SA if request.paymentPlanType == PaymentPlanType.BudgetPaymentPlan && request.amendPlan =>
+        buildSaAmendPlan(request, hodService)
       case DirectDebitSource.TC if request.paymentPlanType == PaymentPlanType.TaxCreditRepaymentPlan =>
         buildTcPlan(request, hodService)
       case DirectDebitSource.MGD if request.paymentPlanType == PaymentPlanType.VariablePaymentPlan =>
@@ -82,6 +84,24 @@ object PaymentPlanBuilder {
       <scheduledPaymentStartDate>{request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
       <scheduledPaymentEndDate>{request.planEndDate.getOrElse("")}</scheduledPaymentEndDate>
       { if (freqCode.nonEmpty) <scheduledPaymentFrequency>{freqCode}</scheduledPaymentFrequency> else Null }
+    </paymentPlan>
+  }
+
+  private def buildSaAmendPlan(request: ChrisSubmissionRequest, hodService: Option[String]): Elem = {
+    println("*********************************************************amendd callled sa budgting")
+    val freqCode = frequencyCode(request)
+    <paymentPlan>
+      <actionType>{ChrisEnvelopeConstants.ActionType_2}</actionType>
+      <pPType>{ChrisEnvelopeConstants.PPType_2}</pPType>
+      <paymentReference>{request.paymentReference}</paymentReference>
+      <corePPReferenceNo>{request.paymentPlanReferenceNumber}</corePPReferenceNo>
+      <hodService>{hodService.getOrElse("")}</hodService>
+      <paymentCurrency>GBP</paymentCurrency>
+      <scheduledPaymentAmount>{f"${request.regularPaymentAmount.getOrElse(BigDecimal(0)).toDouble}%.2f"}</scheduledPaymentAmount>
+      <scheduledPaymentStartDate>{request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
+      <scheduledPaymentEndDate>{request.planEndDate.getOrElse("")}</scheduledPaymentEndDate>
+      {if (freqCode.nonEmpty) <scheduledPaymentFrequency>{freqCode}</scheduledPaymentFrequency> else Null}
+      <totalLiability>{request.totalAmountDue.getOrElse("")}</totalLiability>
     </paymentPlan>
   }
 
