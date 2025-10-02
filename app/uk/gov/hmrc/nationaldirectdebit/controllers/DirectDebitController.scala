@@ -107,7 +107,6 @@ class DirectDebitController @Inject()(
   def isDuplicatePaymentPlan(directDebitReference: String): Action[JsValue] =
     authorise(parse.json).async:
       implicit request =>
-        println("Reached backend")
         withJsonBody[PaymentPlanDuplicateCheckRequest] { paymentPlanDuplicateCheckRequest =>
           service.isDuplicatePaymentPlan(paymentPlanDuplicateCheckRequest).map { response =>
             Ok(Json.toJson(response))

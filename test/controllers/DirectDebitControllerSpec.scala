@@ -21,14 +21,14 @@ import base.SpecBase
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.scalatestplus.mockito.MockitoSugar.mock
-import play.api.http.Status.{BAD_REQUEST, OK}
+import play.api.http.Status.{BAD_REQUEST, INTERNAL_SERVER_ERROR, OK}
 import play.api.libs.json.Json
 import play.api.mvc.Result
 import play.api.test.Helpers.{contentAsJson, status}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.*
-import uk.gov.hmrc.nationaldirectdebit.models.requests.{ChrisSubmissionRequest, GenerateDdiRefRequest, WorkingDaysOffsetRequest}
+import uk.gov.hmrc.nationaldirectdebit.models.requests.{ChrisSubmissionRequest, GenerateDdiRefRequest, PaymentPlanDuplicateCheckRequest, WorkingDaysOffsetRequest}
 import uk.gov.hmrc.nationaldirectdebit.models.responses.*
 import uk.gov.hmrc.nationaldirectdebit.services.{ChrisService, DirectDebitService}
 
@@ -160,6 +160,21 @@ class DirectDebitControllerSpec extends SpecBase {
       }
     }
 
+    "isDuplicatePaymentPlan method" - {
+      "return 200 and a successful response when duplicate payment plan exist" in new SetUp {
+        implicit val hc: HeaderCarrier = HeaderCarrier()
+        when(
+          mockDirectDebitService.isDuplicatePaymentPlan(
+            any[PaymentPlanDuplicateCheckRequest]()
+          )(any[HeaderCarrier]())
+        ).thenReturn(Future.successful(true))
+
+        val result: Future[Result] = controller.isDuplicatePaymentPlan("test directDebitReference")(fakeRequestWithJsonBody(Json.toJson(duplicateCheckRequest)))
+
+        status(result) mustBe OK
+        contentAsJson(result).as[Boolean] mustBe true
+      }
+      }
 
   }
 
@@ -256,5 +271,16 @@ class DirectDebitControllerSpec extends SpecBase {
     )
 
     val controller = new DirectDebitController(fakeAuthAction, mockDirectDebitService, mockChrisService, cc)
+
+    val duplicateCheckRequest: PaymentPlanDuplicateCheckRequest = PaymentPlanDuplicateCheckRequest(
+      directDebitReference = "testRef",
+      paymentPlanReference = "payment ref 123",
+      planType = "type 1",
+      paymentService = "CESA",
+      paymentReference = "payment ref",
+      paymentAmount = 120.00,
+      totalLiability = 780.00,
+      paymentFrequency = "WEEKLY"
+    )
   }
 }

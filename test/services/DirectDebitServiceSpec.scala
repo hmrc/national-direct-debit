@@ -22,7 +22,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.scalatestplus.mockito.MockitoSugar.mock
 import uk.gov.hmrc.nationaldirectdebit.connectors.DirectDebitConnector
-import uk.gov.hmrc.nationaldirectdebit.models.requests.{GenerateDdiRefRequest, WorkingDaysOffsetRequest}
+import uk.gov.hmrc.nationaldirectdebit.models.requests.{GenerateDdiRefRequest, PaymentPlanDuplicateCheckRequest, WorkingDaysOffsetRequest}
 import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDDPaymentPlansResponse, RDSDatacacheResponse, RDSDirectDebitDetails, RDSPaymentPlan}
 import uk.gov.hmrc.nationaldirectdebit.services.DirectDebitService
 
@@ -63,6 +63,17 @@ class DirectDebitServiceSpec extends SpecBase {
     )
   )
 
+  val duplicateCheckRequest: PaymentPlanDuplicateCheckRequest = PaymentPlanDuplicateCheckRequest(
+    directDebitReference = "testRef",
+    paymentPlanReference = "payment ref 123",
+    planType = "type 1",
+    paymentService = "CESA",
+    paymentReference = "payment ref",
+    paymentAmount = 120.00,
+    totalLiability = 780.00,
+    paymentFrequency = "WEEKLY"
+  )
+
   "DirectDebitService" - {
     "retrieveDirectDebits method" - {
       "must return the response from the connector" in {
@@ -97,6 +108,15 @@ class DirectDebitServiceSpec extends SpecBase {
         val result = testService.retrieveDirectDebitPaymentPlans("directDebitReference").futureValue
 
         result mustBe testDDPaymentPlansCacheResponse
+      }
+    }
+
+    "isDuplicatePaymentPlan method" - {
+      "must return the response from the connector" in {
+        when(mockConnector.isDuplicatePaymentPlan(any())(any())).thenReturn(Future.successful(true))
+        val result = testService.isDuplicatePaymentPlan(duplicateCheckRequest).futureValue
+
+        result mustBe true
       }
     }
   }

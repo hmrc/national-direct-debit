@@ -25,7 +25,7 @@ import play.api.http.Status.{INTERNAL_SERVER_ERROR, OK}
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.DirectDebitConnector
-import uk.gov.hmrc.nationaldirectdebit.models.requests.{GenerateDdiRefRequest, WorkingDaysOffsetRequest}
+import uk.gov.hmrc.nationaldirectdebit.models.requests.{GenerateDdiRefRequest, WorkingDaysOffsetRequest, PaymentPlanDuplicateCheckRequest}
 import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDDPaymentPlansResponse, RDSDatacacheResponse, RDSDirectDebitDetails, RDSPaymentPlan}
 
 import java.time.{LocalDate, LocalDateTime}
@@ -77,6 +77,17 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock
     auDdisFlag = "dd",
     paymentPlanCount = 2,
     paymentPlanList = Seq.empty
+  )
+
+  val duplicateCheckRequest: PaymentPlanDuplicateCheckRequest = PaymentPlanDuplicateCheckRequest(
+    directDebitReference = "testRef",
+    paymentPlanReference = "payment ref 123",
+    planType = "type 1",
+    paymentService = "CESA",
+    paymentReference = "payment ref",
+    paymentAmount = 120.00,
+    totalLiability = 780.00,
+    paymentFrequency = "WEEKLY"
   )
 
   "DirectDebtConnector" should {
@@ -295,6 +306,67 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock
         )
 
         val result = intercept[Exception](connector.retrieveDirectDebitPaymentPlans("testRef").futureValue)
+
+        result.getMessage must include("The future returned an exception")
+      }
+    }
+
+    "isDuplicatePaymentPlan" should {
+      "successfully retrieve true if is a duplicate payment plan" in {
+        stubFor(
+          get(urlPathMatching("/rds-datacache-proxy/direct-debits/testRef/duplicate-plan-check"))
+            .willReturn(
+              aResponse()
+                .withStatus(OK)
+                .withBody("true")
+            )
+        )
+
+        val result = connector.isDuplicatePaymentPlan(duplicateCheckRequest).futureValue
+
+        result mustBe true
+      }
+
+      "successfully retrieve false if it is not a duplicate payment plan" in {
+        stubFor(
+          get(urlPathMatching("/rds-datacache-proxy/direct-debits/testRef/duplicate-plan-check"))
+            .willReturn(
+              aResponse()
+                .withStatus(OK)
+                .withBody("false")
+            )
+        )
+
+        val result = connector.isDuplicatePaymentPlan(duplicateCheckRequest).futureValue
+
+        result mustBe false
+      }
+
+      "must fail when the result is parsed as an UpstreamErrorResponse" in {
+        stubFor(
+          get(urlPathMatching("/rds-datacache-proxy/direct-debits/testRef/duplicate-plan-check"))
+            .willReturn(
+              aResponse()
+                .withStatus(INTERNAL_SERVER_ERROR)
+                .withBody("test error")
+            )
+        )
+
+        val result = intercept[Exception](connector.isDuplicatePaymentPlan(duplicateCheckRequest).futureValue)
+
+        result.getMessage must include("returned 500. Response body: 'test error'")
+      }
+
+      "must fail when the result is a failed future" in {
+        stubFor(
+          get(urlPathMatching("/rds-datacache-proxy/direct-debits/testRef/duplicate-plan-check"))
+            .willReturn(
+              aResponse()
+                .withStatus(0)
+            )
+        )
+
+        val result = intercept[Exception](connector.isDuplicatePaymentPlan(duplicateCheckRequest).futureValue)
 
         result.getMessage must include("The future returned an exception")
       }
