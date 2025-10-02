@@ -94,7 +94,7 @@ object PaymentPlanBuilder {
       <actionType>{ChrisEnvelopeConstants.ActionType_2}</actionType>
       <pPType>{ChrisEnvelopeConstants.PPType_2}</pPType>
       <paymentReference>{request.paymentReference}</paymentReference>
-      <corePPReferenceNo>{request.paymentPlanReferenceNumber}</corePPReferenceNo>
+      <corePPReferenceNo>{request.paymentPlanReferenceNumber.getOrElse("")}</corePPReferenceNo>
       <hodService>{hodService.getOrElse("")}</hodService>
       <paymentCurrency>GBP</paymentCurrency>
       <scheduledPaymentAmount>{f"${request.regularPaymentAmount.getOrElse(BigDecimal(0)).toDouble}%.2f"}</scheduledPaymentAmount>
@@ -105,7 +105,8 @@ object PaymentPlanBuilder {
     </paymentPlan>
   }
 
-  private def buildSinglePlan(request: ChrisSubmissionRequest, hodService: Option[String]): Elem =
+  private def buildSinglePlan(request: ChrisSubmissionRequest, hodService: Option[String]): Elem = {
+    println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&single clalled")
     <paymentPlan>
       <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
       <pPType>{ChrisEnvelopeConstants.PPType_1}</pPType>
@@ -116,4 +117,5 @@ object PaymentPlanBuilder {
       <scheduledPaymentStartDate>{request.paymentDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
       <totalLiability>{f"${request.paymentAmount.getOrElse(BigDecimal(0)).toDouble}%.2f"}</totalLiability>
     </paymentPlan>
+  }
 }
