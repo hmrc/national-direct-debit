@@ -26,7 +26,7 @@ import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.DirectDebitConnector
 import uk.gov.hmrc.nationaldirectdebit.models.requests.{GenerateDdiRefRequest, WorkingDaysOffsetRequest}
-import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDDPaymentPlansResponse, RDSDatacacheResponse, RDSDirectDebitDetails, RDSPaymentPlan}
+import uk.gov.hmrc.nationaldirectdebit.models.responses.{DirectDebitDetail, EarliestPaymentDateResponse, GenerateDdiRefResponse, PaymentPlanDetail, RDSDDPaymentPlansResponse, RDSDatacacheResponse, RDSDirectDebitDetails, RDSPaymentPlan, RDSPaymentPlanResponse}
 
 import java.time.{LocalDate, LocalDateTime}
 
@@ -77,6 +77,34 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock
     auDdisFlag = "dd",
     paymentPlanCount = 2,
     paymentPlanList = Seq.empty
+  )
+
+  private val currentTime = LocalDateTime.MIN
+
+  val testPaymentPlanResponse: RDSPaymentPlanResponse = RDSPaymentPlanResponse(
+    directDebitDetails = DirectDebitDetail(
+      bankSortCode = Some("sort code"),
+      bankAccountNumber = Some("account number"),
+      bankAccountName = None,
+      auDdisFlag = true,
+      submissionDateTime = currentTime),
+    paymentPlanDetails = PaymentPlanDetail(
+      hodService = "hod service",
+      planType = "plan Type",
+      paymentReference = "payment reference",
+      submissionDateTime = currentTime,
+      scheduledPaymentAmount = Some(1000),
+      scheduledPaymentStartDate = Some(currentTime.toLocalDate),
+      initialPaymentStartDate = Some(currentTime.toLocalDate),
+      initialPaymentAmount = Some(150),
+      scheduledPaymentEndDate = Some(currentTime.toLocalDate),
+      scheduledPaymentFrequency = Some("1"),
+      suspensionStartDate = Some(currentTime.toLocalDate),
+      suspensionEndDate = None,
+      balancingPaymentAmount = Some(600),
+      balancingPaymentDate = Some(currentTime.toLocalDate),
+      totalLiability = None,
+      paymentPlanEditable = false)
   )
 
   "DirectDebtConnector" should {
@@ -295,6 +323,52 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock
         )
 
         val result = intercept[Exception](connector.retrieveDirectDebitPaymentPlans("testRef").futureValue)
+
+        result.getMessage must include("The future returned an exception")
+      }
+    }
+
+    "retrievePaymentPlanDetails" should {
+      "successfully retrieve a payment plan details" in {
+        stubFor(
+          get(urlPathMatching("/rds-datacache-proxy/direct-debits/test-dd-Ref/payment-plans/test-pp-reference"))
+            .willReturn(
+              aResponse()
+                .withStatus(OK)
+                .withBody(Json.toJson(testPaymentPlanResponse).toString)
+            )
+        )
+
+        val result = connector.retrievePaymentPlanDetails("test-dd-Ref", "test-pp-reference").futureValue
+
+        result mustBe testPaymentPlanResponse
+      }
+
+      "must fail when the result is parsed as an UpstreamErrorResponse" in {
+        stubFor(
+          get(urlPathMatching("/rds-datacache-proxy/direct-debits/test-dd-Ref/payment-plans/test-pp-reference"))
+            .willReturn(
+              aResponse()
+                .withStatus(INTERNAL_SERVER_ERROR)
+                .withBody("test error")
+            )
+        )
+
+        val result = intercept[Exception](connector.retrievePaymentPlanDetails("test-dd-Ref", "test-pp-reference").futureValue)
+
+        result.getMessage must include("returned 500. Response body: 'test error'")
+      }
+
+      "must fail when the result is a failed future" in {
+        stubFor(
+          get(urlPathMatching("/rds-datacache-proxy/direct-debits/test-dd-Ref/payment-plans/test-pp-reference"))
+            .willReturn(
+              aResponse()
+                .withStatus(0)
+            )
+        )
+
+        val result = intercept[Exception](connector.retrievePaymentPlanDetails("test-dd-Ref", "test-pp-reference").futureValue)
 
         result.getMessage must include("The future returned an exception")
       }

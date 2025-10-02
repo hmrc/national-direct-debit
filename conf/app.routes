@@ -1,10 +1,13 @@
 # microservice specific routes
 
-GET      /direct-debits                                     uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.retrieveDirectDebits()
+GET      /direct-debits                                                                 uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.retrieveDirectDebits()
 
-GET     /direct-debits/:directDebitReference/payment-plans      uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.retrieveDirectDebitPaymentPlans(directDebitReference: String)
-POST     /direct-debit-reference                            uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.generateDdiReference()
+GET     /direct-debits/:directDebitReference/payment-plans                              uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.retrieveDirectDebitPaymentPlans(directDebitReference: String)
 
-POST     /direct-debits/future-working-days                 uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.getWorkingDaysOffset()
+GET     /direct-debits/:directDebitReference/payment-plans/:paymentPlanReference        uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.retrievePaymentPlanDetails(directDebitReference: String, paymentPlanReference: String)
 
-POST     /chris                uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.submitToChris()
+POST     /direct-debit-reference                                                        uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.generateDdiReference()
+
+POST     /direct-debits/future-working-days                                             uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.getWorkingDaysOffset()
+
+POST     /chris                                                                         uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.submitToChris()
