@@ -62,6 +62,7 @@ class ChrisServiceSpec
   private val tcRequest = ChrisSubmissionRequest(
     serviceType = DirectDebitSource.TC,
     paymentPlanType = PaymentPlanType.TaxCreditRepaymentPlan,
+    paymentPlanReferenceNumber = None,
     paymentFrequency = Some(PaymentsFrequency.Monthly),
     yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
       accountHolderName = "TC User",
@@ -74,10 +75,8 @@ class ChrisServiceSpec
     planEndDate = None,
     paymentDate = Some(paymentDateDetails),
     yearEndAndMonth = None,
-    bankDetailsAddress = BankAddress(Seq("TC Line 1"), "TC Town", Country("UK"), "TC1 1AA"),
     ddiReferenceNo = "TC-DDI-123",
     paymentReference = "TCRef",
-    bankName = "TC Bank",
     totalAmountDue = Some(BigDecimal(100)),
     paymentAmount = Some(BigDecimal(50)),
     regularPaymentAmount = Some(BigDecimal(25)),
@@ -87,6 +86,7 @@ class ChrisServiceSpec
   private val saMonthlyRequest = ChrisSubmissionRequest(
     serviceType = DirectDebitSource.SA,
     paymentPlanType = PaymentPlanType.BudgetPaymentPlan,
+    paymentPlanReferenceNumber = None,
     paymentFrequency = Some(PaymentsFrequency.Monthly),
     yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
       accountHolderName = "SA Monthly User",
@@ -99,10 +99,8 @@ class ChrisServiceSpec
     planEndDate = None,
     paymentDate = Some(paymentDateDetails),
     yearEndAndMonth = None,
-    bankDetailsAddress = BankAddress(Seq("SA Line 1"), "SA Town", Country("UK"), "SA1 2BB"),
     ddiReferenceNo = "SA-DDI-456",
     paymentReference = "SARef",
-    bankName = "SA Bank",
     totalAmountDue = Some(BigDecimal(200)),
     paymentAmount = Some(BigDecimal(100)),
     regularPaymentAmount = Some(BigDecimal(50)),
@@ -117,6 +115,7 @@ class ChrisServiceSpec
   private val ctRequest = ChrisSubmissionRequest(
     serviceType = DirectDebitSource.CT,
     paymentPlanType = PaymentPlanType.SinglePayment,
+    paymentPlanReferenceNumber = None,
     paymentFrequency = Some(PaymentsFrequency.Monthly),
     yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
       accountHolderName = "CT User",
@@ -129,10 +128,8 @@ class ChrisServiceSpec
     planEndDate = None,
     paymentDate = Some(paymentDateDetails),
     yearEndAndMonth = None,
-    bankDetailsAddress = BankAddress(Seq("CT Line 1"), "CT Town", Country("UK"), "CT1 3CC"),
     ddiReferenceNo = "CT-DDI-789",
     paymentReference = "CTRef",
-    bankName = "CT Bank",
     totalAmountDue = Some(BigDecimal(300)),
     paymentAmount = Some(BigDecimal(150)),
     regularPaymentAmount = Some(BigDecimal(75)),
@@ -142,6 +139,7 @@ class ChrisServiceSpec
   private val mgdRequest = ChrisSubmissionRequest(
     serviceType = DirectDebitSource.MGD,
     paymentPlanType = PaymentPlanType.VariablePaymentPlan,
+    paymentPlanReferenceNumber = None,
     paymentFrequency = None,
     yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
       accountHolderName = "MGD User",
@@ -154,10 +152,8 @@ class ChrisServiceSpec
     planEndDate = None,
     paymentDate = Some(paymentDateDetails),
     yearEndAndMonth = None,
-    bankDetailsAddress = BankAddress(Seq("MGD Line 1"), "MGD Town", Country("UK"), "MGD1 4DD"),
     ddiReferenceNo = "MGD-DDI-101",
     paymentReference = "MGDRef",
-    bankName = "MGD Bank",
     totalAmountDue = Some(BigDecimal(400)),
     paymentAmount = Some(BigDecimal(200)),
     regularPaymentAmount = Some(BigDecimal(100)),
@@ -166,6 +162,7 @@ class ChrisServiceSpec
   private val vatRequest = ChrisSubmissionRequest(
     serviceType = DirectDebitSource.MGD,
     paymentPlanType = PaymentPlanType.VariablePaymentPlan,
+    paymentPlanReferenceNumber = None,
     paymentFrequency = None,
     yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
       accountHolderName = "MGD User",
@@ -178,10 +175,8 @@ class ChrisServiceSpec
     planEndDate = None,
     paymentDate = Some(paymentDateDetails),
     yearEndAndMonth = None,
-    bankDetailsAddress = BankAddress(Seq("MGD Line 1"), "MGD Town", Country("UK"), "MGD1 4DD"),
     ddiReferenceNo = "MGD-DDI-101",
     paymentReference = "MGDRef",
-    bankName = "MGD Bank",
     totalAmountDue = Some(BigDecimal(400)),
     paymentAmount = Some(BigDecimal(200)),
     regularPaymentAmount = Some(BigDecimal(100)),
@@ -191,6 +186,7 @@ class ChrisServiceSpec
   private val payeRequest = ChrisSubmissionRequest(
     serviceType = DirectDebitSource.MGD,
     paymentPlanType = PaymentPlanType.VariablePaymentPlan,
+    paymentPlanReferenceNumber = None,
     paymentFrequency = None,
     yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
       accountHolderName = "MGD User",
@@ -203,10 +199,9 @@ class ChrisServiceSpec
     planEndDate = None,
     paymentDate = Some(paymentDateDetails),
     yearEndAndMonth = None,
-    bankDetailsAddress = BankAddress(Seq("MGD Line 1"), "MGD Town", Country("UK"), "MGD1 4DD"),
     ddiReferenceNo = "MGD-DDI-101",
     paymentReference = "MGDRef",
-    bankName = "MGD Bank",
+ 
     totalAmountDue = Some(BigDecimal(400)),
     paymentAmount = Some(BigDecimal(200)),
     regularPaymentAmount = Some(BigDecimal(100)),

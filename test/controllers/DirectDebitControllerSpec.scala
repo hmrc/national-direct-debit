@@ -199,6 +199,7 @@ class DirectDebitControllerSpec extends SpecBase {
     val baseChrisRequest: ChrisSubmissionRequest = ChrisSubmissionRequest(
       serviceType = DirectDebitSource.TC,
       paymentPlanType = PaymentPlanType.TaxCreditRepaymentPlan,
+      paymentPlanReferenceNumber = None,
       paymentFrequency = Some(PaymentsFrequency.Monthly),
       yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
         accountHolderName = "Test",
@@ -211,10 +212,8 @@ class DirectDebitControllerSpec extends SpecBase {
       planEndDate = None,
       paymentDate = Some(PaymentDateDetails(LocalDate.of(2025, 9, 15), "2025-09-01")),
       yearEndAndMonth = None,
-      bankDetailsAddress = BankAddress(Seq("line 1"), "Town", Country("UK"), "NE5 2DH"),
       ddiReferenceNo = "DDI123456789",
       paymentReference = "testReference",
-      bankName = "Barclays",
       totalAmountDue = Some(BigDecimal(200)),
       paymentAmount = Some(BigDecimal(100.00)),
       regularPaymentAmount = Some(BigDecimal(90.00)),
@@ -224,12 +223,14 @@ class DirectDebitControllerSpec extends SpecBase {
     val testChrisRequestSAMonthly: ChrisSubmissionRequest = baseChrisRequest.copy(
       serviceType = DirectDebitSource.SA,
       paymentPlanType = PaymentPlanType.BudgetPaymentPlan,
+      paymentPlanReferenceNumber = None,
       paymentFrequency = Some(PaymentsFrequency.Monthly)
     )
 
     val testChrisRequestSAWeekly: ChrisSubmissionRequest = baseChrisRequest.copy(
       serviceType = DirectDebitSource.SA,
       paymentPlanType = PaymentPlanType.BudgetPaymentPlan,
+      paymentPlanReferenceNumber = None,
       paymentFrequency = Some(PaymentsFrequency.Weekly)
     )
 
