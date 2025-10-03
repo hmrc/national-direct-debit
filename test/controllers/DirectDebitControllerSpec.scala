@@ -133,7 +133,7 @@ class DirectDebitControllerSpec extends SpecBase {
           )(any[HeaderCarrier]()) // <-- add matcher for the implicit too
         ).thenReturn(Future.successful("<Confirmation>Success</Confirmation>"))
 
-        val result = controller.submitToChris()(fakeRequestWithJsonBody(Json.toJson(testChrisRequestSAMonthly)))
+        val result: Future[Result] = controller.submitToChris()(fakeRequestWithJsonBody(Json.toJson(testChrisRequestSAMonthly)))
 
         status(result) mustBe OK
         (contentAsJson(result) \ "success").as[Boolean] mustBe true
@@ -152,7 +152,7 @@ class DirectDebitControllerSpec extends SpecBase {
           )(any[HeaderCarrier]()) // <-- same fix here
         ).thenReturn(Future.failed(new RuntimeException("Boom!")))
 
-        val result = controller.submitToChris()(fakeRequestWithJsonBody(Json.toJson(testChrisRequestSAMonthly)))
+        val result: Future[Result] = controller.submitToChris()(fakeRequestWithJsonBody(Json.toJson(testChrisRequestSAMonthly)))
 
         status(result) mustBe 500
         (contentAsJson(result) \ "success").as[Boolean] mustBe false
@@ -160,7 +160,17 @@ class DirectDebitControllerSpec extends SpecBase {
       }
     }
 
+    "retrievePaymentPlanDetails method" - {
+      "return 200 and a successful response when payment plans exist" in new SetUp {
+        when(mockDirectDebitService.retrievePaymentPlanDetails(any(), any())(any()))
+          .thenReturn(Future.successful(testPaymentPlanResponse))
 
+        val result: Future[Result] = controller.retrievePaymentPlanDetails("test-dd-reference", "test-pp-reference")(fakeRequest)
+
+        status(result) mustBe OK
+        contentAsJson(result) mustBe Json.toJson(testPaymentPlanResponse)
+      }
+    }
   }
 
   class SetUp {
@@ -253,6 +263,34 @@ class DirectDebitControllerSpec extends SpecBase {
           hodService = "service 1",
           submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12))
       )
+    )
+
+    private val currentTime = LocalDateTime.MIN
+
+    val testPaymentPlanResponse: RDSPaymentPlanResponse = RDSPaymentPlanResponse(
+      directDebitDetails = DirectDebitDetail(
+        bankSortCode = Some("sort code"),
+        bankAccountNumber = Some("account number"),
+        bankAccountName = None,
+        auDdisFlag = true,
+        submissionDateTime = currentTime),
+      paymentPlanDetails = PaymentPlanDetail(
+        hodService = "hod service",
+        planType = "plan Type",
+        paymentReference = "payment reference",
+        submissionDateTime = currentTime,
+        scheduledPaymentAmount = Some(1000),
+        scheduledPaymentStartDate = Some(currentTime.toLocalDate),
+        initialPaymentStartDate = Some(currentTime.toLocalDate),
+        initialPaymentAmount = Some(150),
+        scheduledPaymentEndDate = Some(currentTime.toLocalDate),
+        scheduledPaymentFrequency = Some("1"),
+        suspensionStartDate = Some(currentTime.toLocalDate),
+        suspensionEndDate = None,
+        balancingPaymentAmount = Some(600),
+        balancingPaymentDate = Some(currentTime.toLocalDate),
+        totalLiability = None,
+        paymentPlanEditable = false)
     )
 
     val controller = new DirectDebitController(fakeAuthAction, mockDirectDebitService, mockChrisService, cc)
