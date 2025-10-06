@@ -21,7 +21,7 @@ import base.SpecBase
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.scalatestplus.mockito.MockitoSugar.mock
-import play.api.http.Status.{BAD_REQUEST, INTERNAL_SERVER_ERROR, OK}
+import play.api.http.Status.{BAD_REQUEST, OK}
 import play.api.libs.json.Json
 import play.api.mvc.Result
 import play.api.test.Helpers.{contentAsJson, status}
@@ -181,10 +181,10 @@ class DirectDebitControllerSpec extends SpecBase {
           )(any[HeaderCarrier]())
         ).thenReturn(Future.successful(DuplicateCheckResponse(true)))
 
-        val result: Future[Result] = controller.isDuplicatePaymentPlan("test directDebitReference")(fakeRequestWithJsonBody(Json.toJson(duplicateCheckRequest)))
+        val result: Future[Result] = controller.isDuplicatePaymentPlan("test isDuplicatePaymentPlan")(fakeRequestWithJsonBody(Json.toJson(duplicateCheckRequest)))
 
         status(result) mustBe OK
-        contentAsJson(result).as[Boolean] mustBe true
+        contentAsJson(result) mustBe Json.toJson(DuplicateCheckResponse(true))
       }
     }
 

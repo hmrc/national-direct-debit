@@ -16,7 +16,7 @@
 
 package connectors
 
-import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, get, post, stubFor, urlPathMatching}
+import com.github.tomakehurst.wiremock.client.WireMock.*
 import itutil.ApplicationWithWiremock
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.must.Matchers
@@ -25,9 +25,8 @@ import play.api.http.Status.{INTERNAL_SERVER_ERROR, OK}
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.DirectDebitConnector
-import uk.gov.hmrc.nationaldirectdebit.models.requests.{GenerateDdiRefRequest, WorkingDaysOffsetRequest}
-import uk.gov.hmrc.nationaldirectdebit.models.responses.*
 import uk.gov.hmrc.nationaldirectdebit.models.requests.{GenerateDdiRefRequest, PaymentPlanDuplicateCheckRequest, WorkingDaysOffsetRequest}
+import uk.gov.hmrc.nationaldirectdebit.models.responses.*
 
 import java.time.{LocalDate, LocalDateTime}
 
@@ -393,7 +392,7 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock
             .willReturn(
               aResponse()
                 .withStatus(OK)
-                .withBody("true")
+                .withBody(Json.toJson(DuplicateCheckResponse(true)).toString)
             )
         )
 
@@ -408,7 +407,7 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock
             .willReturn(
               aResponse()
                 .withStatus(OK)
-                .withBody("false")
+                .withBody(Json.toJson(DuplicateCheckResponse(false)).toString)
             )
         )
 

@@ -21,7 +21,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.DirectDebitConnector
 import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDDPaymentPlansResponse, RDSDatacacheResponse, RDSPaymentPlanResponse}
 import uk.gov.hmrc.nationaldirectdebit.models.requests.*
-import uk.gov.hmrc.nationaldirectdebit.models.responses.{DuplicateCheckResponse, EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDDPaymentPlansResponse, RDSDatacacheResponse}
+import uk.gov.hmrc.nationaldirectdebit.models.responses.DuplicateCheckResponse
 
 import scala.concurrent.Future
 

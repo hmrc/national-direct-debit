@@ -150,7 +150,7 @@ class DirectDebitServiceSpec extends SpecBase {
 
     "isDuplicatePaymentPlan method" - {
       "must return the response from the connector" in {
-        when(mockConnector.isDuplicatePaymentPlan(any())(any())).thenReturn(Future.successful(true))
+        when(mockConnector.isDuplicatePaymentPlan(any())(any())).thenReturn(Future.successful(DuplicateCheckResponse(true)))
         val result: DuplicateCheckResponse = testService.isDuplicatePaymentPlan(duplicateCheckRequest).futureValue
 
         result mustBe DuplicateCheckResponse(true)
