@@ -103,6 +103,13 @@ class DirectDebitController @Inject()(
       }
     }
 
+  def retrievePaymentPlanDetails(directDebitReference: String, paymentPlanReference: String): Action[AnyContent] =
+    authorise.async {
+      implicit request =>
+        service.retrievePaymentPlanDetails(directDebitReference, paymentPlanReference).map { response =>
+          Ok(Json.toJson(response))
+        }
+    }
 
   def isDuplicatePaymentPlan(directDebitReference: String): Action[JsValue] =
     authorise(parse.json).async:

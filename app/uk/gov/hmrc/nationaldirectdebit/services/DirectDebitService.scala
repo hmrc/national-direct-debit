@@ -19,8 +19,9 @@ package uk.gov.hmrc.nationaldirectdebit.services
 import com.google.inject.Inject
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.DirectDebitConnector
+import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDDPaymentPlansResponse, RDSDatacacheResponse, RDSPaymentPlanResponse}
+import uk.gov.hmrc.nationaldirectdebit.models.requests.*
 import uk.gov.hmrc.nationaldirectdebit.models.responses.{DuplicateCheckResponse, EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDDPaymentPlansResponse, RDSDatacacheResponse}
-import uk.gov.hmrc.nationaldirectdebit.models.requests.{GenerateDdiRefRequest, PaymentPlanDuplicateCheckRequest, WorkingDaysOffsetRequest}
 
 import scala.concurrent.Future
 
@@ -42,6 +43,10 @@ class DirectDebitService @Inject()(
 
   def retrieveDirectDebitPaymentPlans(directDebitReference: String)(implicit hc: HeaderCarrier): Future[RDSDDPaymentPlansResponse] = {
     connector.retrieveDirectDebitPaymentPlans(directDebitReference)
+  }
+
+  def retrievePaymentPlanDetails(directDebitReference: String, paymentPlanReference: String)(implicit hc: HeaderCarrier): Future[RDSPaymentPlanResponse] = {
+    connector.retrievePaymentPlanDetails(directDebitReference, paymentPlanReference)
   }
 
   def isDuplicatePaymentPlan(request: PaymentPlanDuplicateCheckRequest)(implicit hc: HeaderCarrier): Future[DuplicateCheckResponse] = {

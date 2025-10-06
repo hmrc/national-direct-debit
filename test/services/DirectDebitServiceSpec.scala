@@ -22,8 +22,8 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.scalatestplus.mockito.MockitoSugar.mock
 import uk.gov.hmrc.nationaldirectdebit.connectors.DirectDebitConnector
-import uk.gov.hmrc.nationaldirectdebit.models.requests.{GenerateDdiRefRequest, PaymentPlanDuplicateCheckRequest, WorkingDaysOffsetRequest}
-import uk.gov.hmrc.nationaldirectdebit.models.responses.{DuplicateCheckResponse, EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDDPaymentPlansResponse, RDSDatacacheResponse, RDSDirectDebitDetails, RDSPaymentPlan}
+import uk.gov.hmrc.nationaldirectdebit.models.requests.*
+import uk.gov.hmrc.nationaldirectdebit.models.responses.*
 import uk.gov.hmrc.nationaldirectdebit.services.DirectDebitService
 
 import java.time.{LocalDate, LocalDateTime}
@@ -61,6 +61,34 @@ class DirectDebitServiceSpec extends SpecBase {
         hodService = "service 1",
         submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12))
     )
+  )
+
+  private val currentTime = LocalDateTime.MIN
+
+  val testPaymentPlanResponse: RDSPaymentPlanResponse = RDSPaymentPlanResponse(
+    directDebitDetails = DirectDebitDetail(
+      bankSortCode = Some("sort code"),
+      bankAccountNumber = Some("account number"),
+      bankAccountName = None,
+      auDdisFlag = true,
+      submissionDateTime = currentTime),
+    paymentPlanDetails = PaymentPlanDetail(
+      hodService = "hod service",
+      planType = "plan Type",
+      paymentReference = "payment reference",
+      submissionDateTime = currentTime,
+      scheduledPaymentAmount = Some(1000),
+      scheduledPaymentStartDate = Some(currentTime.toLocalDate),
+      initialPaymentStartDate = Some(currentTime.toLocalDate),
+      initialPaymentAmount = Some(150),
+      scheduledPaymentEndDate = Some(currentTime.toLocalDate),
+      scheduledPaymentFrequency = Some("1"),
+      suspensionStartDate = Some(currentTime.toLocalDate),
+      suspensionEndDate = None,
+      balancingPaymentAmount = Some(600),
+      balancingPaymentDate = Some(currentTime.toLocalDate),
+      totalLiability = None,
+      paymentPlanEditable = false)
   )
 
   val duplicateCheckRequest: PaymentPlanDuplicateCheckRequest = PaymentPlanDuplicateCheckRequest(
@@ -108,6 +136,15 @@ class DirectDebitServiceSpec extends SpecBase {
         val result = testService.retrieveDirectDebitPaymentPlans("directDebitReference").futureValue
 
         result mustBe testDDPaymentPlansCacheResponse
+      }
+    }
+
+    "retrievePaymentPlanDetails method" - {
+      "must return the response from the connector" in {
+        when(mockConnector.retrievePaymentPlanDetails(any(), any())(any())).thenReturn(Future.successful(testPaymentPlanResponse))
+        val result = testService.retrievePaymentPlanDetails("test-dd-reference", "test-pp-reference").futureValue
+
+        result mustBe testPaymentPlanResponse
       }
     }
 
