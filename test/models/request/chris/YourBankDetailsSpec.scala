@@ -27,8 +27,8 @@ class YourBankDetailsSpec extends AnyWordSpec with Matchers {
     """{"accountHolderName":"John Doe","sortCode":"12 34 56","accountNumber":"12345678"}"""
   val model: YourBankDetails = YourBankDetails(
     accountHolderName = "John Doe",
-    sortCode = "12 34 56",
-    accountNumber = "12345678"
+    sortCode          = "12 34 56",
+    accountNumber     = "12345678"
   )
   val json: JsValue = Json.parse(jsonStr)
 

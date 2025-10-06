@@ -20,10 +20,10 @@ import play.api.mvc.{Request, WrappedRequest}
 import uk.gov.hmrc.http.SessionId
 
 case class AuthenticatedRequest[A](
-                                    private val request: Request[A],
-                                    internalId: String,
-                                    sessionId: SessionId,
-                                    credId: String,
-                                    affinityGroup: String,
-                                    nino: Option[String]
-                                  ) extends WrappedRequest[A](request)
+  private val request: Request[A],
+  internalId: String,
+  sessionId: SessionId,
+  credId: String,
+  affinityGroup: String,
+  nino: Option[String]
+) extends WrappedRequest[A](request)

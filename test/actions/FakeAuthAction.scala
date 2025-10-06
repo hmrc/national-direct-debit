@@ -24,11 +24,11 @@ import uk.gov.hmrc.nationaldirectdebit.models.requests.AuthenticatedRequest
 import scala.concurrent.{ExecutionContext, Future}
 
 class FakeAuthAction(
-                      bodyParsers: PlayBodyParsers,
-                      testCredId: String = "cred-123",
-                      testAffinity: String = "Individual",
-                      testNino: Option[String] = Some("AB123456C")
-                    ) extends AuthAction {
+  bodyParsers: PlayBodyParsers,
+  testCredId: String = "cred-123",
+  testAffinity: String = "Individual",
+  testNino: Option[String] = Some("AB123456C")
+) extends AuthAction {
 
   override def parser = bodyParsers.default
 
@@ -36,11 +36,11 @@ class FakeAuthAction(
     block(
       AuthenticatedRequest(
         request,
-        internalId = "internalId-123",
-        sessionId = SessionId("sessionId-123"),
-        credId = testCredId,
+        internalId    = "internalId-123",
+        sessionId     = SessionId("sessionId-123"),
+        credId        = testCredId,
         affinityGroup = testAffinity,
-        nino = testNino
+        nino          = testNino
       )
     )
 
