@@ -107,10 +107,43 @@ class ChrisServiceSpec
     calculation = None
   )
 
+
   private val saWeeklyRequest = saMonthlyRequest.copy(
     paymentFrequency = Some(PaymentsFrequency.Weekly),
     yourBankDetailsWithAuddisStatus = saMonthlyRequest.yourBankDetailsWithAuddisStatus.copy(accountHolderName = "SA Weekly User")
   )
+
+  private val saAmendRequest = saMonthlyRequest.copy(
+    amendPlan = true
+  )
+
+  private val amendSingleRequest = ChrisSubmissionRequest(
+    serviceType = DirectDebitSource.CT,
+    paymentPlanType = PaymentPlanType.SinglePayment,
+    paymentPlanReferenceNumber = None,
+    paymentFrequency = Some(PaymentsFrequency.Monthly),
+    yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
+      accountHolderName = "CT User",
+      sortCode = "33-44-55",
+      accountNumber = "34567890",
+      auddisStatus = true,
+      accountVerified = true
+    ),
+    planStartDate = Some(planStartDateDetails),
+    planEndDate = None,
+    paymentDate = Some(paymentDateDetails),
+    yearEndAndMonth = None,
+    ddiReferenceNo = "CT-DDI-789",
+    paymentReference = "CTRef",
+    totalAmountDue = Some(BigDecimal(300)),
+    paymentAmount = Some(BigDecimal(150)),
+    regularPaymentAmount = Some(BigDecimal(75)),
+    calculation = None,
+    amendPlan = true
+  )
+
+
+
 
   private val ctRequest = ChrisSubmissionRequest(
     serviceType = DirectDebitSource.CT,
@@ -257,6 +290,26 @@ class ChrisServiceSpec
       }
     }
 
+    "return confirmation when submission succeeds for SA Amend (monthly)" in {
+      val enrolments = Enrolments(
+        Set(
+          Enrolment(
+            key = "IR-SA",
+            identifiers = Seq(EnrolmentIdentifier("TaxId", "1234567890")),
+            state = "Activated",
+            delegatedAuthRule = None
+          )
+        )
+      )
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
+      when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>SA amend Monthly Message received</Confirmation>"))
+
+      service.submitToChris(saAmendRequest, "credId123", "Organisation", fakeAuthRequest).map { result =>
+        result must include("SA amend Monthly Message received")
+      }
+    }
+
+
     "return confirmation when submission succeeds for SA (weekly)" in {
       val enrolments = Enrolments(
         Set(
@@ -314,6 +367,26 @@ class ChrisServiceSpec
         result must include("CT Message received")
       }
     }
+
+    "return confirmation when submission succeeds for Amend Single" in {
+      val enrolments = Enrolments(
+        Set(
+          Enrolment(
+            key = "COTA",
+            identifiers = Seq(EnrolmentIdentifier("UTR", "1234567890")),
+            state = "Activated",
+            delegatedAuthRule = None
+          )
+        )
+      )
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
+      when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>CT Message received</Confirmation>"))
+
+      service.submitToChris(amendSingleRequest, "credId123", "Agent", fakeAuthRequest).map { result =>
+        result must include("CT Message received")
+      }
+    }
+
 
     "return confirmation when submission succeeds for VAT" in {
       val enrolments = Enrolments(
