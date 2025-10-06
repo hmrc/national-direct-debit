@@ -25,8 +25,8 @@ import play.api.http.Status.{INTERNAL_SERVER_ERROR, OK}
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.DirectDebitConnector
-import uk.gov.hmrc.nationaldirectdebit.models.requests.{GenerateDdiRefRequest, WorkingDaysOffsetRequest, PaymentPlanDuplicateCheckRequest}
-import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDDPaymentPlansResponse, RDSDatacacheResponse, RDSDirectDebitDetails, RDSPaymentPlan}
+import uk.gov.hmrc.nationaldirectdebit.models.requests.{GenerateDdiRefRequest, PaymentPlanDuplicateCheckRequest, WorkingDaysOffsetRequest}
+import uk.gov.hmrc.nationaldirectdebit.models.responses.{DuplicateCheckResponse, EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDDPaymentPlansResponse, RDSDatacacheResponse, RDSDirectDebitDetails, RDSPaymentPlan}
 
 import java.time.{LocalDate, LocalDateTime}
 
@@ -322,9 +322,9 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock
             )
         )
 
-        val result = connector.isDuplicatePaymentPlan(duplicateCheckRequest).futureValue
+        val result: DuplicateCheckResponse = connector.isDuplicatePaymentPlan(duplicateCheckRequest).futureValue
 
-        result mustBe true
+        result mustBe DuplicateCheckResponse(true)
       }
 
       "successfully retrieve false if it is not a duplicate payment plan" in {
@@ -337,9 +337,9 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock
             )
         )
 
-        val result = connector.isDuplicatePaymentPlan(duplicateCheckRequest).futureValue
+        val result: DuplicateCheckResponse = connector.isDuplicatePaymentPlan(duplicateCheckRequest).futureValue
 
-        result mustBe false
+        result mustBe DuplicateCheckResponse(false)
       }
 
       "must fail when the result is parsed as an UpstreamErrorResponse" in {

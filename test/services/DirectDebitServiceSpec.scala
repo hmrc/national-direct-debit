@@ -23,7 +23,7 @@ import org.mockito.Mockito.when
 import org.scalatestplus.mockito.MockitoSugar.mock
 import uk.gov.hmrc.nationaldirectdebit.connectors.DirectDebitConnector
 import uk.gov.hmrc.nationaldirectdebit.models.requests.{GenerateDdiRefRequest, PaymentPlanDuplicateCheckRequest, WorkingDaysOffsetRequest}
-import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDDPaymentPlansResponse, RDSDatacacheResponse, RDSDirectDebitDetails, RDSPaymentPlan}
+import uk.gov.hmrc.nationaldirectdebit.models.responses.{DuplicateCheckResponse, EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDDPaymentPlansResponse, RDSDatacacheResponse, RDSDirectDebitDetails, RDSPaymentPlan}
 import uk.gov.hmrc.nationaldirectdebit.services.DirectDebitService
 
 import java.time.{LocalDate, LocalDateTime}
@@ -114,9 +114,9 @@ class DirectDebitServiceSpec extends SpecBase {
     "isDuplicatePaymentPlan method" - {
       "must return the response from the connector" in {
         when(mockConnector.isDuplicatePaymentPlan(any())(any())).thenReturn(Future.successful(true))
-        val result = testService.isDuplicatePaymentPlan(duplicateCheckRequest).futureValue
+        val result: DuplicateCheckResponse = testService.isDuplicatePaymentPlan(duplicateCheckRequest).futureValue
 
-        result mustBe true
+        result mustBe DuplicateCheckResponse(true)
       }
     }
   }

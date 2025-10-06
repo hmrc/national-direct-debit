@@ -20,7 +20,7 @@ import com.google.inject.Inject
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.{HeaderCarrier, HttpReadsInstances, StringContextOps}
-import uk.gov.hmrc.nationaldirectdebit.models.responses.{EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDDPaymentPlansResponse, RDSDatacacheResponse}
+import uk.gov.hmrc.nationaldirectdebit.models.responses.{DuplicateCheckResponse, EarliestPaymentDateResponse, GenerateDdiRefResponse, RDSDDPaymentPlansResponse, RDSDatacacheResponse}
 import uk.gov.hmrc.nationaldirectdebit.models.requests.{GenerateDdiRefRequest, PaymentPlanDuplicateCheckRequest, WorkingDaysOffsetRequest}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
@@ -56,9 +56,9 @@ class DirectDebitConnector @Inject()(
       .execute[RDSDDPaymentPlansResponse]
   }
 
-  def isDuplicatePaymentPlan (request: PaymentPlanDuplicateCheckRequest)(implicit hc: HeaderCarrier): Future[Boolean] = {
+  def isDuplicatePaymentPlan (request: PaymentPlanDuplicateCheckRequest)(implicit hc: HeaderCarrier): Future[DuplicateCheckResponse] = {
     http.get(url"$rdsDatacacheProxyBaseUrl/direct-debits/${request.directDebitReference}/duplicate-plan-check")(hc)
       .withBody(Json.toJson(request))
-      .execute[Boolean]
+      .execute[DuplicateCheckResponse]
   }
 }

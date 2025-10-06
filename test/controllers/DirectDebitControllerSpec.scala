@@ -167,7 +167,7 @@ class DirectDebitControllerSpec extends SpecBase {
           mockDirectDebitService.isDuplicatePaymentPlan(
             any[PaymentPlanDuplicateCheckRequest]()
           )(any[HeaderCarrier]())
-        ).thenReturn(Future.successful(true))
+        ).thenReturn(Future.successful(DuplicateCheckResponse(true)))
 
         val result: Future[Result] = controller.isDuplicatePaymentPlan("test directDebitReference")(fakeRequestWithJsonBody(Json.toJson(duplicateCheckRequest)))
 
