@@ -25,7 +25,6 @@ import scala.xml.{Elem, Null}
 object PaymentPlanBuilder {
 
   def build(request: ChrisSubmissionRequest, hodService: Option[String]): Elem = {
-    println("........................"+request.paymentPlanType)
     request.serviceType match {
       case DirectDebitSource.SA if request.paymentPlanType == PaymentPlanType.BudgetPaymentPlan && request.amendPlan =>
         buildSaAmendPlan(request, hodService)
