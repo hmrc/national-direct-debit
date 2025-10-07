@@ -33,62 +33,83 @@ class DirectDebitServiceSpec extends SpecBase {
 
   val mockConnector: DirectDebitConnector = mock[DirectDebitConnector]
   val testService: DirectDebitService = new DirectDebitService(connector = mockConnector)
-  val testDataCacheResponse: RDSDatacacheResponse = RDSDatacacheResponse(directDebitCount = 2,
+  val testDataCacheResponse: RDSDatacacheResponse = RDSDatacacheResponse(
+    directDebitCount = 2,
     directDebitList = Seq(
-      RDSDirectDebitDetails(ddiRefNumber = "testRef", submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12), bankSortCode = "testCode", bankAccountNumber = "testNumber", bankAccountName = "testName", auDdisFlag = true, numberOfPayPlans = 1),
-      RDSDirectDebitDetails(ddiRefNumber = "testRef", submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12), bankSortCode = "testCode", bankAccountNumber = "testNumber", bankAccountName = "testName", auDdisFlag = true, numberOfPayPlans = 1)
-    ))
+      RDSDirectDebitDetails(
+        ddiRefNumber       = "testRef",
+        submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12),
+        bankSortCode       = "testCode",
+        bankAccountNumber  = "testNumber",
+        bankAccountName    = "testName",
+        auDdisFlag         = true,
+        numberOfPayPlans   = 1
+      ),
+      RDSDirectDebitDetails(
+        ddiRefNumber       = "testRef",
+        submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12),
+        bankSortCode       = "testCode",
+        bankAccountNumber  = "testNumber",
+        bankAccountName    = "testName",
+        auDdisFlag         = true,
+        numberOfPayPlans   = 1
+      )
+    )
+  )
 
   val testDDPaymentPlansCacheResponse: RDSDDPaymentPlansResponse = RDSDDPaymentPlansResponse(
-    bankSortCode = "sort code",
+    bankSortCode      = "sort code",
     bankAccountNumber = "account number",
-    bankAccountName = "account name",
-    auDdisFlag = "dd",
-    paymentPlanCount = 2,
+    bankAccountName   = "account name",
+    auDdisFlag        = "dd",
+    paymentPlanCount  = 2,
     paymentPlanList = Seq(
       RDSPaymentPlan(
         scheduledPaymentAmount = 100,
-        planRefNumber = "ref number 1",
-        planType = "type 1",
-        paymentReference = "payment ref 1",
-        hodService = "service 1",
-        submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12)),
+        planRefNumber          = "ref number 1",
+        planType               = "type 1",
+        paymentReference       = "payment ref 1",
+        hodService             = "service 1",
+        submissionDateTime     = LocalDateTime.of(2025, 12, 12, 12, 12)
+      ),
       RDSPaymentPlan(
         scheduledPaymentAmount = 100,
-        planRefNumber = "ref number 1",
-        planType = "type 1",
-        paymentReference = "payment ref 1",
-        hodService = "service 1",
-        submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12))
+        planRefNumber          = "ref number 1",
+        planType               = "type 1",
+        paymentReference       = "payment ref 1",
+        hodService             = "service 1",
+        submissionDateTime     = LocalDateTime.of(2025, 12, 12, 12, 12)
+      )
     )
   )
 
   private val currentTime = LocalDateTime.MIN
 
   val testPaymentPlanResponse: RDSPaymentPlanResponse = RDSPaymentPlanResponse(
-    directDebitDetails = DirectDebitDetail(
-      bankSortCode = Some("sort code"),
-      bankAccountNumber = Some("account number"),
-      bankAccountName = None,
-      auDdisFlag = true,
-      submissionDateTime = currentTime),
+    directDebitDetails = DirectDebitDetail(bankSortCode = Some("sort code"),
+                                           bankAccountNumber  = Some("account number"),
+                                           bankAccountName    = None,
+                                           auDdisFlag         = true,
+                                           submissionDateTime = currentTime
+                                          ),
     paymentPlanDetails = PaymentPlanDetail(
-      hodService = "hod service",
-      planType = "plan Type",
-      paymentReference = "payment reference",
-      submissionDateTime = currentTime,
-      scheduledPaymentAmount = Some(1000),
+      hodService                = "hod service",
+      planType                  = "plan Type",
+      paymentReference          = "payment reference",
+      submissionDateTime        = currentTime,
+      scheduledPaymentAmount    = Some(1000),
       scheduledPaymentStartDate = Some(currentTime.toLocalDate),
-      initialPaymentStartDate = Some(currentTime.toLocalDate),
-      initialPaymentAmount = Some(150),
-      scheduledPaymentEndDate = Some(currentTime.toLocalDate),
+      initialPaymentStartDate   = Some(currentTime.toLocalDate),
+      initialPaymentAmount      = Some(150),
+      scheduledPaymentEndDate   = Some(currentTime.toLocalDate),
       scheduledPaymentFrequency = Some("1"),
-      suspensionStartDate = Some(currentTime.toLocalDate),
-      suspensionEndDate = None,
-      balancingPaymentAmount = Some(600),
-      balancingPaymentDate = Some(currentTime.toLocalDate),
-      totalLiability = None,
-      paymentPlanEditable = false)
+      suspensionStartDate       = Some(currentTime.toLocalDate),
+      suspensionEndDate         = None,
+      balancingPaymentAmount    = Some(600),
+      balancingPaymentDate      = Some(currentTime.toLocalDate),
+      totalLiability            = None,
+      paymentPlanEditable       = false
+    )
   )
 
   "DirectDebitService" - {
@@ -104,12 +125,13 @@ class DirectDebitServiceSpec extends SpecBase {
     "AddWorkingDaysOffset method" - {
       "must return the response from the connector" in {
         when(mockConnector.getWorkingDaysOffset(any())(any())).thenReturn(Future.successful(EarliestPaymentDateResponse(LocalDate.of(2025, 12, 12))))
-        val result = testService.getWorkingDaysOffset(WorkingDaysOffsetRequest(baseDate = LocalDate.of(2025, 12, 12), offsetWorkingDays = 10)).futureValue
+        val result =
+          testService.getWorkingDaysOffset(WorkingDaysOffsetRequest(baseDate = LocalDate.of(2025, 12, 12), offsetWorkingDays = 10)).futureValue
 
         result mustBe EarliestPaymentDateResponse(LocalDate.of(2025, 12, 12))
       }
     }
-    
+
     "generateDdiReference method" - {
       "must return the response from the connector" in {
         when(mockConnector.generateDdiReference(any())(any())).thenReturn(Future.successful(GenerateDdiRefResponse("12345")))

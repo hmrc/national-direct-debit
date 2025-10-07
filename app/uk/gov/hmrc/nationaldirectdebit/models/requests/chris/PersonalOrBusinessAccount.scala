@@ -25,9 +25,10 @@ object PersonalOrBusinessAccount extends Enumerable.Implicits {
   case object Business extends WithName("business") with PersonalOrBusinessAccount
 
   val values: Seq[PersonalOrBusinessAccount] = Seq(
-    Personal, Business
+    Personal,
+    Business
   )
 
   implicit val enumerable: Enumerable[PersonalOrBusinessAccount] =
-    Enumerable(values.map(v => v.toString -> v): _*)
+    Enumerable(values.map(v => v.toString -> v)*)
 }

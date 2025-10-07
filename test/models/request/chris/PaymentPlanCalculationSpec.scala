@@ -34,11 +34,11 @@ class PaymentPlanCalculationSpec extends AnyWordSpec with Matchers {
        |}""".stripMargin
 
   val model: PaymentPlanCalculation = PaymentPlanCalculation(
-    regularPaymentAmount = Some(BigDecimal(100.50)),
-    finalPaymentAmount = Some(BigDecimal(50.25)),
-    secondPaymentDate = Some(LocalDate.parse("2025-09-15")),
+    regularPaymentAmount   = Some(BigDecimal(100.50)),
+    finalPaymentAmount     = Some(BigDecimal(50.25)),
+    secondPaymentDate      = Some(LocalDate.parse("2025-09-15")),
     penultimatePaymentDate = Some(LocalDate.parse("2025-09-20")),
-    finalPaymentDate = Some(LocalDate.parse("2025-09-25"))
+    finalPaymentDate       = Some(LocalDate.parse("2025-09-25"))
   )
 
   val json: JsValue = Json.parse(jsonStr)

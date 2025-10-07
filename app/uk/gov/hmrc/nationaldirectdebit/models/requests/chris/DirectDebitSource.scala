@@ -39,13 +39,19 @@ object DirectDebitSource extends Enumerable.Implicits {
   case object VAT extends WithName("vat") with DirectDebitSource
 
   val values: Seq[DirectDebitSource] = Seq(
-    CT, MGD, NIC, OL, PAYE, SA, SDLT, TC, VAT
+    CT,
+    MGD,
+    NIC,
+    OL,
+    PAYE,
+    SA,
+    SDLT,
+    TC,
+    VAT
   )
-  
-
 
   implicit val enumerable: Enumerable[DirectDebitSource] =
-    Enumerable(values.map(v => v.toString -> v): _*)
+    Enumerable(values.map(v => v.toString -> v)*)
 
-   val objectMap: Map[String, DirectDebitSource] = values.map(v => v.toString -> v).toMap
+  val objectMap: Map[String, DirectDebitSource] = values.map(v => v.toString -> v).toMap
 }

@@ -29,25 +29,27 @@ import uk.gov.hmrc.play.http.HeaderCarrierConverter
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class DefaultAuthAction @Inject()(
-                                   override val authConnector: AuthConnector,
-                                   val parser: BodyParsers.Default
-                                 )(implicit val executionContext: ExecutionContext)
-  extends AuthAction with AuthorisedFunctions with Logging:
+class DefaultAuthAction @Inject() (
+  override val authConnector: AuthConnector,
+  val parser: BodyParsers.Default
+)(implicit val executionContext: ExecutionContext)
+    extends AuthAction
+    with AuthorisedFunctions
+    with Logging:
 
   override def invokeBlock[A](
-                               request: Request[A],
-                               block: AuthenticatedRequest[A] => Future[Result]
-                             ): Future[Result] =
+    request: Request[A],
+    block: AuthenticatedRequest[A] => Future[Result]
+  ): Future[Result] =
     given hc: HeaderCarrier = HeaderCarrierConverter.fromRequest(request)
 
     val sessionId: SessionId = hc.sessionId
       .getOrElse(throw new UnauthorizedException("Unable to retrieve session ID from headers"))
-    
+
     val retrievals = Retrievals.internalId and Retrievals.credentials and Retrievals.affinityGroup and Retrievals.nino
 
-    authorised().retrieve(retrievals) {
-      case maybeInternalId ~ maybeCreds ~ maybeAffinity ~ maybeNino =>
+    authorised()
+      .retrieve(retrievals) { case maybeInternalId ~ maybeCreds ~ maybeAffinity ~ maybeNino =>
         (maybeInternalId, maybeCreds, maybeAffinity) match
           case (Some(internalId), Some(credentials), Some(affinity)) =>
             val credId = credentials.providerId
@@ -65,13 +67,11 @@ class DefaultAuthAction @Inject()(
 
           case _ =>
             throw new UnauthorizedException("Unable to retrieve required auth values")
-    }.recover {
-      case _: AuthorisationException =>
+      }
+      .recover { case _: AuthorisationException =>
         val error = "Failed to authorise request"
         logger.warn(error)
         Unauthorized(error)
-    }
+      }
 
-trait AuthAction
-  extends ActionBuilder[AuthenticatedRequest, AnyContent]
-    with ActionFunction[Request, AuthenticatedRequest]
+trait AuthAction extends ActionBuilder[AuthenticatedRequest, AnyContent] with ActionFunction[Request, AuthenticatedRequest]

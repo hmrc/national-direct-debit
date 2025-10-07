@@ -20,17 +20,16 @@ import scala.xml.{Node, Text}
 
 object XmlUtils {
 
-
   def formatKeys(
-                  hodServices: Seq[Map[String, String]],
-                  indent: String
-                ): Seq[scala.xml.Node] =
+    hodServices: Seq[Map[String, String]],
+    indent: String
+  ): Seq[scala.xml.Node] =
     hodServices.zipWithIndex.flatMap { case (serviceMap, idx) =>
       val prefix = if (idx > 0) s"\n$indent" else ""
 
       (for {
         service <- serviceMap.get("service")
-        idName <- serviceMap.get("identifierName")
+        idName  <- serviceMap.get("identifierName")
         idValue <- serviceMap.get("identifierValue")
       } yield {
         val valueToUse =
@@ -47,15 +46,15 @@ object XmlUtils {
     }
 
   def formatKnownFacts(
-                        hodServices: Seq[Map[String, String]],
-                        indent: String
-                      ): Seq[scala.xml.Node] =
+    hodServices: Seq[Map[String, String]],
+    indent: String
+  ): Seq[scala.xml.Node] =
     hodServices.zipWithIndex.flatMap { case (serviceMap, idx) =>
       val prefix = if (idx > 0) s"\n$indent" else ""
 
       for {
-        service <- serviceMap.get("service")
-        idNames <- serviceMap.get("identifierName")
+        service  <- serviceMap.get("service")
+        idNames  <- serviceMap.get("identifierName")
         idValues <- serviceMap.get("identifierValue")
       } yield {
         val names = idNames.split("/").map(_.trim)
@@ -75,6 +74,5 @@ object XmlUtils {
         )
       }
     }.flatten
-
 
 }
