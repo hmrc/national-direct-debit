@@ -34,82 +34,77 @@ import java.time.LocalDate
 import scala.concurrent.Future
 import scala.xml.Elem
 
-class ChrisServiceSpec
-  extends AsyncWordSpec
-    with Matchers
-    with ScalaFutures
-    with MockitoSugar {
+class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures with MockitoSugar {
 
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
-  private val mockConnector     = mock[ChrisConnector]
+  private val mockConnector = mock[ChrisConnector]
   private val mockAuthConnector = mock[AuthConnector]
 
   private val service = new ChrisService(mockConnector, mockAuthConnector)
 
   // Plan and payment details
   private val planStartDateDetails = PlanStartDateDetails(
-    enteredDate = LocalDate.of(2025, 9, 1),
+    enteredDate           = LocalDate.of(2025, 9, 1),
     earliestPlanStartDate = "2025-09-01"
   )
 
   private val paymentDateDetails = PaymentDateDetails(
-    enteredDate = LocalDate.of(2025, 9, 15),
+    enteredDate         = LocalDate.of(2025, 9, 15),
     earliestPaymentDate = "2025-09-01"
   )
 
   // Distinct requests for each service type
   private val tcRequest = ChrisSubmissionRequest(
-    serviceType = DirectDebitSource.TC,
-    paymentPlanType = PaymentPlanType.TaxCreditRepaymentPlan,
+    serviceType                = DirectDebitSource.TC,
+    paymentPlanType            = PaymentPlanType.TaxCreditRepaymentPlan,
     paymentPlanReferenceNumber = None,
-    paymentFrequency = Some(PaymentsFrequency.Monthly),
+    paymentFrequency           = Some(PaymentsFrequency.Monthly),
     yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
       accountHolderName = "TC User",
-      sortCode = "11-22-33",
-      accountNumber = "12345678",
-      auddisStatus = true,
-      accountVerified = true
+      sortCode          = "11-22-33",
+      accountNumber     = "12345678",
+      auddisStatus      = true,
+      accountVerified   = true
     ),
-    planStartDate = Some(planStartDateDetails),
-    planEndDate = None,
-    paymentDate = Some(paymentDateDetails),
-    yearEndAndMonth = None,
-    ddiReferenceNo = "TC-DDI-123",
-    paymentReference = "TCRef",
-    totalAmountDue = Some(BigDecimal(100)),
-    paymentAmount = Some(BigDecimal(50)),
+    planStartDate        = Some(planStartDateDetails),
+    planEndDate          = None,
+    paymentDate          = Some(paymentDateDetails),
+    yearEndAndMonth      = None,
+    ddiReferenceNo       = "TC-DDI-123",
+    paymentReference     = "TCRef",
+    totalAmountDue       = Some(BigDecimal(100)),
+    paymentAmount        = Some(BigDecimal(50)),
     regularPaymentAmount = Some(BigDecimal(25)),
-    calculation = None
+    calculation          = None
   )
 
   private val saMonthlyRequest = ChrisSubmissionRequest(
-    serviceType = DirectDebitSource.SA,
-    paymentPlanType = PaymentPlanType.BudgetPaymentPlan,
+    serviceType                = DirectDebitSource.SA,
+    paymentPlanType            = PaymentPlanType.BudgetPaymentPlan,
     paymentPlanReferenceNumber = None,
-    paymentFrequency = Some(PaymentsFrequency.Monthly),
+    paymentFrequency           = Some(PaymentsFrequency.Monthly),
     yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
       accountHolderName = "SA Monthly User",
-      sortCode = "22-33-44",
-      accountNumber = "23456789",
-      auddisStatus = false,
-      accountVerified = false
+      sortCode          = "22-33-44",
+      accountNumber     = "23456789",
+      auddisStatus      = false,
+      accountVerified   = false
     ),
-    planStartDate = Some(planStartDateDetails),
-    planEndDate = None,
-    paymentDate = Some(paymentDateDetails),
-    yearEndAndMonth = None,
-    ddiReferenceNo = "SA-DDI-456",
-    paymentReference = "SARef",
-    totalAmountDue = Some(BigDecimal(200)),
-    paymentAmount = Some(BigDecimal(100)),
+    planStartDate        = Some(planStartDateDetails),
+    planEndDate          = None,
+    paymentDate          = Some(paymentDateDetails),
+    yearEndAndMonth      = None,
+    ddiReferenceNo       = "SA-DDI-456",
+    paymentReference     = "SARef",
+    totalAmountDue       = Some(BigDecimal(200)),
+    paymentAmount        = Some(BigDecimal(100)),
     regularPaymentAmount = Some(BigDecimal(50)),
-    calculation = None
+    calculation          = None
   )
 
-
   private val saWeeklyRequest = saMonthlyRequest.copy(
-    paymentFrequency = Some(PaymentsFrequency.Weekly),
+    paymentFrequency                = Some(PaymentsFrequency.Weekly),
     yourBankDetailsWithAuddisStatus = saMonthlyRequest.yourBankDetailsWithAuddisStatus.copy(accountHolderName = "SA Weekly User")
   )
 
@@ -118,136 +113,132 @@ class ChrisServiceSpec
   )
 
   private val amendSingleRequest = ChrisSubmissionRequest(
-    serviceType = DirectDebitSource.CT,
-    paymentPlanType = PaymentPlanType.SinglePayment,
+    serviceType                = DirectDebitSource.CT,
+    paymentPlanType            = PaymentPlanType.SinglePayment,
     paymentPlanReferenceNumber = None,
-    paymentFrequency = Some(PaymentsFrequency.Monthly),
+    paymentFrequency           = Some(PaymentsFrequency.Monthly),
     yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
       accountHolderName = "CT User",
-      sortCode = "33-44-55",
-      accountNumber = "34567890",
-      auddisStatus = true,
-      accountVerified = true
+      sortCode          = "33-44-55",
+      accountNumber     = "34567890",
+      auddisStatus      = true,
+      accountVerified   = true
     ),
-    planStartDate = Some(planStartDateDetails),
-    planEndDate = None,
-    paymentDate = Some(paymentDateDetails),
-    yearEndAndMonth = None,
-    ddiReferenceNo = "CT-DDI-789",
-    paymentReference = "CTRef",
-    totalAmountDue = Some(BigDecimal(300)),
-    paymentAmount = Some(BigDecimal(150)),
+    planStartDate        = Some(planStartDateDetails),
+    planEndDate          = None,
+    paymentDate          = Some(paymentDateDetails),
+    yearEndAndMonth      = None,
+    ddiReferenceNo       = "CT-DDI-789",
+    paymentReference     = "CTRef",
+    totalAmountDue       = Some(BigDecimal(300)),
+    paymentAmount        = Some(BigDecimal(150)),
     regularPaymentAmount = Some(BigDecimal(75)),
-    calculation = None,
-    amendPlan = true
+    calculation          = None,
+    amendPlan            = true
   )
 
-
-
-
   private val ctRequest = ChrisSubmissionRequest(
-    serviceType = DirectDebitSource.CT,
-    paymentPlanType = PaymentPlanType.SinglePayment,
+    serviceType                = DirectDebitSource.CT,
+    paymentPlanType            = PaymentPlanType.SinglePayment,
     paymentPlanReferenceNumber = None,
-    paymentFrequency = Some(PaymentsFrequency.Monthly),
+    paymentFrequency           = Some(PaymentsFrequency.Monthly),
     yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
       accountHolderName = "CT User",
-      sortCode = "33-44-55",
-      accountNumber = "34567890",
-      auddisStatus = true,
-      accountVerified = true
+      sortCode          = "33-44-55",
+      accountNumber     = "34567890",
+      auddisStatus      = true,
+      accountVerified   = true
     ),
-    planStartDate = Some(planStartDateDetails),
-    planEndDate = None,
-    paymentDate = Some(paymentDateDetails),
-    yearEndAndMonth = None,
-    ddiReferenceNo = "CT-DDI-789",
-    paymentReference = "CTRef",
-    totalAmountDue = Some(BigDecimal(300)),
-    paymentAmount = Some(BigDecimal(150)),
+    planStartDate        = Some(planStartDateDetails),
+    planEndDate          = None,
+    paymentDate          = Some(paymentDateDetails),
+    yearEndAndMonth      = None,
+    ddiReferenceNo       = "CT-DDI-789",
+    paymentReference     = "CTRef",
+    totalAmountDue       = Some(BigDecimal(300)),
+    paymentAmount        = Some(BigDecimal(150)),
     regularPaymentAmount = Some(BigDecimal(75)),
-    calculation = None
+    calculation          = None
   )
 
   private val mgdRequest = ChrisSubmissionRequest(
-    serviceType = DirectDebitSource.MGD,
-    paymentPlanType = PaymentPlanType.VariablePaymentPlan,
+    serviceType                = DirectDebitSource.MGD,
+    paymentPlanType            = PaymentPlanType.VariablePaymentPlan,
     paymentPlanReferenceNumber = None,
-    paymentFrequency = None,
+    paymentFrequency           = None,
     yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
       accountHolderName = "MGD User",
-      sortCode = "44-55-66",
-      accountNumber = "45678901",
-      auddisStatus = false,
-      accountVerified = false
+      sortCode          = "44-55-66",
+      accountNumber     = "45678901",
+      auddisStatus      = false,
+      accountVerified   = false
     ),
-    planStartDate = Some(planStartDateDetails),
-    planEndDate = None,
-    paymentDate = Some(paymentDateDetails),
-    yearEndAndMonth = None,
-    ddiReferenceNo = "MGD-DDI-101",
-    paymentReference = "MGDRef",
-    totalAmountDue = Some(BigDecimal(400)),
-    paymentAmount = Some(BigDecimal(200)),
+    planStartDate        = Some(planStartDateDetails),
+    planEndDate          = None,
+    paymentDate          = Some(paymentDateDetails),
+    yearEndAndMonth      = None,
+    ddiReferenceNo       = "MGD-DDI-101",
+    paymentReference     = "MGDRef",
+    totalAmountDue       = Some(BigDecimal(400)),
+    paymentAmount        = Some(BigDecimal(200)),
     regularPaymentAmount = Some(BigDecimal(100)),
-    calculation = None
+    calculation          = None
   )
   private val vatRequest = ChrisSubmissionRequest(
-    serviceType = DirectDebitSource.MGD,
-    paymentPlanType = PaymentPlanType.VariablePaymentPlan,
+    serviceType                = DirectDebitSource.MGD,
+    paymentPlanType            = PaymentPlanType.VariablePaymentPlan,
     paymentPlanReferenceNumber = None,
-    paymentFrequency = None,
+    paymentFrequency           = None,
     yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
       accountHolderName = "MGD User",
-      sortCode = "44-55-66",
-      accountNumber = "45678901",
-      auddisStatus = false,
-      accountVerified = false
+      sortCode          = "44-55-66",
+      accountNumber     = "45678901",
+      auddisStatus      = false,
+      accountVerified   = false
     ),
-    planStartDate = Some(planStartDateDetails),
-    planEndDate = None,
-    paymentDate = Some(paymentDateDetails),
-    yearEndAndMonth = None,
-    ddiReferenceNo = "MGD-DDI-101",
-    paymentReference = "MGDRef",
-    totalAmountDue = Some(BigDecimal(400)),
-    paymentAmount = Some(BigDecimal(200)),
+    planStartDate        = Some(planStartDateDetails),
+    planEndDate          = None,
+    paymentDate          = Some(paymentDateDetails),
+    yearEndAndMonth      = None,
+    ddiReferenceNo       = "MGD-DDI-101",
+    paymentReference     = "MGDRef",
+    totalAmountDue       = Some(BigDecimal(400)),
+    paymentAmount        = Some(BigDecimal(200)),
     regularPaymentAmount = Some(BigDecimal(100)),
-    calculation = None
+    calculation          = None
   )
 
   private val payeRequest = ChrisSubmissionRequest(
-    serviceType = DirectDebitSource.MGD,
-    paymentPlanType = PaymentPlanType.VariablePaymentPlan,
+    serviceType                = DirectDebitSource.MGD,
+    paymentPlanType            = PaymentPlanType.VariablePaymentPlan,
     paymentPlanReferenceNumber = None,
-    paymentFrequency = None,
+    paymentFrequency           = None,
     yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
       accountHolderName = "MGD User",
-      sortCode = "44-55-66",
-      accountNumber = "45678901",
-      auddisStatus = false,
-      accountVerified = false
+      sortCode          = "44-55-66",
+      accountNumber     = "45678901",
+      auddisStatus      = false,
+      accountVerified   = false
     ),
-    planStartDate = Some(planStartDateDetails),
-    planEndDate = None,
-    paymentDate = Some(paymentDateDetails),
-    yearEndAndMonth = None,
-    ddiReferenceNo = "MGD-DDI-101",
-    paymentReference = "MGDRef",
- 
-    totalAmountDue = Some(BigDecimal(400)),
-    paymentAmount = Some(BigDecimal(200)),
+    planStartDate        = Some(planStartDateDetails),
+    planEndDate          = None,
+    paymentDate          = Some(paymentDateDetails),
+    yearEndAndMonth      = None,
+    ddiReferenceNo       = "MGD-DDI-101",
+    paymentReference     = "MGDRef",
+    totalAmountDue       = Some(BigDecimal(400)),
+    paymentAmount        = Some(BigDecimal(200)),
     regularPaymentAmount = Some(BigDecimal(100)),
-    calculation = None
+    calculation          = None
   )
 
   val fakeAuthRequest = AuthenticatedRequest(
-    request = FakeRequest(),
-    internalId = "internalId-123",
-    sessionId = SessionId("session-123"),
-    credId = "credId123",
+    request       = FakeRequest(),
+    internalId    = "internalId-123",
+    sessionId     = SessionId("session-123"),
+    credId        = "credId123",
     affinityGroup = "Organisation",
-    nino = Some("AB123456C")
+    nino          = Some("AB123456C")
   )
 
   "ChrisService.submitToChris" should {
@@ -256,9 +247,9 @@ class ChrisServiceSpec
       val enrolments = Enrolments(
         Set(
           Enrolment(
-            key = "NTC",
-            identifiers = Seq(EnrolmentIdentifier("Nino", "AB1234567A")),
-            state = "Activated",
+            key               = "NTC",
+            identifiers       = Seq(EnrolmentIdentifier("Nino", "AB1234567A")),
+            state             = "Activated",
             delegatedAuthRule = None
           )
         )
@@ -275,9 +266,9 @@ class ChrisServiceSpec
       val enrolments = Enrolments(
         Set(
           Enrolment(
-            key = "IR-SA",
-            identifiers = Seq(EnrolmentIdentifier("TaxId", "1234567890")),
-            state = "Activated",
+            key               = "IR-SA",
+            identifiers       = Seq(EnrolmentIdentifier("TaxId", "1234567890")),
+            state             = "Activated",
             delegatedAuthRule = None
           )
         )
@@ -294,9 +285,9 @@ class ChrisServiceSpec
       val enrolments = Enrolments(
         Set(
           Enrolment(
-            key = "IR-SA",
-            identifiers = Seq(EnrolmentIdentifier("TaxId", "1234567890")),
-            state = "Activated",
+            key               = "IR-SA",
+            identifiers       = Seq(EnrolmentIdentifier("TaxId", "1234567890")),
+            state             = "Activated",
             delegatedAuthRule = None
           )
         )
@@ -309,14 +300,13 @@ class ChrisServiceSpec
       }
     }
 
-
     "return confirmation when submission succeeds for SA (weekly)" in {
       val enrolments = Enrolments(
         Set(
           Enrolment(
-            key = "CESA",
-            identifiers = Seq(EnrolmentIdentifier("UTR", "1234567890")),
-            state = "Activated",
+            key               = "CESA",
+            identifiers       = Seq(EnrolmentIdentifier("UTR", "1234567890")),
+            state             = "Activated",
             delegatedAuthRule = None
           )
         )
@@ -333,9 +323,9 @@ class ChrisServiceSpec
       val enrolments = Enrolments(
         Set(
           Enrolment(
-            key = "SAFE",
-            identifiers = Seq(EnrolmentIdentifier("UTR", "1234567890")),
-            state = "Activated",
+            key               = "SAFE",
+            identifiers       = Seq(EnrolmentIdentifier("UTR", "1234567890")),
+            state             = "Activated",
             delegatedAuthRule = None
           )
         )
@@ -348,14 +338,13 @@ class ChrisServiceSpec
       }
     }
 
-
     "return confirmation when submission succeeds for CT" in {
       val enrolments = Enrolments(
         Set(
           Enrolment(
-            key = "COTA",
-            identifiers = Seq(EnrolmentIdentifier("UTR", "1234567890")),
-            state = "Activated",
+            key               = "COTA",
+            identifiers       = Seq(EnrolmentIdentifier("UTR", "1234567890")),
+            state             = "Activated",
             delegatedAuthRule = None
           )
         )
@@ -372,9 +361,9 @@ class ChrisServiceSpec
       val enrolments = Enrolments(
         Set(
           Enrolment(
-            key = "COTA",
-            identifiers = Seq(EnrolmentIdentifier("UTR", "1234567890")),
-            state = "Activated",
+            key               = "COTA",
+            identifiers       = Seq(EnrolmentIdentifier("UTR", "1234567890")),
+            state             = "Activated",
             delegatedAuthRule = None
           )
         )
@@ -387,14 +376,13 @@ class ChrisServiceSpec
       }
     }
 
-
     "return confirmation when submission succeeds for VAT" in {
       val enrolments = Enrolments(
         Set(
           Enrolment(
-            key = "VAT",
-            identifiers = Seq(EnrolmentIdentifier("UTR", "1234567890")),
-            state = "Activated",
+            key               = "VAT",
+            identifiers       = Seq(EnrolmentIdentifier("UTR", "1234567890")),
+            state             = "Activated",
             delegatedAuthRule = None
           )
         )
@@ -411,9 +399,9 @@ class ChrisServiceSpec
       val enrolments = Enrolments(
         Set(
           Enrolment(
-            key = "VAT",
-            identifiers = Seq(EnrolmentIdentifier("UTR", "1234567890")),
-            state = "Activated",
+            key               = "VAT",
+            identifiers       = Seq(EnrolmentIdentifier("UTR", "1234567890")),
+            state             = "Activated",
             delegatedAuthRule = None
           )
         )
@@ -426,14 +414,13 @@ class ChrisServiceSpec
       }
     }
 
-
     "return confirmation when submission succeeds for PAYE" in {
       val enrolments = Enrolments(
         Set(
           Enrolment(
-            key = "IR-PAYE",
-            identifiers = Seq(EnrolmentIdentifier("TaxOfficeNumber", "11111111111"),EnrolmentIdentifier("TaxOfficeReference", "222222222222")),
-            state = "Activated",
+            key               = "IR-PAYE",
+            identifiers       = Seq(EnrolmentIdentifier("TaxOfficeNumber", "11111111111"), EnrolmentIdentifier("TaxOfficeReference", "222222222222")),
+            state             = "Activated",
             delegatedAuthRule = None
           )
         )
@@ -450,9 +437,9 @@ class ChrisServiceSpec
       val enrolments = Enrolments(
         Set(
           Enrolment(
-            key = "MGD",
-            identifiers = Seq(EnrolmentIdentifier("HMRCMGDRN", "MGD4567890")),
-            state = "Activated",
+            key               = "MGD",
+            identifiers       = Seq(EnrolmentIdentifier("HMRCMGDRN", "MGD4567890")),
+            state             = "Activated",
             delegatedAuthRule = None
           )
         )

@@ -27,12 +27,12 @@ object ChrisEnvelopeBuilder extends Logging {
   private val prettyPrinter = new PrettyPrinter(120, 4)
 
   def build(
-             request: uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest,
-             credId: String,
-             affinityGroup: String,
-             hodServices: Seq[Map[String, String]],
-             authRequest: uk.gov.hmrc.nationaldirectdebit.models.requests.AuthenticatedRequest[_]
-           ): Elem = {
+    request: uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest,
+    credId: String,
+    affinityGroup: String,
+    hodServices: Seq[Map[String, String]],
+    authRequest: uk.gov.hmrc.nationaldirectdebit.models.requests.AuthenticatedRequest[?]
+  ): Elem = {
 
     val correlatingId = java.util.UUID.randomUUID().toString.replace("-", "")
     val receiptDate = java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).format(dateTimeFormatter)
@@ -67,7 +67,7 @@ object ChrisEnvelopeBuilder extends Logging {
               <credentialID>{credId}</credentialID>
                 {XmlUtils.formatKnownFacts(hodServices, "           ")}
               <directDebitInstruction>
-                <actionType>{if (request.amendPlan) ChrisEnvelopeConstants.ActionType_2 else ChrisEnvelopeConstants.ActionType_1 }</actionType>
+                <actionType>{if (request.amendPlan) ChrisEnvelopeConstants.ActionType_2 else ChrisEnvelopeConstants.ActionType_1}</actionType>
                 <ddiReferenceNo>{request.ddiReferenceNo}</ddiReferenceNo>
                 <bankSortCode>{request.yourBankDetailsWithAuddisStatus.sortCode}</bankSortCode>
                 <bankAccountNo>{request.yourBankDetailsWithAuddisStatus.accountNumber}</bankAccountNo>

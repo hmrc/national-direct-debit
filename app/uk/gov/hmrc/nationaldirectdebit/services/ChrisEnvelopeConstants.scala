@@ -20,8 +20,8 @@ import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.DirectDebitSource
 
 object ChrisEnvelopeConstants {
   val MessageClass = "HMRC-NDDS-DDI"
-  val Qualifier    = "request"
-  val Function     = "submit"
+  val Qualifier = "request"
+  val Function = "submit"
   val SenderSystem = "Portal"
   val ActionType_1 = "01"
   val ActionType_2 = "02"
@@ -31,14 +31,14 @@ object ChrisEnvelopeConstants {
   val PPType_4 = "04"
 
   val listHodServices: Map[DirectDebitSource, String] = Map(
-    DirectDebitSource.CT -> "COTA",
+    DirectDebitSource.CT   -> "COTA",
     DirectDebitSource.PAYE -> "PAYE",
-    DirectDebitSource.SA -> "CESA",
-    DirectDebitSource.TC -> "NTC",
-    DirectDebitSource.VAT -> "VAT",
-    DirectDebitSource.MGD -> "MGD",
-    DirectDebitSource.NIC -> "NIDN",
-    DirectDebitSource.OL -> "SAFE",
+    DirectDebitSource.SA   -> "CESA",
+    DirectDebitSource.TC   -> "NTC",
+    DirectDebitSource.VAT  -> "VAT",
+    DirectDebitSource.MGD  -> "MGD",
+    DirectDebitSource.NIC  -> "NIDN",
+    DirectDebitSource.OL   -> "SAFE",
     DirectDebitSource.SDLT -> "SDLT"
   )
 }

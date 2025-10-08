@@ -20,30 +20,35 @@ sealed trait PaymentPlanType
 
 object PaymentPlanType extends Enumerable.Implicits {
 
-  case object SinglePayment extends WithName("singlePaymentPlan") with PaymentPlanType
-  case object VariablePaymentPlan extends WithName("variablePaymentPlan") with PaymentPlanType
-  case object BudgetPaymentPlan extends WithName("budgetPaymentPlan") with PaymentPlanType
+  case object SinglePayment          extends WithName("singlePaymentPlan") with PaymentPlanType
+  case object VariablePaymentPlan    extends WithName("variablePaymentPlan") with PaymentPlanType
+  case object BudgetPaymentPlan      extends WithName("budgetPaymentPlan") with PaymentPlanType
   case object TaxCreditRepaymentPlan extends WithName("taxCreditRepaymentPlan") with PaymentPlanType
 
   // All values used for Enumerable mapping
   val values: Seq[PaymentPlanType] = Seq(
-    SinglePayment, VariablePaymentPlan, BudgetPaymentPlan, TaxCreditRepaymentPlan
+    SinglePayment,
+    VariablePaymentPlan,
+    BudgetPaymentPlan,
+    TaxCreditRepaymentPlan
   )
 
   val values1: Seq[PaymentPlanType] = Seq(
-    SinglePayment, VariablePaymentPlan
+    SinglePayment,
+    VariablePaymentPlan
   )
 
   val values2: Seq[PaymentPlanType] = Seq(
-    SinglePayment, BudgetPaymentPlan
+    SinglePayment,
+    BudgetPaymentPlan
   )
 
   val values3: Seq[PaymentPlanType] = Seq(
-    SinglePayment, TaxCreditRepaymentPlan
+    SinglePayment,
+    TaxCreditRepaymentPlan
   )
-  
 
   implicit val enumerable: Enumerable[PaymentPlanType] =
-    Enumerable(values.map(v => v.toString -> v): _*)
+    Enumerable(values.map(v => v.toString -> v)*)
 
 }

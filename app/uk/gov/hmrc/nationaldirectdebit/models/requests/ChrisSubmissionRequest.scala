@@ -21,26 +21,24 @@ import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.*
 
 import java.time.LocalDate
 
-
 case class ChrisSubmissionRequest(
-                                   serviceType: DirectDebitSource,
-                                   paymentPlanType: PaymentPlanType,
-                                   paymentPlanReferenceNumber:Option[String],
-                                   paymentFrequency: Option[PaymentsFrequency],
-                                   yourBankDetailsWithAuddisStatus: YourBankDetailsWithAuddisStatus,
-                                   planStartDate: Option[PlanStartDateDetails],
-                                   planEndDate: Option[LocalDate],
-                                   paymentDate: Option[PaymentDateDetails],
-                                   yearEndAndMonth: Option[YearEndAndMonth],
-                                   ddiReferenceNo: String,
-                                   paymentReference: String,
-                                   totalAmountDue:Option[BigDecimal],
-                                   paymentAmount:Option[BigDecimal],
-                                   regularPaymentAmount:Option[BigDecimal],
-                                   calculation: Option[PaymentPlanCalculation],
-                                   amendPlan: Boolean = false
-
-                                 )
+  serviceType: DirectDebitSource,
+  paymentPlanType: PaymentPlanType,
+  paymentPlanReferenceNumber: Option[String],
+  paymentFrequency: Option[PaymentsFrequency],
+  yourBankDetailsWithAuddisStatus: YourBankDetailsWithAuddisStatus,
+  planStartDate: Option[PlanStartDateDetails],
+  planEndDate: Option[LocalDate],
+  paymentDate: Option[PaymentDateDetails],
+  yearEndAndMonth: Option[YearEndAndMonth],
+  ddiReferenceNo: String,
+  paymentReference: String,
+  totalAmountDue: Option[BigDecimal],
+  paymentAmount: Option[BigDecimal],
+  regularPaymentAmount: Option[BigDecimal],
+  calculation: Option[PaymentPlanCalculation],
+  amendPlan: Boolean = false
+)
 
 object ChrisSubmissionRequest {
   implicit val format: OFormat[ChrisSubmissionRequest] = Json.format[ChrisSubmissionRequest]

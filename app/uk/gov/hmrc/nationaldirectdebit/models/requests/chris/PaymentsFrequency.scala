@@ -20,13 +20,14 @@ sealed trait PaymentsFrequency
 
 object PaymentsFrequency extends Enumerable.Implicits {
 
-  case object Weekly extends WithName("weekly") with PaymentsFrequency
+  case object Weekly  extends WithName("weekly") with PaymentsFrequency
   case object Monthly extends WithName("monthly") with PaymentsFrequency
 
   val values: Seq[PaymentsFrequency] = Seq(
-    Weekly, Monthly
+    Weekly,
+    Monthly
   )
 
   implicit val enumerable: Enumerable[PaymentsFrequency] =
-    Enumerable(values.map(v => v.toString -> v): _*)
+    Enumerable(values.map(v => v.toString -> v)*)
 }

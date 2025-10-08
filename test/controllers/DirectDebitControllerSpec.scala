@@ -118,7 +118,6 @@ class DirectDebitControllerSpec extends SpecBase {
       }
     }
 
-
     "submitToChris method for SA submissions" - {
 
       "return 200 and success response when submission succeeds" in new SetUp {
@@ -190,108 +189,112 @@ class DirectDebitControllerSpec extends SpecBase {
     )
 
     val fakeAuthAction = new FakeAuthAction(
-      bodyParsers = bodyParsers,
-      testCredId = "cred-123",
+      bodyParsers  = bodyParsers,
+      testCredId   = "cred-123",
       testAffinity = "Individual"
     )
 
     // --- Add these Chris request test data here ---
     val baseChrisRequest: ChrisSubmissionRequest = ChrisSubmissionRequest(
-      serviceType = DirectDebitSource.TC,
-      paymentPlanType = PaymentPlanType.TaxCreditRepaymentPlan,
+      serviceType                = DirectDebitSource.TC,
+      paymentPlanType            = PaymentPlanType.TaxCreditRepaymentPlan,
       paymentPlanReferenceNumber = None,
-      paymentFrequency = Some(PaymentsFrequency.Monthly),
+      paymentFrequency           = Some(PaymentsFrequency.Monthly),
       yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
         accountHolderName = "Test",
-        sortCode = "123456",
-        accountNumber = "12345678",
-        auddisStatus = false,
-        accountVerified = false
+        sortCode          = "123456",
+        accountNumber     = "12345678",
+        auddisStatus      = false,
+        accountVerified   = false
       ),
-      planStartDate = Some(PlanStartDateDetails(LocalDate.of(2025, 9, 1), "2025-09-01")),
-      planEndDate = None,
-      paymentDate = Some(PaymentDateDetails(LocalDate.of(2025, 9, 15), "2025-09-01")),
-      yearEndAndMonth = None,
-      ddiReferenceNo = "DDI123456789",
-      paymentReference = "testReference",
-      totalAmountDue = Some(BigDecimal(200)),
-      paymentAmount = Some(BigDecimal(100.00)),
+      planStartDate        = Some(PlanStartDateDetails(LocalDate.of(2025, 9, 1), "2025-09-01")),
+      planEndDate          = None,
+      paymentDate          = Some(PaymentDateDetails(LocalDate.of(2025, 9, 15), "2025-09-01")),
+      yearEndAndMonth      = None,
+      ddiReferenceNo       = "DDI123456789",
+      paymentReference     = "testReference",
+      totalAmountDue       = Some(BigDecimal(200)),
+      paymentAmount        = Some(BigDecimal(100.00)),
       regularPaymentAmount = Some(BigDecimal(90.00)),
-      calculation = None
+      calculation          = None
     )
 
     val testChrisRequestSAMonthly: ChrisSubmissionRequest = baseChrisRequest.copy(
-      serviceType = DirectDebitSource.SA,
-      paymentPlanType = PaymentPlanType.BudgetPaymentPlan,
+      serviceType                = DirectDebitSource.SA,
+      paymentPlanType            = PaymentPlanType.BudgetPaymentPlan,
       paymentPlanReferenceNumber = None,
-      paymentFrequency = Some(PaymentsFrequency.Monthly)
+      paymentFrequency           = Some(PaymentsFrequency.Monthly)
     )
 
     val testChrisRequestSAWeekly: ChrisSubmissionRequest = baseChrisRequest.copy(
-      serviceType = DirectDebitSource.SA,
-      paymentPlanType = PaymentPlanType.BudgetPaymentPlan,
+      serviceType                = DirectDebitSource.SA,
+      paymentPlanType            = PaymentPlanType.BudgetPaymentPlan,
       paymentPlanReferenceNumber = None,
-      paymentFrequency = Some(PaymentsFrequency.Weekly)
+      paymentFrequency           = Some(PaymentsFrequency.Weekly)
     )
 
     val testDDPaymentPlansEmptyResponse: RDSDDPaymentPlansResponse = RDSDDPaymentPlansResponse(
-      bankSortCode = "sort code",
+      bankSortCode      = "sort code",
       bankAccountNumber = "account number",
-      bankAccountName = "account name",
-      auDdisFlag = "dd",
-      paymentPlanCount = 0,
-      paymentPlanList = Seq.empty)
+      bankAccountName   = "account name",
+      auDdisFlag        = "dd",
+      paymentPlanCount  = 0,
+      paymentPlanList   = Seq.empty
+    )
 
     val testDDPaymentPlansCacheResponse: RDSDDPaymentPlansResponse = RDSDDPaymentPlansResponse(
-      bankSortCode = "sort code",
+      bankSortCode      = "sort code",
       bankAccountNumber = "account number",
-      bankAccountName = "account name",
-      auDdisFlag = "dd",
-      paymentPlanCount = 2,
+      bankAccountName   = "account name",
+      auDdisFlag        = "dd",
+      paymentPlanCount  = 2,
       paymentPlanList = Seq(
         RDSPaymentPlan(
           scheduledPaymentAmount = 100,
-          planRefNumber = "ref number 1",
-          planType = "type 1",
-          paymentReference = "payment ref 1",
-          hodService = "service 1",
-          submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12)),
+          planRefNumber          = "ref number 1",
+          planType               = "type 1",
+          paymentReference       = "payment ref 1",
+          hodService             = "service 1",
+          submissionDateTime     = LocalDateTime.of(2025, 12, 12, 12, 12)
+        ),
         RDSPaymentPlan(
           scheduledPaymentAmount = 100,
-          planRefNumber = "ref number 1",
-          planType = "type 1",
-          paymentReference = "payment ref 1",
-          hodService = "service 1",
-          submissionDateTime = LocalDateTime.of(2025, 12, 12, 12, 12))
+          planRefNumber          = "ref number 1",
+          planType               = "type 1",
+          paymentReference       = "payment ref 1",
+          hodService             = "service 1",
+          submissionDateTime     = LocalDateTime.of(2025, 12, 12, 12, 12)
+        )
       )
     )
 
     private val currentTime = LocalDateTime.MIN
 
     val testPaymentPlanResponse: RDSPaymentPlanResponse = RDSPaymentPlanResponse(
-      directDebitDetails = DirectDebitDetail(
-        bankSortCode = Some("sort code"),
-        bankAccountNumber = Some("account number"),
-        bankAccountName = None,
-        auDdisFlag = true,
-        submissionDateTime = currentTime),
+      directDebitDetails = DirectDebitDetail(bankSortCode = Some("sort code"),
+                                             bankAccountNumber  = Some("account number"),
+                                             bankAccountName    = None,
+                                             auDdisFlag         = true,
+                                             submissionDateTime = currentTime
+                                            ),
       paymentPlanDetails = PaymentPlanDetail(
-        hodService = "hod service",
-        planType = "plan Type",
-        paymentReference = "payment reference",
-        submissionDateTime = currentTime,
-        scheduledPaymentAmount = Some(1000),
+        hodService                = "hod service",
+        planType                  = "plan Type",
+        paymentReference          = "payment reference",
+        submissionDateTime        = currentTime,
+        scheduledPaymentAmount    = Some(1000),
         scheduledPaymentStartDate = Some(currentTime.toLocalDate),
-        initialPaymentStartDate = Some(currentTime.toLocalDate),
-        initialPaymentAmount = Some(150),
-        scheduledPaymentEndDate = Some(currentTime.toLocalDate),
+        initialPaymentStartDate   = Some(currentTime.toLocalDate),
+        initialPaymentAmount      = Some(150),
+        scheduledPaymentEndDate   = Some(currentTime.toLocalDate),
         scheduledPaymentFrequency = Some("1"),
-        suspensionStartDate = Some(currentTime.toLocalDate),
-        suspensionEndDate = None,
-        balancingPaymentAmount = Some(600),
-        balancingPaymentDate = Some(currentTime.toLocalDate),
-        totalLiability = None,
-        paymentPlanEditable = false)
+        suspensionStartDate       = Some(currentTime.toLocalDate),
+        suspensionEndDate         = None,
+        balancingPaymentAmount    = Some(600),
+        balancingPaymentDate      = Some(currentTime.toLocalDate),
+        totalLiability            = None,
+        paymentPlanEditable       = false
+      )
     )
 
     val controller = new DirectDebitController(fakeAuthAction, mockDirectDebitService, mockChrisService, cc)

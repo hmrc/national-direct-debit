@@ -25,8 +25,7 @@ case class CreateDirectDebitRequest(paymentReference: String)
 object CreateDirectDebitRequest:
   val refReads: Reads[CreateDirectDebitRequest] = (__ \ "paymentReference").format[String].map(CreateDirectDebitRequest.apply)
   val refWrites: Writes[CreateDirectDebitRequest] = new Writes[CreateDirectDebitRequest] {
-    override def writes(req: CreateDirectDebitRequest): JsValue = Json.parse(
-      s"""
+    override def writes(req: CreateDirectDebitRequest): JsValue = Json.parse(s"""
          |{ "paymentReference": "${req.paymentReference}" }
          |""".stripMargin)
   }

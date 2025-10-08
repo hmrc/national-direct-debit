@@ -24,9 +24,9 @@ import uk.gov.hmrc.nationaldirectdebit.models.requests.{GenerateDdiRefRequest, W
 
 import scala.concurrent.Future
 
-class DirectDebitService @Inject()(
-                                    connector: DirectDebitConnector
-                                  ) {
+class DirectDebitService @Inject() (
+  connector: DirectDebitConnector
+) {
 
   def retrieveDirectDebits()(implicit hc: HeaderCarrier): Future[RDSDatacacheResponse] = {
     connector.retrieveDirectDebits()
@@ -35,7 +35,7 @@ class DirectDebitService @Inject()(
   def getWorkingDaysOffset(getWorkingDaysOffsetRequest: WorkingDaysOffsetRequest)(implicit hc: HeaderCarrier): Future[EarliestPaymentDateResponse] = {
     connector.getWorkingDaysOffset(getWorkingDaysOffsetRequest)
   }
-  
+
   def generateDdiReference(request: GenerateDdiRefRequest)(implicit hc: HeaderCarrier): Future[GenerateDdiRefResponse] = {
     connector.generateDdiReference(request)
   }
@@ -44,7 +44,9 @@ class DirectDebitService @Inject()(
     connector.retrieveDirectDebitPaymentPlans(directDebitReference)
   }
 
-  def retrievePaymentPlanDetails(directDebitReference: String, paymentPlanReference: String)(implicit hc: HeaderCarrier): Future[RDSPaymentPlanResponse] = {
+  def retrievePaymentPlanDetails(directDebitReference: String, paymentPlanReference: String)(implicit
+    hc: HeaderCarrier
+  ): Future[RDSPaymentPlanResponse] = {
     connector.retrievePaymentPlanDetails(directDebitReference, paymentPlanReference)
   }
 }
