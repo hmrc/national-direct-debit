@@ -27,7 +27,7 @@ object PaymentPlanBuilder {
   def build(request: ChrisSubmissionRequest, hodService: Option[String]): Elem = {
     request.serviceType match {
       case DirectDebitSource.SA if request.paymentPlanType == PaymentPlanType.BudgetPaymentPlan && request.amendPlan =>
-        buildSaAmendPlan(request, hodService)
+        buildAmendBudgetPlan(request, hodService)
       case DirectDebitSource.TC if request.paymentPlanType == PaymentPlanType.TaxCreditRepaymentPlan =>
         buildTcPlan(request, hodService)
       case DirectDebitSource.MGD if request.paymentPlanType == PaymentPlanType.VariablePaymentPlan =>
@@ -91,7 +91,7 @@ object PaymentPlanBuilder {
     </paymentPlan>
   }
 
-  private def buildSaAmendPlan(request: ChrisSubmissionRequest, hodService: Option[String]): Elem = {
+  private def buildAmendBudgetPlan(request: ChrisSubmissionRequest, hodService: Option[String]): Elem = {
     val freqCode = frequencyCode(request)
     <paymentPlan>
       <actionType>{ChrisEnvelopeConstants.ActionType_2}</actionType>
@@ -100,7 +100,7 @@ object PaymentPlanBuilder {
       <corePPReferenceNo>{request.paymentPlanReferenceNumber.getOrElse("")}</corePPReferenceNo>
       <hodService>{hodService.getOrElse("")}</hodService>
       <paymentCurrency>GBP</paymentCurrency>
-      <scheduledPaymentAmount>{f"${request.regularPaymentAmount.getOrElse(BigDecimal(0)).toDouble}%.2f"}</scheduledPaymentAmount>
+      <scheduledPaymentAmount>{f"${request.amendPaymentAmount.getOrElse(BigDecimal(0)).toDouble}%.2f"}</scheduledPaymentAmount>
       <scheduledPaymentStartDate>{request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
       <scheduledPaymentEndDate>{request.planEndDate.getOrElse("")}</scheduledPaymentEndDate>
       {if (freqCode.nonEmpty) <scheduledPaymentFrequency>{freqCode}</scheduledPaymentFrequency> else Null}
@@ -130,11 +130,11 @@ object PaymentPlanBuilder {
       <corePPReferenceNo>{request.paymentPlanReferenceNumber.getOrElse("")}</corePPReferenceNo>
       <hodService>{hodService.getOrElse("")}</hodService>
       <paymentCurrency>GBP</paymentCurrency>
-      <scheduledPaymentAmount>{f"${request.regularPaymentAmount.getOrElse(BigDecimal(0)).toDouble}%.2f"}</scheduledPaymentAmount>
+      <scheduledPaymentAmount>{f"${request.amendPaymentAmount.getOrElse(BigDecimal(0)).toDouble}%.2f"}</scheduledPaymentAmount>
       <scheduledPaymentStartDate>{request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
       <scheduledPaymentEndDate>{request.planEndDate.getOrElse("")}</scheduledPaymentEndDate>
       {if (freqCode.nonEmpty) <scheduledPaymentFrequency>{freqCode}</scheduledPaymentFrequency> else Null}
-      <totalLiability>{f"${request.regularPaymentAmount.getOrElse(BigDecimal(0)).toDouble}%.2f"}</totalLiability>
+      <totalLiability>{f"${request.amendPaymentAmount.getOrElse(BigDecimal(0)).toDouble}%.2f"}</totalLiability>
     </paymentPlan>
 
 }

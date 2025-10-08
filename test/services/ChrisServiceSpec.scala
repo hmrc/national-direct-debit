@@ -75,6 +75,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
     paymentReference     = "TCRef",
     totalAmountDue       = Some(BigDecimal(100)),
     paymentAmount        = Some(BigDecimal(50)),
+    amendPaymentAmount   = None,
     regularPaymentAmount = Some(BigDecimal(25)),
     calculation          = None
   )
@@ -99,6 +100,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
     paymentReference     = "SARef",
     totalAmountDue       = Some(BigDecimal(200)),
     paymentAmount        = Some(BigDecimal(100)),
+    amendPaymentAmount   = None,
     regularPaymentAmount = Some(BigDecimal(50)),
     calculation          = None
   )
@@ -109,7 +111,8 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
   )
 
   private val saAmendRequest = saMonthlyRequest.copy(
-    amendPlan = true
+    amendPlan          = true,
+    amendPaymentAmount = Some(BigDecimal(100))
   )
 
   private val amendSingleRequest = ChrisSubmissionRequest(
@@ -132,7 +135,8 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
     paymentReference     = "CTRef",
     totalAmountDue       = Some(BigDecimal(300)),
     paymentAmount        = Some(BigDecimal(150)),
-    regularPaymentAmount = Some(BigDecimal(75)),
+    regularPaymentAmount = None,
+    amendPaymentAmount   = Some(BigDecimal(75)),
     calculation          = None,
     amendPlan            = true
   )
@@ -158,6 +162,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
     totalAmountDue       = Some(BigDecimal(300)),
     paymentAmount        = Some(BigDecimal(150)),
     regularPaymentAmount = Some(BigDecimal(75)),
+    amendPaymentAmount   = None,
     calculation          = None
   )
 
@@ -182,6 +187,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
     totalAmountDue       = Some(BigDecimal(400)),
     paymentAmount        = Some(BigDecimal(200)),
     regularPaymentAmount = Some(BigDecimal(100)),
+    amendPaymentAmount   = None,
     calculation          = None
   )
   private val vatRequest = ChrisSubmissionRequest(
@@ -205,6 +211,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
     totalAmountDue       = Some(BigDecimal(400)),
     paymentAmount        = Some(BigDecimal(200)),
     regularPaymentAmount = Some(BigDecimal(100)),
+    amendPaymentAmount   = None,
     calculation          = None
   )
 
@@ -229,6 +236,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
     totalAmountDue       = Some(BigDecimal(400)),
     paymentAmount        = Some(BigDecimal(200)),
     regularPaymentAmount = Some(BigDecimal(100)),
+    amendPaymentAmount   = None,
     calculation          = None
   )
 

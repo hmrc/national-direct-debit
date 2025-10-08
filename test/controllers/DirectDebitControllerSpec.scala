@@ -214,6 +214,7 @@ class DirectDebitControllerSpec extends SpecBase {
       ddiReferenceNo       = "DDI123456789",
       paymentReference     = "testReference",
       totalAmountDue       = Some(BigDecimal(200)),
+      amendPaymentAmount   = Some(BigDecimal(100)),
       paymentAmount        = Some(BigDecimal(100.00)),
       regularPaymentAmount = Some(BigDecimal(90.00)),
       calculation          = None
