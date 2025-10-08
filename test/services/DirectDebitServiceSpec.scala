@@ -115,12 +115,12 @@ class DirectDebitServiceSpec extends SpecBase {
   val duplicateCheckRequest: PaymentPlanDuplicateCheckRequest = PaymentPlanDuplicateCheckRequest(
     directDebitReference = "testRef",
     paymentPlanReference = "payment ref 123",
-    planType = "type 1",
-    paymentService = "CESA",
-    paymentReference = "payment ref",
-    paymentAmount = 120.00,
-    totalLiability = 780.00,
-    paymentFrequency = "WEEKLY"
+    planType             = "type 1",
+    paymentService       = "CESA",
+    paymentReference     = "payment ref",
+    paymentAmount        = 120.00,
+    totalLiability       = 780.00,
+    paymentFrequency     = "WEEKLY"
   )
 
   "DirectDebitService" - {

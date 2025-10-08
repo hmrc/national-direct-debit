@@ -180,13 +180,13 @@ class DirectDebitControllerSpec extends SpecBase {
           )(any[HeaderCarrier]())
         ).thenReturn(Future.successful(DuplicateCheckResponse(true)))
 
-        val result: Future[Result] = controller.isDuplicatePaymentPlan("test isDuplicatePaymentPlan")(fakeRequestWithJsonBody(Json.toJson(duplicateCheckRequest)))
+        val result: Future[Result] =
+          controller.isDuplicatePaymentPlan("test isDuplicatePaymentPlan")(fakeRequestWithJsonBody(Json.toJson(duplicateCheckRequest)))
 
         status(result) mustBe OK
         contentAsJson(result) mustBe Json.toJson(DuplicateCheckResponse(true))
       }
     }
-
 
   }
 
@@ -319,12 +319,12 @@ class DirectDebitControllerSpec extends SpecBase {
     val duplicateCheckRequest: PaymentPlanDuplicateCheckRequest = PaymentPlanDuplicateCheckRequest(
       directDebitReference = "testRef",
       paymentPlanReference = "payment ref 123",
-      planType = "type 1",
-      paymentService = "CESA",
-      paymentReference = "payment ref",
-      paymentAmount = 120.00,
-      totalLiability = 780.00,
-      paymentFrequency = "WEEKLY"
+      planType             = "type 1",
+      paymentService       = "CESA",
+      paymentReference     = "payment ref",
+      paymentAmount        = 120.00,
+      totalLiability       = 780.00,
+      paymentFrequency     = "WEEKLY"
     )
   }
 }
