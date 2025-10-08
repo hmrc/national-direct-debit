@@ -27,19 +27,20 @@ import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext
 
-class DirectDebitController @Inject()(
-                                       authorise: AuthAction,
-                                       service: DirectDebitService,
-                                       chrisService: ChrisService,
-                                       val cc: ControllerComponents
-                                     )(implicit ec: ExecutionContext) extends BackendController(cc) with Logging {
+class DirectDebitController @Inject() (
+  authorise: AuthAction,
+  service: DirectDebitService,
+  chrisService: ChrisService,
+  val cc: ControllerComponents
+)(implicit ec: ExecutionContext)
+    extends BackendController(cc)
+    with Logging {
 
   def retrieveDirectDebits(): Action[AnyContent] =
-    authorise.async {
-      implicit request =>
-        service.retrieveDirectDebits().map { response =>
-          Ok(Json.toJson(response))
-        }
+    authorise.async { implicit request =>
+      service.retrieveDirectDebits().map { response =>
+        Ok(Json.toJson(response))
+      }
     }
 
   def getWorkingDaysOffset: Action[JsValue] =
@@ -61,13 +62,11 @@ class DirectDebitController @Inject()(
         }
 
   def retrieveDirectDebitPaymentPlans(directDebitReference: String): Action[AnyContent] =
-    authorise.async {
-      implicit request =>
-        service.retrieveDirectDebitPaymentPlans(directDebitReference).map { response =>
-          Ok(Json.toJson(response))
-        }
+    authorise.async { implicit request =>
+      service.retrieveDirectDebitPaymentPlans(directDebitReference).map { response =>
+        Ok(Json.toJson(response))
+      }
     }
-
 
   def submitToChris(): Action[JsValue] =
     authorise(parse.json).async { implicit request =>
@@ -80,34 +79,38 @@ class DirectDebitController @Inject()(
               |""".stripMargin
         )
 
-        chrisService.submitToChris(chrisRequest, request.credId, request.affinityGroup, request)
+        chrisService
+          .submitToChris(chrisRequest, request.credId, request.affinityGroup, request)
           .map { response =>
             // Success: return 200 with response
             logger.info(s"ChRIS submission successful for request: ${chrisRequest.ddiReferenceNo}")
-            Ok(Json.obj(
-              "success" -> true,
-              "response" -> response
-            ))
+            Ok(
+              Json.obj(
+                "success"  -> true,
+                "response" -> response
+              )
+            )
           }
           .recover { case ex =>
             // Log full stack trace
             logger.error(s"ChRIS submission failed for request: ${chrisRequest.ddiReferenceNo}", ex)
 
             // Return structured error JSON to frontend
-            InternalServerError(Json.obj(
-              "success" -> false,
-              "message" -> s"CHRIS submission failed: ${ex.getMessage}",
-              "exception" -> ex.getClass.getSimpleName
-            ))
+            InternalServerError(
+              Json.obj(
+                "success"   -> false,
+                "message"   -> s"CHRIS submission failed: ${ex.getMessage}",
+                "exception" -> ex.getClass.getSimpleName
+              )
+            )
           }
       }
     }
 
   def retrievePaymentPlanDetails(directDebitReference: String, paymentPlanReference: String): Action[AnyContent] =
-    authorise.async {
-      implicit request =>
-        service.retrievePaymentPlanDetails(directDebitReference, paymentPlanReference).map { response =>
-          Ok(Json.toJson(response))
-        }
+    authorise.async { implicit request =>
+      service.retrievePaymentPlanDetails(directDebitReference, paymentPlanReference).map { response =>
+        Ok(Json.toJson(response))
+      }
     }
 }

@@ -35,9 +35,9 @@ class BankSpec extends AnyWordSpec with Matchers {
       |  "postCode":"SW1A 1AA"
       |}""".stripMargin
   val bankAddressModel: BankAddress = BankAddress(
-    lines = Seq("1 High Street", "Floor 2"),
-    town = "London",
-    country = countryModel,
+    lines    = Seq("1 High Street", "Floor 2"),
+    town     = "London",
+    country  = countryModel,
     postCode = "SW1A 1AA"
   )
   val bankAddressJson: JsValue = Json.parse(bankAddressJsonStr)
@@ -54,7 +54,7 @@ class BankSpec extends AnyWordSpec with Matchers {
       |}""".stripMargin
   val bankModel: Bank = Bank(
     bankName = "Barclays Bank UK PLC",
-    address = bankAddressModel
+    address  = bankAddressModel
   )
   val bankJson: JsValue = Json.parse(bankJsonStr)
 

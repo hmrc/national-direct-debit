@@ -22,17 +22,15 @@ import play.api.libs.json.{JsValue, Json}
 import uk.gov.hmrc.nationaldirectdebit.models.requests.CreateDirectDebitRequest
 import uk.gov.hmrc.nationaldirectdebit.models.requests.CreateDirectDebitRequest.*
 
-class CreateDirectDebitRequestSpec
-  extends AnyWordSpec
-    with Matchers:
+class CreateDirectDebitRequestSpec extends AnyWordSpec with Matchers:
 
   val jsonAsString: String = """{"paymentReference":"some-reference"}"""
   val model: CreateDirectDebitRequest = CreateDirectDebitRequest("some-reference")
   val json: JsValue = Json.parse(jsonAsString)
 
-  "CreateDirectDebitRequest" should :
-    "read JSON correctly" in :
+  "CreateDirectDebitRequest" should:
+    "read JSON correctly" in:
       Json.fromJson(json).get shouldBe model
 
-    "write JSON correctly" in :
+    "write JSON correctly" in:
       Json.toJson(model).toString shouldBe jsonAsString

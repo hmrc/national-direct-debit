@@ -34,10 +34,10 @@ class DirectDebitDetailsSpec extends AnyWordSpec with Matchers {
 
   val model: DirectDebitDetails = DirectDebitDetails(
     directDebitReference = "DD123456",
-    setupDate = "2025-09-14",
-    sortCode = "207102",
-    accountNumber = "44311655",
-    paymentPlans = "PlanA"
+    setupDate            = "2025-09-14",
+    sortCode             = "207102",
+    accountNumber        = "44311655",
+    paymentPlans         = "PlanA"
   )
 
   val json: JsValue = Json.parse(jsonAsString)

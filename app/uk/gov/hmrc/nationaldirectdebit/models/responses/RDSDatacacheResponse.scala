@@ -25,16 +25,15 @@ case class RDSDirectDebitDetails(ddiRefNumber: String,
                                  bankAccountNumber: String,
                                  bankAccountName: String,
                                  auDdisFlag: Boolean,
-                                 numberOfPayPlans: Int)
+                                 numberOfPayPlans: Int
+                                )
 
 object RDSDirectDebitDetails {
   implicit val format: OFormat[RDSDirectDebitDetails] = Json.format[RDSDirectDebitDetails]
   java.time.Month.values()
 }
 
-
-case class RDSDatacacheResponse(directDebitCount: Int,
-                                directDebitList: Seq[RDSDirectDebitDetails])
+case class RDSDatacacheResponse(directDebitCount: Int, directDebitList: Seq[RDSDirectDebitDetails])
 
 object RDSDatacacheResponse {
 

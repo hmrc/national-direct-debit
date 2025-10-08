@@ -19,24 +19,24 @@ package uk.gov.hmrc.nationaldirectdebit.models.requests.chris
 import play.api.libs.json.{Json, OFormat}
 
 case class BankAddress(
-                        lines: Seq[String],
-                        town: String,
-                        country: Country,
-                        postCode: String
-                      )
+  lines: Seq[String],
+  town: String,
+  country: Country,
+  postCode: String
+)
 
 case class Country(
-                 name: String
-               )
+  name: String
+)
 
 object Country {
   implicit val format: OFormat[Country] = Json.format[Country]
 }
 
 case class Bank(
-                 bankName: String,
-                 address: BankAddress
-               )
+  bankName: String,
+  address: BankAddress
+)
 
 object Bank {
   implicit val format: OFormat[Bank] = Json.format[Bank]

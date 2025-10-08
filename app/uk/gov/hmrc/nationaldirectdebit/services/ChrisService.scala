@@ -28,14 +28,11 @@ import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.ChrisEnvelopeBuilder
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class ChrisService @Inject()(chrisConnector: ChrisConnector,
-                             authConnector: AuthConnector
-                            )(implicit ec: ExecutionContext) extends Logging {
-
+class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: AuthConnector)(implicit ec: ExecutionContext) extends Logging {
 
   private def getEligibleHodServices(
-                                      request: ChrisSubmissionRequest
-                                    )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Seq[Map[String, String]]] = {
+    request: ChrisSubmissionRequest
+  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Seq[Map[String, String]]] = {
     authConnector.authorise(EmptyPredicate, Retrievals.allEnrolments).map { enrolments =>
 
       logger.info(s"Retrieved enrolments: ${enrolments.enrolments.map(_.key).mkString(", ")}")
@@ -50,20 +47,26 @@ class ChrisService @Inject()(chrisConnector: ChrisConnector,
 
       // Step 2: Group identifiers by service
       val grouped: Map[String, Seq[(String, String)]] =
-        activeEnrolments.groupBy(_.key).view.mapValues { enrols =>
-          enrols.flatMap(_.identifiers.map(i => i.key -> i.value))
-        }.toMap
+        activeEnrolments
+          .groupBy(_.key)
+          .view
+          .mapValues { enrols =>
+            enrols.flatMap(_.identifiers.map(i => i.key -> i.value))
+          }
+          .toMap
 
       // Step 3: Build final Seq[Map(service, identifierName, identifierValue)]
       val enrolmentMaps: Seq[Map[String, String]] = grouped.map { case (service, identifiers) =>
         val concatenatedNames = identifiers.map(_._1).mkString("/")
-        val concatenatedValues = identifiers.map { case (name, value) =>
-          if (service == "NTS" && name == "NINO") value.take(8) else value
-        }.mkString("/")
+        val concatenatedValues = identifiers
+          .map { case (name, value) =>
+            if (service == "NTS" && name == "NINO") value.take(8) else value
+          }
+          .mkString("/")
 
         Map(
-          "service" -> service,
-          "identifierName" -> concatenatedNames,
+          "service"         -> service,
+          "identifierName"  -> concatenatedNames,
           "identifierValue" -> concatenatedValues
         )
       }.toSeq
@@ -82,9 +85,9 @@ class ChrisService @Inject()(chrisConnector: ChrisConnector,
     }
   }
 
-
-  def submitToChris(request: ChrisSubmissionRequest, credId: String, affinityGroup: String, authRequest: AuthenticatedRequest[_])
-                   (implicit hc: HeaderCarrier): Future[String] =
+  def submitToChris(request: ChrisSubmissionRequest, credId: String, affinityGroup: String, authRequest: AuthenticatedRequest[?])(implicit
+    hc: HeaderCarrier
+  ): Future[String] =
     for {
       hodServices <- getEligibleHodServices(request: ChrisSubmissionRequest)
       envelopeXml = ChrisEnvelopeBuilder.build(request, credId, affinityGroup, hodServices, authRequest)

@@ -27,37 +27,45 @@ import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class DirectDebitConnector @Inject()(
-                                      http: HttpClientV2,
-                                      config: ServicesConfig
-                                    )(implicit ec: ExecutionContext) extends HttpReadsInstances {
+class DirectDebitConnector @Inject() (
+  http: HttpClientV2,
+  config: ServicesConfig
+)(implicit ec: ExecutionContext)
+    extends HttpReadsInstances {
 
   private val rdsDatacacheProxyBaseUrl: String = config.baseUrl("rds-datacache-proxy") + "/rds-datacache-proxy"
 
   def retrieveDirectDebits()(implicit hc: HeaderCarrier): Future[RDSDatacacheResponse] = {
-    http.get(url"$rdsDatacacheProxyBaseUrl/direct-debits")(hc)
+    http
+      .get(url"$rdsDatacacheProxyBaseUrl/direct-debits")(hc)
       .execute[RDSDatacacheResponse]
   }
 
   def getWorkingDaysOffset(getWorkingDaysOffsetRequest: WorkingDaysOffsetRequest)(implicit hc: HeaderCarrier): Future[EarliestPaymentDateResponse] = {
-    http.post(url"$rdsDatacacheProxyBaseUrl/direct-debits/future-working-days")(hc)
+    http
+      .post(url"$rdsDatacacheProxyBaseUrl/direct-debits/future-working-days")(hc)
       .withBody(Json.toJson(getWorkingDaysOffsetRequest))
       .execute[EarliestPaymentDateResponse]
   }
 
   def generateDdiReference(getDdiRefRequest: GenerateDdiRefRequest)(implicit hc: HeaderCarrier): Future[GenerateDdiRefResponse] = {
-    http.post(url"$rdsDatacacheProxyBaseUrl/direct-debit-reference")(hc)
+    http
+      .post(url"$rdsDatacacheProxyBaseUrl/direct-debit-reference")(hc)
       .withBody(Json.toJson(getDdiRefRequest))
       .execute[GenerateDdiRefResponse]
   }
 
   def retrieveDirectDebitPaymentPlans(directDebitReference: String)(implicit hc: HeaderCarrier): Future[RDSDDPaymentPlansResponse] = {
-    http.get(url"$rdsDatacacheProxyBaseUrl/direct-debits/$directDebitReference/payment-plans")(hc)
+    http
+      .get(url"$rdsDatacacheProxyBaseUrl/direct-debits/$directDebitReference/payment-plans")(hc)
       .execute[RDSDDPaymentPlansResponse]
   }
 
-  def retrievePaymentPlanDetails(directDebitReference: String, paymentPlanReference: String)(implicit hc: HeaderCarrier): Future[RDSPaymentPlanResponse] = {
-    http.get(url"$rdsDatacacheProxyBaseUrl/direct-debits/$directDebitReference/payment-plans/$paymentPlanReference")(hc)
+  def retrievePaymentPlanDetails(directDebitReference: String, paymentPlanReference: String)(implicit
+    hc: HeaderCarrier
+  ): Future[RDSPaymentPlanResponse] = {
+    http
+      .get(url"$rdsDatacacheProxyBaseUrl/direct-debits/$directDebitReference/payment-plans/$paymentPlanReference")(hc)
       .execute[RDSPaymentPlanResponse]
   }
 }
