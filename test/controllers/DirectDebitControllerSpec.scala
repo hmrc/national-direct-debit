@@ -283,16 +283,17 @@ class DirectDebitControllerSpec extends SpecBase {
         submissionDateTime        = currentTime,
         scheduledPaymentAmount    = Some(1000),
         scheduledPaymentStartDate = Some(currentTime.toLocalDate),
-        initialPaymentStartDate = Some(currentTime.toLocalDate),
-        initialPaymentAmount = Some(150),
-        scheduledPaymentEndDate = Some(currentTime.toLocalDate),
+        initialPaymentStartDate   = Some(currentTime.toLocalDate),
+        initialPaymentAmount      = Some(150),
+        scheduledPaymentEndDate   = Some(currentTime.toLocalDate),
         scheduledPaymentFrequency = Some(1),
-        suspensionStartDate = Some(currentTime.toLocalDate),
-        suspensionEndDate = None,
-        balancingPaymentAmount = Some(600),
-        balancingPaymentDate = Some(currentTime.toLocalDate),
-        totalLiability = None,
-        paymentPlanEditable = false)
+        suspensionStartDate       = Some(currentTime.toLocalDate),
+        suspensionEndDate         = None,
+        balancingPaymentAmount    = Some(600),
+        balancingPaymentDate      = Some(currentTime.toLocalDate),
+        totalLiability            = None,
+        paymentPlanEditable       = false
+      )
     )
 
     val controller = new DirectDebitController(fakeAuthAction, mockDirectDebitService, mockChrisService, cc)
