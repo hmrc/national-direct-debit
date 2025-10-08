@@ -21,24 +21,25 @@ import play.api.libs.json.{Json, OFormat}
 import java.time.LocalDateTime
 
 case class RDSPaymentPlan(scheduledPaymentAmount: BigDecimal,
-                       planRefNumber: String,
-                       planType: String,
-                       paymentReference: String,
-                       hodService: String,
-                       submissionDateTime: LocalDateTime)
+                          planRefNumber: String,
+                          planType: String,
+                          paymentReference: String,
+                          hodService: String,
+                          submissionDateTime: LocalDateTime
+                         )
 
 object RDSPaymentPlan {
   implicit val format: OFormat[RDSPaymentPlan] = Json.format[RDSPaymentPlan]
   java.time.Month.values()
 }
 
-
 case class RDSDDPaymentPlansResponse(bankSortCode: String,
                                      bankAccountNumber: String,
                                      bankAccountName: String,
                                      auDdisFlag: String,
                                      paymentPlanCount: Int,
-                                     paymentPlanList: Seq[RDSPaymentPlan])
+                                     paymentPlanList: Seq[RDSPaymentPlan]
+                                    )
 
 object RDSDDPaymentPlansResponse {
 

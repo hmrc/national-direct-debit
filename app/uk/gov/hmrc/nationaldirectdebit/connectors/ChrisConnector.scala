@@ -25,10 +25,11 @@ import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import scala.concurrent.{ExecutionContext, Future}
 import scala.xml.Elem
 
-class ChrisConnector @Inject()(
-                                ws: StandaloneAhcWSClient,
-                                config: ServicesConfig
-                              )(implicit ec: ExecutionContext) extends Logging {
+class ChrisConnector @Inject() (
+  ws: StandaloneAhcWSClient,
+  config: ServicesConfig
+)(implicit ec: ExecutionContext)
+    extends Logging {
 
   private val chrisBaseUrl: String = config.baseUrl("chris") + "/submission/ChRIS/NDDS/Filing/async/HMRC-NDDS-DDI"
 

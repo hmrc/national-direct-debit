@@ -51,7 +51,9 @@ object PaymentPlanBuilder {
       <paymentReference>{request.paymentReference}</paymentReference>
       <hodService>{hodService.getOrElse("")}</hodService>
       <paymentCurrency>GBP</paymentCurrency>
-      <scheduledPaymentAmount>{f"${request.calculation.flatMap(_.regularPaymentAmount).getOrElse(BigDecimal(0)).toDouble}%.2f"}</scheduledPaymentAmount>
+      <scheduledPaymentAmount>{
+      f"${request.calculation.flatMap(_.regularPaymentAmount).getOrElse(BigDecimal(0)).toDouble}%.2f"
+    }</scheduledPaymentAmount>
       <scheduledPaymentStartDate>{request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
       <scheduledPaymentEndDate>{request.calculation.flatMap(_.finalPaymentDate).getOrElse("")}</scheduledPaymentEndDate>
       <scheduledPaymentFrequency>05</scheduledPaymentFrequency>
@@ -81,7 +83,7 @@ object PaymentPlanBuilder {
       <scheduledPaymentAmount>{f"${request.regularPaymentAmount.getOrElse(BigDecimal(0)).toDouble}%.2f"}</scheduledPaymentAmount>
       <scheduledPaymentStartDate>{request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
       <scheduledPaymentEndDate>{request.planEndDate.getOrElse("")}</scheduledPaymentEndDate>
-      { if (freqCode.nonEmpty) <scheduledPaymentFrequency>{freqCode}</scheduledPaymentFrequency> else Null }
+      {if (freqCode.nonEmpty) <scheduledPaymentFrequency>{freqCode}</scheduledPaymentFrequency> else Null}
     </paymentPlan>
   }
 
