@@ -134,7 +134,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
     ddiReferenceNo       = "CT-DDI-789",
     paymentReference     = "CTRef",
     totalAmountDue       = Some(BigDecimal(300)),
-    paymentAmount        = Some(BigDecimal(150)),
+    paymentAmount        = None,
     regularPaymentAmount = None,
     amendPaymentAmount   = Some(BigDecimal(75)),
     calculation          = None,
