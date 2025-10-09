@@ -128,12 +128,12 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock with Matchers wit
   val duplicateCheckRequest: PaymentPlanDuplicateCheckRequest = PaymentPlanDuplicateCheckRequest(
     directDebitReference = "testRef",
     paymentPlanReference = "payment ref 123",
-    planType             = "type 1",
+    planType             = "01",
     paymentService       = "CESA",
     paymentReference     = "payment ref",
     paymentAmount        = 120.00,
     totalLiability       = 780.00,
-    paymentFrequency     = "WEEKLY"
+    paymentFrequency     = 1
   )
 
   "DirectDebtConnector" should {

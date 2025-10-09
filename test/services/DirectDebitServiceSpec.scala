@@ -67,17 +67,17 @@ class DirectDebitServiceSpec extends SpecBase {
       RDSPaymentPlan(
         scheduledPaymentAmount = 100,
         planRefNumber          = "ref number 1",
-        planType               = "type 1",
+        planType               = "01",
         paymentReference       = "payment ref 1",
-        hodService             = "service 1",
+        hodService             = "CESA",
         submissionDateTime     = LocalDateTime.of(2025, 12, 12, 12, 12)
       ),
       RDSPaymentPlan(
         scheduledPaymentAmount = 100,
         planRefNumber          = "ref number 1",
-        planType               = "type 1",
+        planType               = "01",
         paymentReference       = "payment ref 1",
-        hodService             = "service 1",
+        hodService             = "CESA",
         submissionDateTime     = LocalDateTime.of(2025, 12, 12, 12, 12)
       )
     )
@@ -93,8 +93,8 @@ class DirectDebitServiceSpec extends SpecBase {
                                            submissionDateTime = currentTime
                                           ),
     paymentPlanDetails = PaymentPlanDetail(
-      hodService                = "hod service",
-      planType                  = "plan Type",
+      hodService                = "CESA",
+      planType                  = "01",
       paymentReference          = "payment reference",
       submissionDateTime        = currentTime,
       scheduledPaymentAmount    = Some(1000),
@@ -115,12 +115,12 @@ class DirectDebitServiceSpec extends SpecBase {
   val duplicateCheckRequest: PaymentPlanDuplicateCheckRequest = PaymentPlanDuplicateCheckRequest(
     directDebitReference = "testRef",
     paymentPlanReference = "payment ref 123",
-    planType             = "type 1",
+    planType             = "01",
     paymentService       = "CESA",
     paymentReference     = "payment ref",
     paymentAmount        = 120.00,
     totalLiability       = 780.00,
-    paymentFrequency     = "WEEKLY"
+    paymentFrequency     = 1
   )
 
   "DirectDebitService" - {
