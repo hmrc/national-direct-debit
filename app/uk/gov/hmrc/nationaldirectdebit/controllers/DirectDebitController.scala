@@ -113,4 +113,11 @@ class DirectDebitController @Inject() (
         Ok(Json.toJson(response))
       }
     }
+
+  def lockPaymentPlan(directDebitReference: String, paymentPlanReference: String): Action[AnyContent] =
+    authorise.async { implicit request =>
+      service.lockPaymentPlan(directDebitReference, paymentPlanReference).map { response =>
+        Ok(Json.toJson(response))
+      }
+    }
 }

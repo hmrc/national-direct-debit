@@ -170,6 +170,18 @@ class DirectDebitControllerSpec extends SpecBase {
         contentAsJson(result) mustBe Json.toJson(testPaymentPlanResponse)
       }
     }
+
+    "lockPaymentPlan method" - {
+      "return 200 and a successful response when payment plans exist" in new SetUp {
+        when(mockDirectDebitService.lockPaymentPlan(any(), any())(any()))
+          .thenReturn(Future.successful(RDSPaymentPlanLock(lockSuccessful = true)))
+
+        val result: Future[Result] = controller.lockPaymentPlan("test-dd-reference", "test-pp-reference")(fakeRequest)
+
+        status(result) mustBe OK
+        contentAsJson(result) mustBe Json.toJson(RDSPaymentPlanLock(lockSuccessful = true))
+      }
+    }
   }
 
   class SetUp {

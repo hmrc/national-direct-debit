@@ -23,7 +23,7 @@ import org.mockito.Mockito.when
 import org.scalatestplus.mockito.MockitoSugar.mock
 import uk.gov.hmrc.nationaldirectdebit.connectors.DirectDebitConnector
 import uk.gov.hmrc.nationaldirectdebit.models.requests.{GenerateDdiRefRequest, WorkingDaysOffsetRequest}
-import uk.gov.hmrc.nationaldirectdebit.models.responses.{DirectDebitDetail, EarliestPaymentDateResponse, GenerateDdiRefResponse, PaymentPlanDetail, RDSDDPaymentPlansResponse, RDSDatacacheResponse, RDSDirectDebitDetails, RDSPaymentPlan, RDSPaymentPlanResponse}
+import uk.gov.hmrc.nationaldirectdebit.models.responses.*
 import uk.gov.hmrc.nationaldirectdebit.services.DirectDebitService
 
 import java.time.{LocalDate, LocalDateTime}
@@ -156,6 +156,16 @@ class DirectDebitServiceSpec extends SpecBase {
         val result = testService.retrievePaymentPlanDetails("test-dd-reference", "test-pp-reference").futureValue
 
         result mustBe testPaymentPlanResponse
+      }
+    }
+
+    "lockPaymentPlan method" - {
+      "must return the response from the connector" in {
+        when(mockConnector.lockPaymentPlan(any(), any())(any()))
+          .thenReturn(Future.successful(RDSPaymentPlanLock(lockSuccessful = true)))
+        val result = testService.lockPaymentPlan("test-dd-reference", "test-pp-reference").futureValue
+
+        result mustBe RDSPaymentPlanLock(lockSuccessful = true)
       }
     }
   }
