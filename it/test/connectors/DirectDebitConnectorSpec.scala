@@ -133,7 +133,8 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock with Matchers wit
     paymentReference     = "payment ref",
     paymentAmount        = 120.00,
     totalLiability       = 780.00,
-    paymentFrequency     = 1
+    paymentFrequency     = 1,
+    paymentStartDate = currentTime.toLocalDate
   )
 
   "DirectDebtConnector" should {
@@ -406,7 +407,7 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock with Matchers wit
     "isDuplicatePaymentPlan" should {
       "successfully retrieve true if is a duplicate payment plan" in {
         stubFor(
-          get(urlPathMatching("/rds-datacache-proxy/direct-debits/testRef/duplicate-plan-check"))
+          post(urlPathMatching("/rds-datacache-proxy/direct-debits/testRef/duplicate-plan-check"))
             .willReturn(
               aResponse()
                 .withStatus(OK)
@@ -421,7 +422,7 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock with Matchers wit
 
       "successfully retrieve false if it is not a duplicate payment plan" in {
         stubFor(
-          get(urlPathMatching("/rds-datacache-proxy/direct-debits/testRef/duplicate-plan-check"))
+          post(urlPathMatching("/rds-datacache-proxy/direct-debits/testRef/duplicate-plan-check"))
             .willReturn(
               aResponse()
                 .withStatus(OK)
@@ -436,7 +437,7 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock with Matchers wit
 
       "must fail when the result is parsed as an UpstreamErrorResponse" in {
         stubFor(
-          get(urlPathMatching("/rds-datacache-proxy/direct-debits/testRef/duplicate-plan-check"))
+          post(urlPathMatching("/rds-datacache-proxy/direct-debits/testRef/duplicate-plan-check"))
             .willReturn(
               aResponse()
                 .withStatus(INTERNAL_SERVER_ERROR)

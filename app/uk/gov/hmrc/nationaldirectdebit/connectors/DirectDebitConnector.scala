@@ -71,7 +71,7 @@ class DirectDebitConnector @Inject() (
 
   def isDuplicatePaymentPlan(request: PaymentPlanDuplicateCheckRequest)(implicit hc: HeaderCarrier): Future[DuplicateCheckResponse] = {
     http
-      .get(url"$rdsDatacacheProxyBaseUrl/direct-debits/${request.directDebitReference}/duplicate-plan-check")(hc)
+      .post(url"$rdsDatacacheProxyBaseUrl/direct-debits/${request.directDebitReference}/duplicate-plan-check")(hc)
       .withBody(Json.toJson(request))
       .execute[DuplicateCheckResponse]
   }
