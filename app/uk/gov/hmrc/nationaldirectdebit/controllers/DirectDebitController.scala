@@ -21,7 +21,7 @@ import play.api.Logging
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.nationaldirectdebit.actions.AuthAction
-import uk.gov.hmrc.nationaldirectdebit.models.requests.{ChrisSubmissionRequest, GenerateDdiRefRequest, WorkingDaysOffsetRequest}
+import uk.gov.hmrc.nationaldirectdebit.models.requests.{ChrisSubmissionRequest, GenerateDdiRefRequest, PaymentPlanDuplicateCheckRequest, WorkingDaysOffsetRequest}
 import uk.gov.hmrc.nationaldirectdebit.services.{ChrisService, DirectDebitService}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -113,4 +113,13 @@ class DirectDebitController @Inject() (
         Ok(Json.toJson(response))
       }
     }
+
+  def isDuplicatePaymentPlan(directDebitReference: String): Action[JsValue] =
+    authorise(parse.json).async:
+      implicit request =>
+        withJsonBody[PaymentPlanDuplicateCheckRequest] { paymentPlanDuplicateCheckRequest =>
+          service.isDuplicatePaymentPlan(paymentPlanDuplicateCheckRequest).map { response =>
+            Ok(Json.toJson(response))
+          }
+        }
 }

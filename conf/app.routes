@@ -11,3 +11,5 @@ POST     /direct-debit-reference                                                
 POST     /direct-debits/future-working-days                                             uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.getWorkingDaysOffset()
 
 POST     /chris                                                                         uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.submitToChris()
+
+POST     /direct-debits/:directDebitReference/duplicate-plan-check                      uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController.isDuplicatePaymentPlan(directDebitReference: String)
