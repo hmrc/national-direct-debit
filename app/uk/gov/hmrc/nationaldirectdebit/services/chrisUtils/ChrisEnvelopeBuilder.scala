@@ -67,7 +67,7 @@ object ChrisEnvelopeBuilder extends Logging {
               <credentialID>{credId}</credentialID>
                 {XmlUtils.formatKnownFacts(hodServices, "           ")}
               <directDebitInstruction>
-                <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
+                <actionType>{if (request.amendPlan) ChrisEnvelopeConstants.ActionType_2 else ChrisEnvelopeConstants.ActionType_1}</actionType>
                 <ddiReferenceNo>{request.ddiReferenceNo}</ddiReferenceNo>
                 <bankSortCode>{request.yourBankDetailsWithAuddisStatus.sortCode}</bankSortCode>
                 <bankAccountNo>{request.yourBankDetailsWithAuddisStatus.accountNumber}</bankAccountNo>

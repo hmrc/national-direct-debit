@@ -24,20 +24,21 @@ import java.time.LocalDate
 case class ChrisSubmissionRequest(
   serviceType: DirectDebitSource,
   paymentPlanType: PaymentPlanType,
+  paymentPlanReferenceNumber: Option[String],
   paymentFrequency: Option[PaymentsFrequency],
   yourBankDetailsWithAuddisStatus: YourBankDetailsWithAuddisStatus,
   planStartDate: Option[PlanStartDateDetails],
   planEndDate: Option[LocalDate],
   paymentDate: Option[PaymentDateDetails],
   yearEndAndMonth: Option[YearEndAndMonth],
-  bankDetailsAddress: BankAddress,
   ddiReferenceNo: String,
   paymentReference: String,
-  bankName: String,
   totalAmountDue: Option[BigDecimal],
   paymentAmount: Option[BigDecimal],
   regularPaymentAmount: Option[BigDecimal],
-  calculation: Option[PaymentPlanCalculation]
+  amendPaymentAmount: Option[BigDecimal],
+  calculation: Option[PaymentPlanCalculation],
+  amendPlan: Boolean = false
 )
 
 object ChrisSubmissionRequest {
