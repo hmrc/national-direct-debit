@@ -56,9 +56,10 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
 
   // Distinct requests for each service type
   private val tcRequest = ChrisSubmissionRequest(
-    serviceType      = DirectDebitSource.TC,
-    paymentPlanType  = PaymentPlanType.TaxCreditRepaymentPlan,
-    paymentFrequency = Some(PaymentsFrequency.Monthly),
+    serviceType                = DirectDebitSource.TC,
+    paymentPlanType            = PaymentPlanType.TaxCreditRepaymentPlan,
+    paymentPlanReferenceNumber = None,
+    paymentFrequency           = Some(PaymentsFrequency.Monthly),
     yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
       accountHolderName = "TC User",
       sortCode          = "11-22-33",
@@ -70,20 +71,20 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
     planEndDate          = None,
     paymentDate          = Some(paymentDateDetails),
     yearEndAndMonth      = None,
-    bankDetailsAddress   = BankAddress(Seq("TC Line 1"), "TC Town", Country("UK"), "TC1 1AA"),
     ddiReferenceNo       = "TC-DDI-123",
     paymentReference     = "TCRef",
-    bankName             = "TC Bank",
     totalAmountDue       = Some(BigDecimal(100)),
     paymentAmount        = Some(BigDecimal(50)),
+    amendPaymentAmount   = None,
     regularPaymentAmount = Some(BigDecimal(25)),
     calculation          = None
   )
 
   private val saMonthlyRequest = ChrisSubmissionRequest(
-    serviceType      = DirectDebitSource.SA,
-    paymentPlanType  = PaymentPlanType.BudgetPaymentPlan,
-    paymentFrequency = Some(PaymentsFrequency.Monthly),
+    serviceType                = DirectDebitSource.SA,
+    paymentPlanType            = PaymentPlanType.BudgetPaymentPlan,
+    paymentPlanReferenceNumber = None,
+    paymentFrequency           = Some(PaymentsFrequency.Monthly),
     yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
       accountHolderName = "SA Monthly User",
       sortCode          = "22-33-44",
@@ -95,12 +96,11 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
     planEndDate          = None,
     paymentDate          = Some(paymentDateDetails),
     yearEndAndMonth      = None,
-    bankDetailsAddress   = BankAddress(Seq("SA Line 1"), "SA Town", Country("UK"), "SA1 2BB"),
     ddiReferenceNo       = "SA-DDI-456",
     paymentReference     = "SARef",
-    bankName             = "SA Bank",
     totalAmountDue       = Some(BigDecimal(200)),
     paymentAmount        = Some(BigDecimal(100)),
+    amendPaymentAmount   = None,
     regularPaymentAmount = Some(BigDecimal(50)),
     calculation          = None
   )
@@ -110,10 +110,16 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
     yourBankDetailsWithAuddisStatus = saMonthlyRequest.yourBankDetailsWithAuddisStatus.copy(accountHolderName = "SA Weekly User")
   )
 
-  private val ctRequest = ChrisSubmissionRequest(
-    serviceType      = DirectDebitSource.CT,
-    paymentPlanType  = PaymentPlanType.SinglePayment,
-    paymentFrequency = Some(PaymentsFrequency.Monthly),
+  private val saAmendRequest = saMonthlyRequest.copy(
+    amendPlan          = true,
+    amendPaymentAmount = Some(BigDecimal(100))
+  )
+
+  private val amendSingleRequest = ChrisSubmissionRequest(
+    serviceType                = DirectDebitSource.CT,
+    paymentPlanType            = PaymentPlanType.SinglePayment,
+    paymentPlanReferenceNumber = None,
+    paymentFrequency           = Some(PaymentsFrequency.Monthly),
     yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
       accountHolderName = "CT User",
       sortCode          = "33-44-55",
@@ -125,20 +131,46 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
     planEndDate          = None,
     paymentDate          = Some(paymentDateDetails),
     yearEndAndMonth      = None,
-    bankDetailsAddress   = BankAddress(Seq("CT Line 1"), "CT Town", Country("UK"), "CT1 3CC"),
     ddiReferenceNo       = "CT-DDI-789",
     paymentReference     = "CTRef",
-    bankName             = "CT Bank",
+    totalAmountDue       = Some(BigDecimal(300)),
+    paymentAmount        = None,
+    regularPaymentAmount = None,
+    amendPaymentAmount   = Some(BigDecimal(75)),
+    calculation          = None,
+    amendPlan            = true
+  )
+
+  private val ctRequest = ChrisSubmissionRequest(
+    serviceType                = DirectDebitSource.CT,
+    paymentPlanType            = PaymentPlanType.SinglePayment,
+    paymentPlanReferenceNumber = None,
+    paymentFrequency           = Some(PaymentsFrequency.Monthly),
+    yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
+      accountHolderName = "CT User",
+      sortCode          = "33-44-55",
+      accountNumber     = "34567890",
+      auddisStatus      = true,
+      accountVerified   = true
+    ),
+    planStartDate        = Some(planStartDateDetails),
+    planEndDate          = None,
+    paymentDate          = Some(paymentDateDetails),
+    yearEndAndMonth      = None,
+    ddiReferenceNo       = "CT-DDI-789",
+    paymentReference     = "CTRef",
     totalAmountDue       = Some(BigDecimal(300)),
     paymentAmount        = Some(BigDecimal(150)),
     regularPaymentAmount = Some(BigDecimal(75)),
+    amendPaymentAmount   = None,
     calculation          = None
   )
 
   private val mgdRequest = ChrisSubmissionRequest(
-    serviceType      = DirectDebitSource.MGD,
-    paymentPlanType  = PaymentPlanType.VariablePaymentPlan,
-    paymentFrequency = None,
+    serviceType                = DirectDebitSource.MGD,
+    paymentPlanType            = PaymentPlanType.VariablePaymentPlan,
+    paymentPlanReferenceNumber = None,
+    paymentFrequency           = None,
     yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
       accountHolderName = "MGD User",
       sortCode          = "44-55-66",
@@ -150,19 +182,19 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
     planEndDate          = None,
     paymentDate          = Some(paymentDateDetails),
     yearEndAndMonth      = None,
-    bankDetailsAddress   = BankAddress(Seq("MGD Line 1"), "MGD Town", Country("UK"), "MGD1 4DD"),
     ddiReferenceNo       = "MGD-DDI-101",
     paymentReference     = "MGDRef",
-    bankName             = "MGD Bank",
     totalAmountDue       = Some(BigDecimal(400)),
     paymentAmount        = Some(BigDecimal(200)),
     regularPaymentAmount = Some(BigDecimal(100)),
+    amendPaymentAmount   = None,
     calculation          = None
   )
   private val vatRequest = ChrisSubmissionRequest(
-    serviceType      = DirectDebitSource.MGD,
-    paymentPlanType  = PaymentPlanType.VariablePaymentPlan,
-    paymentFrequency = None,
+    serviceType                = DirectDebitSource.MGD,
+    paymentPlanType            = PaymentPlanType.VariablePaymentPlan,
+    paymentPlanReferenceNumber = None,
+    paymentFrequency           = None,
     yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
       accountHolderName = "MGD User",
       sortCode          = "44-55-66",
@@ -174,20 +206,20 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
     planEndDate          = None,
     paymentDate          = Some(paymentDateDetails),
     yearEndAndMonth      = None,
-    bankDetailsAddress   = BankAddress(Seq("MGD Line 1"), "MGD Town", Country("UK"), "MGD1 4DD"),
     ddiReferenceNo       = "MGD-DDI-101",
     paymentReference     = "MGDRef",
-    bankName             = "MGD Bank",
     totalAmountDue       = Some(BigDecimal(400)),
     paymentAmount        = Some(BigDecimal(200)),
     regularPaymentAmount = Some(BigDecimal(100)),
+    amendPaymentAmount   = None,
     calculation          = None
   )
 
   private val payeRequest = ChrisSubmissionRequest(
-    serviceType      = DirectDebitSource.MGD,
-    paymentPlanType  = PaymentPlanType.VariablePaymentPlan,
-    paymentFrequency = None,
+    serviceType                = DirectDebitSource.MGD,
+    paymentPlanType            = PaymentPlanType.VariablePaymentPlan,
+    paymentPlanReferenceNumber = None,
+    paymentFrequency           = None,
     yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
       accountHolderName = "MGD User",
       sortCode          = "44-55-66",
@@ -199,13 +231,12 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
     planEndDate          = None,
     paymentDate          = Some(paymentDateDetails),
     yearEndAndMonth      = None,
-    bankDetailsAddress   = BankAddress(Seq("MGD Line 1"), "MGD Town", Country("UK"), "MGD1 4DD"),
     ddiReferenceNo       = "MGD-DDI-101",
     paymentReference     = "MGDRef",
-    bankName             = "MGD Bank",
     totalAmountDue       = Some(BigDecimal(400)),
     paymentAmount        = Some(BigDecimal(200)),
     regularPaymentAmount = Some(BigDecimal(100)),
+    amendPaymentAmount   = None,
     calculation          = None
   )
 
@@ -255,6 +286,25 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
 
       service.submitToChris(saMonthlyRequest, "credId123", "Organisation", fakeAuthRequest).map { result =>
         result must include("SA Monthly Message received")
+      }
+    }
+
+    "return confirmation when submission succeeds for SA Amend (monthly)" in {
+      val enrolments = Enrolments(
+        Set(
+          Enrolment(
+            key               = "IR-SA",
+            identifiers       = Seq(EnrolmentIdentifier("TaxId", "1234567890")),
+            state             = "Activated",
+            delegatedAuthRule = None
+          )
+        )
+      )
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
+      when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>SA amend Monthly Message received</Confirmation>"))
+
+      service.submitToChris(saAmendRequest, "credId123", "Organisation", fakeAuthRequest).map { result =>
+        result must include("SA amend Monthly Message received")
       }
     }
 
@@ -311,6 +361,25 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>CT Message received</Confirmation>"))
 
       service.submitToChris(ctRequest, "credId123", "Agent", fakeAuthRequest).map { result =>
+        result must include("CT Message received")
+      }
+    }
+
+    "return confirmation when submission succeeds for Amend Single" in {
+      val enrolments = Enrolments(
+        Set(
+          Enrolment(
+            key               = "COTA",
+            identifiers       = Seq(EnrolmentIdentifier("UTR", "1234567890")),
+            state             = "Activated",
+            delegatedAuthRule = None
+          )
+        )
+      )
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
+      when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>CT Message received</Confirmation>"))
+
+      service.submitToChris(amendSingleRequest, "credId123", "Agent", fakeAuthRequest).map { result =>
         result must include("CT Message received")
       }
     }
