@@ -104,7 +104,7 @@ object PaymentPlanBuilder {
       <scheduledPaymentStartDate>{request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
       <scheduledPaymentEndDate>{request.planEndDate.getOrElse("")}</scheduledPaymentEndDate>
       {if (freqCode.nonEmpty) <scheduledPaymentFrequency>{freqCode}</scheduledPaymentFrequency> else Null}
-      <totalLiability>{request.totalAmountDue.getOrElse("")}</totalLiability>
+      <totalLiability>{f"${request.totalAmountDue.getOrElse(BigDecimal(0)).toDouble}%.2f"}</totalLiability>
     </paymentPlan>
   }
 
