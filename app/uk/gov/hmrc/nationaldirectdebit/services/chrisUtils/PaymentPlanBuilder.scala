@@ -28,12 +28,18 @@ object PaymentPlanBuilder {
     request.serviceType match {
       case DirectDebitSource.SA if request.paymentPlanType == PaymentPlanType.BudgetPaymentPlan && request.amendPlan =>
         buildAmendBudgetPlan(request, hodService)
+      case DirectDebitSource.SA if request.paymentPlanType == PaymentPlanType.BudgetPaymentPlan && request.cancelPlan =>
+        buildCancelPlan(request, hodService, ChrisEnvelopeConstants.PPType_2)
+      case DirectDebitSource.SA if request.paymentPlanType == PaymentPlanType.VariablePaymentPlan && request.cancelPlan =>
+        buildCancelPlan(request, hodService, ChrisEnvelopeConstants.PPType_4)
       case DirectDebitSource.TC if request.paymentPlanType == PaymentPlanType.TaxCreditRepaymentPlan =>
         buildTcPlan(request, hodService)
       case DirectDebitSource.MGD if request.paymentPlanType == PaymentPlanType.VariablePaymentPlan =>
         buildMgdPlan(request, hodService)
       case DirectDebitSource.SA if request.paymentPlanType == PaymentPlanType.BudgetPaymentPlan =>
         buildSaPlan(request, hodService)
+      case _ if request.cancelPlan =>
+        buildCancelPlan(request, hodService, ChrisEnvelopeConstants.PPType_1)
       case _ if request.amendPlan =>
         buildAmendSinglePlan(request, hodService)
       case _ =>
@@ -121,7 +127,7 @@ object PaymentPlanBuilder {
     </paymentPlan>
   }
 
-  private def buildAmendSinglePlan(request: ChrisSubmissionRequest, hodService: Option[String]): Elem =
+  private def buildAmendSinglePlan(request: ChrisSubmissionRequest, hodService: Option[String]): Elem = {
     <paymentPlan>
       <actionType>{ChrisEnvelopeConstants.ActionType_2}</actionType>
       <pPType>{ChrisEnvelopeConstants.PPType_1}</pPType>
@@ -133,5 +139,23 @@ object PaymentPlanBuilder {
       <scheduledPaymentStartDate>{request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
       <totalLiability>{f"${request.amendPaymentAmount.getOrElse(BigDecimal(0)).toDouble}%.2f"}</totalLiability>
     </paymentPlan>
+  }
+
+  private def buildCancelPlan(
+    request: ChrisSubmissionRequest,
+    hodService: Option[String],
+    ppType: String
+  ): Elem = {
+    <paymentPlan>
+      <actionType>{ChrisEnvelopeConstants.ActionType_4}</actionType>
+      <pPType>{ppType}</pPType>
+      <paymentReference>{request.paymentReference}</paymentReference>
+      <corePPReferenceNo>{request.paymentPlanReferenceNumber.getOrElse("")}</corePPReferenceNo>
+      <hodService>{hodService.getOrElse("")}</hodService>
+      <paymentCurrency>GBP</paymentCurrency>
+      <scheduledPaymentAmount>{f"${request.paymentAmount.getOrElse(BigDecimal(0)).toDouble}%.2f"}</scheduledPaymentAmount>
+      <scheduledPaymentStartDate>{request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
+    </paymentPlan>
+  }
 
 }
