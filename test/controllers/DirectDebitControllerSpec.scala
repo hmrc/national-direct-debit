@@ -28,7 +28,7 @@ import play.api.test.Helpers.{contentAsJson, status}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.*
-import uk.gov.hmrc.nationaldirectdebit.models.requests.{ChrisSubmissionRequest, GenerateDdiRefRequest, WorkingDaysOffsetRequest}
+import uk.gov.hmrc.nationaldirectdebit.models.requests.{ChrisSubmissionRequest, GenerateDdiRefRequest, PaymentPlanDuplicateCheckRequest, WorkingDaysOffsetRequest}
 import uk.gov.hmrc.nationaldirectdebit.models.responses.*
 import uk.gov.hmrc.nationaldirectdebit.services.{ChrisService, DirectDebitService}
 
@@ -182,6 +182,24 @@ class DirectDebitControllerSpec extends SpecBase {
         contentAsJson(result) mustBe Json.toJson(RDSPaymentPlanLock(lockSuccessful = true))
       }
     }
+
+    "isDuplicatePaymentPlan method" - {
+      "return 200 and a successful response when duplicate payment plan exist" in new SetUp {
+        implicit val hc: HeaderCarrier = HeaderCarrier()
+        when(
+          mockDirectDebitService.isDuplicatePaymentPlan(
+            any[PaymentPlanDuplicateCheckRequest]()
+          )(any[HeaderCarrier]())
+        ).thenReturn(Future.successful(DuplicateCheckResponse(true)))
+
+        val result: Future[Result] =
+          controller.isDuplicatePaymentPlan("test isDuplicatePaymentPlan")(fakeRequestWithJsonBody(Json.toJson(duplicateCheckRequest)))
+
+        status(result) mustBe OK
+        contentAsJson(result) mustBe Json.toJson(DuplicateCheckResponse(true))
+      }
+    }
+
   }
 
   class SetUp {
@@ -265,17 +283,17 @@ class DirectDebitControllerSpec extends SpecBase {
         RDSPaymentPlan(
           scheduledPaymentAmount = 100,
           planRefNumber          = "ref number 1",
-          planType               = "type 1",
+          planType               = "01",
           paymentReference       = "payment ref 1",
-          hodService             = "service 1",
+          hodService             = "CESA",
           submissionDateTime     = LocalDateTime.of(2025, 12, 12, 12, 12)
         ),
         RDSPaymentPlan(
           scheduledPaymentAmount = 100,
           planRefNumber          = "ref number 1",
-          planType               = "type 1",
+          planType               = "01",
           paymentReference       = "payment ref 1",
-          hodService             = "service 1",
+          hodService             = "CESA",
           submissionDateTime     = LocalDateTime.of(2025, 12, 12, 12, 12)
         )
       )
@@ -291,8 +309,8 @@ class DirectDebitControllerSpec extends SpecBase {
                                              submissionDateTime = currentTime
                                             ),
       paymentPlanDetails = PaymentPlanDetail(
-        hodService                = "hod service",
-        planType                  = "plan Type",
+        hodService                = "CESA",
+        planType                  = "01",
         paymentReference          = "payment reference",
         submissionDateTime        = currentTime,
         scheduledPaymentAmount    = Some(1000),
@@ -311,5 +329,17 @@ class DirectDebitControllerSpec extends SpecBase {
     )
 
     val controller = new DirectDebitController(fakeAuthAction, mockDirectDebitService, mockChrisService, cc)
+
+    val duplicateCheckRequest: PaymentPlanDuplicateCheckRequest = PaymentPlanDuplicateCheckRequest(
+      directDebitReference = "testRef",
+      paymentPlanReference = "payment ref 123",
+      planType             = "01",
+      paymentService       = "CESA",
+      paymentReference     = "payment ref",
+      paymentAmount        = 120.00,
+      totalLiability       = 780.00,
+      paymentFrequency     = Some(1),
+      paymentStartDate     = currentTime.toLocalDate
+    )
   }
 }

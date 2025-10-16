@@ -20,7 +20,7 @@ import com.google.inject.Inject
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.DirectDebitConnector
 import uk.gov.hmrc.nationaldirectdebit.models.responses.*
-import uk.gov.hmrc.nationaldirectdebit.models.requests.{GenerateDdiRefRequest, WorkingDaysOffsetRequest}
+import uk.gov.hmrc.nationaldirectdebit.models.requests.*
 
 import scala.concurrent.Future
 
@@ -55,4 +55,9 @@ class DirectDebitService @Inject() (
   ): Future[RDSPaymentPlanLock] = {
     connector.lockPaymentPlan(directDebitReference, paymentPlanReference)
   }
+
+  def isDuplicatePaymentPlan(request: PaymentPlanDuplicateCheckRequest)(implicit hc: HeaderCarrier): Future[DuplicateCheckResponse] = {
+    connector.isDuplicatePaymentPlan(request)
+  }
+
 }

@@ -67,12 +67,17 @@ object ChrisEnvelopeBuilder extends Logging {
               <credentialID>{credId}</credentialID>
                 {XmlUtils.formatKnownFacts(hodServices, "           ")}
               <directDebitInstruction>
-                <actionType>{if (request.amendPlan) ChrisEnvelopeConstants.ActionType_2 else ChrisEnvelopeConstants.ActionType_1}</actionType>
-                <ddiReferenceNo>{request.ddiReferenceNo}</ddiReferenceNo>
-                <bankSortCode>{request.yourBankDetailsWithAuddisStatus.sortCode}</bankSortCode>
-                <bankAccountNo>{request.yourBankDetailsWithAuddisStatus.accountNumber}</bankAccountNo>
-                <bankAccountName>{request.yourBankDetailsWithAuddisStatus.accountHolderName}</bankAccountName>
-                {if (request.yourBankDetailsWithAuddisStatus.auddisStatus) <paperAuddisFlag>01</paperAuddisFlag> else scala.xml.Null}
+                {
+        if (request.amendPlan) { <ddiReferenceNo>{request.ddiReferenceNo}</ddiReferenceNo> }
+        else {
+          <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
+                          <ddiReferenceNo>{request.ddiReferenceNo}</ddiReferenceNo>
+                           <bankSortCode>{request.yourBankDetailsWithAuddisStatus.sortCode}</bankSortCode>
+                          <bankAccountNo>{request.yourBankDetailsWithAuddisStatus.accountNumber}</bankAccountNo>
+                          <bankAccountName>{request.yourBankDetailsWithAuddisStatus.accountHolderName}</bankAccountName>
+        }
+      }
+                        {if (request.yourBankDetailsWithAuddisStatus.auddisStatus) <paperAuddisFlag>01</paperAuddisFlag> else scala.xml.Null}
               </directDebitInstruction>{PaymentPlanBuilder.build(request, expectedHodService)}
             </dDIPPDetails>
           </IRenvelope>
