@@ -28,10 +28,12 @@ object PaymentPlanBuilder {
     request.serviceType match {
       case DirectDebitSource.SA if request.paymentPlanType == PaymentPlanType.BudgetPaymentPlan && request.amendPlan =>
         buildAmendBudgetPlan(request, hodService)
+
       case DirectDebitSource.SA if request.paymentPlanType == PaymentPlanType.BudgetPaymentPlan && request.cancelPlan =>
         buildCancelPlan(request, hodService, ChrisEnvelopeConstants.PPType_2)
-      case DirectDebitSource.SA if request.paymentPlanType == PaymentPlanType.VariablePaymentPlan && request.cancelPlan =>
+      case DirectDebitSource.MGD if request.paymentPlanType == PaymentPlanType.VariablePaymentPlan && request.cancelPlan =>
         buildCancelPlan(request, hodService, ChrisEnvelopeConstants.PPType_4)
+
       case DirectDebitSource.TC if request.paymentPlanType == PaymentPlanType.TaxCreditRepaymentPlan =>
         buildTcPlan(request, hodService)
       case DirectDebitSource.MGD if request.paymentPlanType == PaymentPlanType.VariablePaymentPlan =>
