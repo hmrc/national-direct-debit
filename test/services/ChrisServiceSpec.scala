@@ -112,7 +112,8 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
 
   private val saAmendRequest = saMonthlyRequest.copy(
     amendPlan          = true,
-    amendPaymentAmount = Some(BigDecimal(100))
+    amendPaymentAmount = Some(BigDecimal(100)),
+    totalAmountDue     = null
   )
 
   private val amendSingleRequest = ChrisSubmissionRequest(
@@ -303,7 +304,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
       when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>SA amend Monthly Message received</Confirmation>"))
 
-      service.submitToChris(saAmendRequest, "credId123", "Organisation", fakeAuthRequest).map { result =>
+      service.submitToChris(saAmendRequest, "credId123", "Agent", fakeAuthRequest).map { result =>
         result must include("SA amend Monthly Message received")
       }
     }
