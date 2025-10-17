@@ -114,6 +114,13 @@ class DirectDebitController @Inject() (
       }
     }
 
+  def lockPaymentPlan(directDebitReference: String, paymentPlanReference: String): Action[AnyContent] =
+    authorise.async { implicit request =>
+      service.lockPaymentPlan(directDebitReference, paymentPlanReference).map { response =>
+        Ok(Json.toJson(response))
+      }
+    }
+
   def isDuplicatePaymentPlan(directDebitReference: String): Action[JsValue] =
     authorise(parse.json).async:
       implicit request =>
@@ -122,4 +129,5 @@ class DirectDebitController @Inject() (
             Ok(Json.toJson(response))
           }
         }
+
 }

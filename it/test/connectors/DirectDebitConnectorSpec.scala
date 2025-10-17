@@ -16,7 +16,7 @@
 
 package connectors
 
-import com.github.tomakehurst.wiremock.client.WireMock.*
+import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, get, post, put, stubFor, urlPathMatching}
 import itutil.ApplicationWithWiremock
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.must.Matchers
@@ -404,6 +404,67 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock with Matchers wit
       }
     }
 
+    "lockPaymentPlan" should {
+      "return lockSuccessful is true when payment plan locked" in {
+        stubFor(
+          put(urlPathMatching("/rds-datacache-proxy/direct-debits/test-dd-Ref/payment-plans/test-pp-reference/lock"))
+            .willReturn(
+              aResponse()
+                .withStatus(OK)
+                .withBody(Json.toJson(RDSPaymentPlanLock(lockSuccessful = true)).toString)
+            )
+        )
+
+        val result = connector.lockPaymentPlan("test-dd-Ref", "test-pp-reference").futureValue
+
+        result mustBe RDSPaymentPlanLock(lockSuccessful = true)
+      }
+
+      "return lockSuccessful is false when payment plan lock failed" in {
+        stubFor(
+          put(urlPathMatching("/rds-datacache-proxy/direct-debits/test-dd-Ref/payment-plans/test-pp-reference/lock"))
+            .willReturn(
+              aResponse()
+                .withStatus(OK)
+                .withBody(Json.toJson(RDSPaymentPlanLock(lockSuccessful = false)).toString)
+            )
+        )
+
+        val result = connector.lockPaymentPlan("test-dd-Ref", "test-pp-reference").futureValue
+
+        result mustBe RDSPaymentPlanLock(lockSuccessful = false)
+      }
+
+      "must fail when the result is parsed as an UpstreamErrorResponse" in {
+        stubFor(
+          put(urlPathMatching("/rds-datacache-proxy/direct-debits/test-dd-Ref/payment-plans/test-pp-reference/lock"))
+            .willReturn(
+              aResponse()
+                .withStatus(INTERNAL_SERVER_ERROR)
+                .withBody("test error")
+            )
+        )
+
+        val result = intercept[Exception](connector.lockPaymentPlan("test-dd-Ref", "test-pp-reference").futureValue)
+
+        result.getMessage must include("returned 500. Response body: 'test error'")
+      }
+
+      "must fail when the result is a failed future" in {
+        stubFor(
+          put(urlPathMatching("/rds-datacache-proxy/direct-debits/test-dd-Ref/payment-plans/test-pp-reference/lock"))
+            .willReturn(
+              aResponse()
+                .withStatus(0)
+            )
+        )
+
+        val result = intercept[Exception](connector.lockPaymentPlan("test-dd-Ref", "test-pp-reference").futureValue)
+
+        result.getMessage must include("The future returned an exception")
+      }
+    }
+
     "isDuplicatePaymentPlan" should {
       "successfully retrieve true if is a duplicate payment plan" in {
         stubFor(
@@ -464,6 +525,5 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock with Matchers wit
         result.getMessage must include("The future returned an exception")
       }
     }
-
   }
 }
