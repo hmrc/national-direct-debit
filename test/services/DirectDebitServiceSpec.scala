@@ -118,8 +118,8 @@ class DirectDebitServiceSpec extends SpecBase {
     planType             = "01",
     paymentService       = "CESA",
     paymentReference     = "payment ref",
-    paymentAmount        = Some(120.00),
-    totalLiability       = Some(120.00),
+    paymentAmount        = 120.00,
+    totalLiability       = 780.00,
     paymentFrequency     = Some(1),
     paymentStartDate     = currentTime.toLocalDate
   )
