@@ -116,6 +116,10 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
     totalAmountDue     = null
   )
 
+  private val saCancelequest = saMonthlyRequest.copy(
+    cancelPlan = true
+  )
+
   private val amendSingleRequest = ChrisSubmissionRequest(
     serviceType                = DirectDebitSource.CT,
     paymentPlanType            = PaymentPlanType.SinglePayment,
@@ -140,6 +144,32 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
     amendPaymentAmount   = Some(BigDecimal(75)),
     calculation          = None,
     amendPlan            = true
+  )
+
+  private val cancelSingleRequest = ChrisSubmissionRequest(
+    serviceType                = DirectDebitSource.CT,
+    paymentPlanType            = PaymentPlanType.SinglePayment,
+    paymentPlanReferenceNumber = None,
+    paymentFrequency           = Some(PaymentsFrequency.Monthly),
+    yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
+      accountHolderName = "CT User",
+      sortCode          = "33-44-55",
+      accountNumber     = "34567890",
+      auddisStatus      = true,
+      accountVerified   = true
+    ),
+    planStartDate        = Some(planStartDateDetails),
+    planEndDate          = None,
+    paymentDate          = Some(paymentDateDetails),
+    yearEndAndMonth      = None,
+    ddiReferenceNo       = "CT-DDI-789",
+    paymentReference     = "CTRef",
+    totalAmountDue       = Some(BigDecimal(300)),
+    paymentAmount        = None,
+    regularPaymentAmount = None,
+    amendPaymentAmount   = None,
+    calculation          = None,
+    cancelPlan           = true
   )
 
   private val ctRequest = ChrisSubmissionRequest(
@@ -191,6 +221,33 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
     amendPaymentAmount   = None,
     calculation          = None
   )
+
+  private val mgdCancelRequest = ChrisSubmissionRequest(
+    serviceType                = DirectDebitSource.MGD,
+    paymentPlanType            = PaymentPlanType.VariablePaymentPlan,
+    paymentPlanReferenceNumber = None,
+    paymentFrequency           = None,
+    yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
+      accountHolderName = "MGD User",
+      sortCode          = "44-55-66",
+      accountNumber     = "45678901",
+      auddisStatus      = false,
+      accountVerified   = false
+    ),
+    planStartDate        = Some(planStartDateDetails),
+    planEndDate          = None,
+    paymentDate          = Some(paymentDateDetails),
+    yearEndAndMonth      = None,
+    ddiReferenceNo       = "MGD-DDI-101",
+    paymentReference     = "MGDRef",
+    totalAmountDue       = Some(BigDecimal(400)),
+    paymentAmount        = Some(BigDecimal(200)),
+    regularPaymentAmount = Some(BigDecimal(100)),
+    amendPaymentAmount   = None,
+    calculation          = None,
+    cancelPlan           = true
+  )
+
   private val vatRequest = ChrisSubmissionRequest(
     serviceType                = DirectDebitSource.MGD,
     paymentPlanType            = PaymentPlanType.VariablePaymentPlan,
@@ -309,6 +366,25 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       }
     }
 
+    "return confirmation when submission succeeds for SA cancel (monthly)" in {
+      val enrolments = Enrolments(
+        Set(
+          Enrolment(
+            key               = "IR-SA",
+            identifiers       = Seq(EnrolmentIdentifier("TaxId", "1234567890")),
+            state             = "Activated",
+            delegatedAuthRule = None
+          )
+        )
+      )
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
+      when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>SA Cancel Monthly Message received</Confirmation>"))
+
+      service.submitToChris(saCancelequest, "credId123", "Organisation", fakeAuthRequest).map { result =>
+        result must include("SA Cancel Monthly Message received")
+      }
+    }
+
     "return confirmation when submission succeeds for SA (weekly)" in {
       val enrolments = Enrolments(
         Set(
@@ -385,6 +461,25 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       }
     }
 
+    "return confirmation when submission succeeds for cancel single plan" in {
+      val enrolments = Enrolments(
+        Set(
+          Enrolment(
+            key               = "COTA",
+            identifiers       = Seq(EnrolmentIdentifier("UTR", "1234567890")),
+            state             = "Activated",
+            delegatedAuthRule = None
+          )
+        )
+      )
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
+      when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>Cancel Message received</Confirmation>"))
+
+      service.submitToChris(cancelSingleRequest, "credId123", "Agent", fakeAuthRequest).map { result =>
+        result must include("Cancel Message received")
+      }
+    }
+
     "return confirmation when submission succeeds for VAT" in {
       val enrolments = Enrolments(
         Set(
@@ -458,6 +553,26 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
 
       service.submitToChris(mgdRequest, "credId123", "Individual", fakeAuthRequest).map { result =>
         result must include("MGD Message received")
+      }
+    }
+
+    "return confirmation when submission succeeds for cancel variable plan" in {
+      val enrolments = Enrolments(
+        Set(
+          Enrolment(
+            key               = "MGD",
+            identifiers       = Seq(EnrolmentIdentifier("HMRCMGDRN", "MGD4567890")),
+            state             = "Activated",
+            delegatedAuthRule = None
+          )
+        )
+      )
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
+      when(mockConnector.submitEnvelope(any[Elem]))
+        .thenReturn(Future.successful("<Confirmation>MGD with variable Cancel Message received</Confirmation>"))
+
+      service.submitToChris(mgdCancelRequest, "credId123", "Individual", fakeAuthRequest).map { result =>
+        result must include("MGD with variable Cancel Message received")
       }
     }
 
