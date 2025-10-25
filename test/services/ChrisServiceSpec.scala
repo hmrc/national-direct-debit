@@ -67,17 +67,18 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       auddisStatus      = true,
       accountVerified   = true
     ),
-    planStartDate        = Some(planStartDateDetails),
-    planEndDate          = None,
-    paymentDate          = Some(paymentDateDetails),
-    yearEndAndMonth      = None,
-    ddiReferenceNo       = "TC-DDI-123",
-    paymentReference     = "TCRef",
-    totalAmountDue       = Some(BigDecimal(100)),
-    paymentAmount        = Some(BigDecimal(50)),
-    amendPaymentAmount   = None,
-    regularPaymentAmount = Some(BigDecimal(25)),
-    calculation          = None
+    planStartDate             = Some(planStartDateDetails),
+    planEndDate               = None,
+    paymentDate               = Some(paymentDateDetails),
+    yearEndAndMonth           = None,
+    ddiReferenceNo            = "TC-DDI-123",
+    paymentReference          = "TCRef",
+    totalAmountDue            = Some(BigDecimal(100)),
+    paymentAmount             = Some(BigDecimal(50)),
+    amendPaymentAmount        = None,
+    regularPaymentAmount      = Some(BigDecimal(25)),
+    calculation               = None,
+    suspensionPeriodRangeDate = None
   )
 
   private val saMonthlyRequest = ChrisSubmissionRequest(
@@ -92,17 +93,18 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       auddisStatus      = false,
       accountVerified   = false
     ),
-    planStartDate        = Some(planStartDateDetails),
-    planEndDate          = None,
-    paymentDate          = Some(paymentDateDetails),
-    yearEndAndMonth      = None,
-    ddiReferenceNo       = "SA-DDI-456",
-    paymentReference     = "SARef",
-    totalAmountDue       = Some(BigDecimal(200)),
-    paymentAmount        = Some(BigDecimal(100)),
-    amendPaymentAmount   = None,
-    regularPaymentAmount = Some(BigDecimal(50)),
-    calculation          = None
+    planStartDate             = Some(planStartDateDetails),
+    planEndDate               = None,
+    paymentDate               = Some(paymentDateDetails),
+    yearEndAndMonth           = None,
+    ddiReferenceNo            = "SA-DDI-456",
+    paymentReference          = "SARef",
+    totalAmountDue            = Some(BigDecimal(200)),
+    paymentAmount             = Some(BigDecimal(100)),
+    amendPaymentAmount        = None,
+    regularPaymentAmount      = Some(BigDecimal(50)),
+    calculation               = None,
+    suspensionPeriodRangeDate = None
   )
 
   private val saWeeklyRequest = saMonthlyRequest.copy(
@@ -132,18 +134,19 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       auddisStatus      = true,
       accountVerified   = true
     ),
-    planStartDate        = Some(planStartDateDetails),
-    planEndDate          = None,
-    paymentDate          = Some(paymentDateDetails),
-    yearEndAndMonth      = None,
-    ddiReferenceNo       = "CT-DDI-789",
-    paymentReference     = "CTRef",
-    totalAmountDue       = Some(BigDecimal(300)),
-    paymentAmount        = None,
-    regularPaymentAmount = None,
-    amendPaymentAmount   = Some(BigDecimal(75)),
-    calculation          = None,
-    amendPlan            = true
+    planStartDate             = Some(planStartDateDetails),
+    planEndDate               = None,
+    paymentDate               = Some(paymentDateDetails),
+    yearEndAndMonth           = None,
+    ddiReferenceNo            = "CT-DDI-789",
+    paymentReference          = "CTRef",
+    totalAmountDue            = Some(BigDecimal(300)),
+    paymentAmount             = None,
+    regularPaymentAmount      = None,
+    amendPaymentAmount        = Some(BigDecimal(75)),
+    calculation               = None,
+    amendPlan                 = true,
+    suspensionPeriodRangeDate = None
   )
 
   private val cancelSingleRequest = ChrisSubmissionRequest(
@@ -158,18 +161,19 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       auddisStatus      = true,
       accountVerified   = true
     ),
-    planStartDate        = Some(planStartDateDetails),
-    planEndDate          = None,
-    paymentDate          = Some(paymentDateDetails),
-    yearEndAndMonth      = None,
-    ddiReferenceNo       = "CT-DDI-789",
-    paymentReference     = "CTRef",
-    totalAmountDue       = Some(BigDecimal(300)),
-    paymentAmount        = None,
-    regularPaymentAmount = None,
-    amendPaymentAmount   = None,
-    calculation          = None,
-    cancelPlan           = true
+    planStartDate             = Some(planStartDateDetails),
+    planEndDate               = None,
+    paymentDate               = Some(paymentDateDetails),
+    yearEndAndMonth           = None,
+    ddiReferenceNo            = "CT-DDI-789",
+    paymentReference          = "CTRef",
+    totalAmountDue            = Some(BigDecimal(300)),
+    paymentAmount             = None,
+    regularPaymentAmount      = None,
+    amendPaymentAmount        = None,
+    calculation               = None,
+    cancelPlan                = true,
+    suspensionPeriodRangeDate = None
   )
 
   private val ctRequest = ChrisSubmissionRequest(
@@ -184,17 +188,18 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       auddisStatus      = true,
       accountVerified   = true
     ),
-    planStartDate        = Some(planStartDateDetails),
-    planEndDate          = None,
-    paymentDate          = Some(paymentDateDetails),
-    yearEndAndMonth      = None,
-    ddiReferenceNo       = "CT-DDI-789",
-    paymentReference     = "CTRef",
-    totalAmountDue       = Some(BigDecimal(300)),
-    paymentAmount        = Some(BigDecimal(150)),
-    regularPaymentAmount = Some(BigDecimal(75)),
-    amendPaymentAmount   = None,
-    calculation          = None
+    planStartDate             = Some(planStartDateDetails),
+    planEndDate               = None,
+    paymentDate               = Some(paymentDateDetails),
+    yearEndAndMonth           = None,
+    ddiReferenceNo            = "CT-DDI-789",
+    paymentReference          = "CTRef",
+    totalAmountDue            = Some(BigDecimal(300)),
+    paymentAmount             = Some(BigDecimal(150)),
+    regularPaymentAmount      = Some(BigDecimal(75)),
+    amendPaymentAmount        = None,
+    calculation               = None,
+    suspensionPeriodRangeDate = None
   )
 
   private val mgdRequest = ChrisSubmissionRequest(
@@ -209,17 +214,18 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       auddisStatus      = false,
       accountVerified   = false
     ),
-    planStartDate        = Some(planStartDateDetails),
-    planEndDate          = None,
-    paymentDate          = Some(paymentDateDetails),
-    yearEndAndMonth      = None,
-    ddiReferenceNo       = "MGD-DDI-101",
-    paymentReference     = "MGDRef",
-    totalAmountDue       = Some(BigDecimal(400)),
-    paymentAmount        = Some(BigDecimal(200)),
-    regularPaymentAmount = Some(BigDecimal(100)),
-    amendPaymentAmount   = None,
-    calculation          = None
+    planStartDate             = Some(planStartDateDetails),
+    planEndDate               = None,
+    paymentDate               = Some(paymentDateDetails),
+    yearEndAndMonth           = None,
+    ddiReferenceNo            = "MGD-DDI-101",
+    paymentReference          = "MGDRef",
+    totalAmountDue            = Some(BigDecimal(400)),
+    paymentAmount             = Some(BigDecimal(200)),
+    regularPaymentAmount      = Some(BigDecimal(100)),
+    amendPaymentAmount        = None,
+    calculation               = None,
+    suspensionPeriodRangeDate = None
   )
 
   private val mgdCancelRequest = ChrisSubmissionRequest(
@@ -234,18 +240,19 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       auddisStatus      = false,
       accountVerified   = false
     ),
-    planStartDate        = Some(planStartDateDetails),
-    planEndDate          = None,
-    paymentDate          = Some(paymentDateDetails),
-    yearEndAndMonth      = None,
-    ddiReferenceNo       = "MGD-DDI-101",
-    paymentReference     = "MGDRef",
-    totalAmountDue       = Some(BigDecimal(400)),
-    paymentAmount        = Some(BigDecimal(200)),
-    regularPaymentAmount = Some(BigDecimal(100)),
-    amendPaymentAmount   = None,
-    calculation          = None,
-    cancelPlan           = true
+    planStartDate             = Some(planStartDateDetails),
+    planEndDate               = None,
+    paymentDate               = Some(paymentDateDetails),
+    yearEndAndMonth           = None,
+    ddiReferenceNo            = "MGD-DDI-101",
+    paymentReference          = "MGDRef",
+    totalAmountDue            = Some(BigDecimal(400)),
+    paymentAmount             = Some(BigDecimal(200)),
+    regularPaymentAmount      = Some(BigDecimal(100)),
+    amendPaymentAmount        = None,
+    calculation               = None,
+    cancelPlan                = true,
+    suspensionPeriodRangeDate = None
   )
 
   private val vatRequest = ChrisSubmissionRequest(
@@ -260,17 +267,18 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       auddisStatus      = false,
       accountVerified   = false
     ),
-    planStartDate        = Some(planStartDateDetails),
-    planEndDate          = None,
-    paymentDate          = Some(paymentDateDetails),
-    yearEndAndMonth      = None,
-    ddiReferenceNo       = "MGD-DDI-101",
-    paymentReference     = "MGDRef",
-    totalAmountDue       = Some(BigDecimal(400)),
-    paymentAmount        = Some(BigDecimal(200)),
-    regularPaymentAmount = Some(BigDecimal(100)),
-    amendPaymentAmount   = None,
-    calculation          = None
+    planStartDate             = Some(planStartDateDetails),
+    planEndDate               = None,
+    paymentDate               = Some(paymentDateDetails),
+    yearEndAndMonth           = None,
+    ddiReferenceNo            = "MGD-DDI-101",
+    paymentReference          = "MGDRef",
+    totalAmountDue            = Some(BigDecimal(400)),
+    paymentAmount             = Some(BigDecimal(200)),
+    regularPaymentAmount      = Some(BigDecimal(100)),
+    amendPaymentAmount        = None,
+    calculation               = None,
+    suspensionPeriodRangeDate = None
   )
 
   private val payeRequest = ChrisSubmissionRequest(
@@ -285,17 +293,18 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       auddisStatus      = false,
       accountVerified   = false
     ),
-    planStartDate        = Some(planStartDateDetails),
-    planEndDate          = None,
-    paymentDate          = Some(paymentDateDetails),
-    yearEndAndMonth      = None,
-    ddiReferenceNo       = "MGD-DDI-101",
-    paymentReference     = "MGDRef",
-    totalAmountDue       = Some(BigDecimal(400)),
-    paymentAmount        = Some(BigDecimal(200)),
-    regularPaymentAmount = Some(BigDecimal(100)),
-    amendPaymentAmount   = None,
-    calculation          = None
+    planStartDate             = Some(planStartDateDetails),
+    planEndDate               = None,
+    paymentDate               = Some(paymentDateDetails),
+    yearEndAndMonth           = None,
+    ddiReferenceNo            = "MGD-DDI-101",
+    paymentReference          = "MGDRef",
+    totalAmountDue            = Some(BigDecimal(400)),
+    paymentAmount             = Some(BigDecimal(200)),
+    regularPaymentAmount      = Some(BigDecimal(100)),
+    amendPaymentAmount        = None,
+    calculation               = None,
+    suspensionPeriodRangeDate = None
   )
 
   val fakeAuthRequest = AuthenticatedRequest(

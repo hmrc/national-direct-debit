@@ -68,7 +68,7 @@ object ChrisEnvelopeBuilder extends Logging {
                 {XmlUtils.formatKnownFacts(hodServices, "           ")}
               <directDebitInstruction>
                 {
-        if (request.amendPlan || request.cancelPlan) { <ddiReferenceNo>{request.ddiReferenceNo}</ddiReferenceNo> }
+        if (request.amendPlan || request.cancelPlan || request.suspendPlan) { <ddiReferenceNo>{request.ddiReferenceNo}</ddiReferenceNo> }
         else {
           <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
                           <ddiReferenceNo>{request.ddiReferenceNo}</ddiReferenceNo>
