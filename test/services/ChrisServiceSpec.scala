@@ -26,6 +26,7 @@ import play.api.test.FakeRequest
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.{HeaderCarrier, SessionId}
 import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
+import uk.gov.hmrc.nationaldirectdebit.models.SuspensionPeriodRange
 import uk.gov.hmrc.nationaldirectdebit.models.requests.*
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.*
 import uk.gov.hmrc.nationaldirectdebit.services.ChrisService
@@ -116,6 +117,28 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
     amendPlan          = true,
     amendPaymentAmount = Some(BigDecimal(100)),
     totalAmountDue     = null
+  )
+
+  private val saBudgetingSuspendRequest = saMonthlyRequest.copy(
+    suspendPlan = true,
+    suspensionPeriodRangeDate = Some(
+      SuspensionPeriodRange(
+        startDate = LocalDate.of(2025, 5, 1),
+        endDate   = LocalDate.of(2025, 6, 1)
+      )
+    ),
+    totalAmountDue = None
+  )
+
+  private val saBudgetingSuspendRequestWeekly = saWeeklyRequest.copy(
+    suspendPlan = true,
+    suspensionPeriodRangeDate = Some(
+      SuspensionPeriodRange(
+        startDate = LocalDate.of(2025, 5, 1),
+        endDate   = LocalDate.of(2025, 6, 1)
+      )
+    ),
+    totalAmountDue = None
   )
 
   private val saCancelequest = saMonthlyRequest.copy(
@@ -391,6 +414,52 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
 
       service.submitToChris(saCancelequest, "credId123", "Organisation", fakeAuthRequest).map { result =>
         result must include("SA Cancel Monthly Message received")
+      }
+    }
+
+    "return confirmation when submission succeeds for SA suspend (monthly)" in {
+      val enrolments = Enrolments(
+        Set(
+          Enrolment(
+            key               = "IR-SA",
+            identifiers       = Seq(EnrolmentIdentifier("TaxId", "1234567890")),
+            state             = "Activated",
+            delegatedAuthRule = None
+          )
+        )
+      )
+
+      when(mockAuthConnector.authorise(any(), any())(any(), any()))
+        .thenReturn(Future.successful(enrolments))
+
+      when(mockConnector.submitEnvelope(any[Elem]))
+        .thenReturn(Future.successful("<Confirmation>SA Suspend Monthly Message received</Confirmation>"))
+
+      service.submitToChris(saBudgetingSuspendRequest, "credId123", "Agent", fakeAuthRequest).map { result =>
+        result must include("SA Suspend Monthly Message received")
+      }
+    }
+
+    "return confirmation when submission succeeds for SA suspend (Weekly)" in {
+      val enrolments = Enrolments(
+        Set(
+          Enrolment(
+            key               = "IR-SA",
+            identifiers       = Seq(EnrolmentIdentifier("TaxId", "1234567890")),
+            state             = "Activated",
+            delegatedAuthRule = None
+          )
+        )
+      )
+
+      when(mockAuthConnector.authorise(any(), any())(any(), any()))
+        .thenReturn(Future.successful(enrolments))
+
+      when(mockConnector.submitEnvelope(any[Elem]))
+        .thenReturn(Future.successful("<Confirmation>SA Suspend Weekly Message received</Confirmation>"))
+
+      service.submitToChris(saBudgetingSuspendRequestWeekly, "credId123", "Agent", fakeAuthRequest).map { result =>
+        result must include("SA Suspend Weekly Message received")
       }
     }
 
