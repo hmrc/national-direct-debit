@@ -21,7 +21,7 @@ import play.api.mvc.*
 import play.api.mvc.Results.Unauthorized
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.retrieve.~
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisationException, AuthorisedFunctions}
+import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisationException, AuthorisedFunctions, Enrolment, Enrolments}
 import uk.gov.hmrc.http.{HeaderCarrier, SessionId, UnauthorizedException}
 import uk.gov.hmrc.nationaldirectdebit.models.requests.AuthenticatedRequest
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
@@ -37,6 +37,26 @@ class DefaultAuthAction @Inject() (
     with AuthorisedFunctions
     with Logging:
 
+  val acceptedEnrolments = Set(
+    "IR-SA",
+    "IR-SA-TRUST-ORG",
+    "IR-SA-PART-ORG",
+    "IR-CT",
+    "IR-PAYE",
+    "HMRC-CIS-ORG",
+    "HMRC-MGD-ORG",
+    "HMRC-ECL-ORG"
+  )
+
+  private def usingSupportedEnrolments(enrolments: Enrolments): Boolean = {
+    enrolments.enrolments
+      .exists {
+        case e @ Enrolment("HMRC-PSA-ORG", _, _, _) if e.isActivated                        => true
+        case e @ Enrolment(key, _, state, _) if e.isActivated || state == "NotYetActivated" => acceptedEnrolments(key)
+        case _                                                                              => false
+      }
+  }
+
   override def invokeBlock[A](
     request: Request[A],
     block: AuthenticatedRequest[A] => Future[Result]
@@ -46,12 +66,12 @@ class DefaultAuthAction @Inject() (
     val sessionId: SessionId = hc.sessionId
       .getOrElse(throw new UnauthorizedException("Unable to retrieve session ID from headers"))
 
-    val retrievals = Retrievals.internalId and Retrievals.credentials and Retrievals.affinityGroup and Retrievals.nino
+    val retrievals = Retrievals.internalId and Retrievals.credentials and Retrievals.affinityGroup and Retrievals.nino and Retrievals.allEnrolments
 
     authorised()
-      .retrieve(retrievals) { case maybeInternalId ~ maybeCreds ~ maybeAffinity ~ maybeNino =>
-        (maybeInternalId, maybeCreds, maybeAffinity) match
-          case (Some(internalId), Some(credentials), Some(affinity)) =>
+      .retrieve(retrievals) { case maybeInternalId ~ maybeCreds ~ maybeAffinity ~ maybeNino ~ enrolments =>
+        (maybeInternalId, maybeCreds, maybeAffinity, enrolments) match
+          case (Some(internalId), Some(credentials), Some(affinity), userEnrolments) if usingSupportedEnrolments(userEnrolments) =>
             val credId = credentials.providerId
             val affinityName = affinity.toString
             block(
