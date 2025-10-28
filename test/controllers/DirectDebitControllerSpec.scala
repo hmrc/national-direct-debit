@@ -237,17 +237,18 @@ class DirectDebitControllerSpec extends SpecBase {
         auddisStatus      = false,
         accountVerified   = false
       ),
-      planStartDate        = Some(PlanStartDateDetails(LocalDate.of(2025, 9, 1), "2025-09-01")),
-      planEndDate          = None,
-      paymentDate          = Some(PaymentDateDetails(LocalDate.of(2025, 9, 15), "2025-09-01")),
-      yearEndAndMonth      = None,
-      ddiReferenceNo       = "DDI123456789",
-      paymentReference     = "testReference",
-      totalAmountDue       = Some(BigDecimal(200)),
-      amendPaymentAmount   = Some(BigDecimal(100)),
-      paymentAmount        = Some(BigDecimal(100.00)),
-      regularPaymentAmount = Some(BigDecimal(90.00)),
-      calculation          = None
+      planStartDate             = Some(PlanStartDateDetails(LocalDate.of(2025, 9, 1), "2025-09-01")),
+      planEndDate               = None,
+      paymentDate               = Some(PaymentDateDetails(LocalDate.of(2025, 9, 15), "2025-09-01")),
+      yearEndAndMonth           = None,
+      ddiReferenceNo            = "DDI123456789",
+      paymentReference          = "testReference",
+      totalAmountDue            = Some(BigDecimal(200)),
+      amendPaymentAmount        = Some(BigDecimal(100)),
+      paymentAmount             = Some(BigDecimal(100.00)),
+      regularPaymentAmount      = Some(BigDecimal(90.00)),
+      calculation               = None,
+      suspensionPeriodRangeDate = None
     )
 
     val testChrisRequestSAMonthly: ChrisSubmissionRequest = baseChrisRequest.copy(

@@ -15,8 +15,8 @@
  */
 
 package uk.gov.hmrc.nationaldirectdebit.models.requests
-
 import play.api.libs.json.{Json, OFormat}
+import uk.gov.hmrc.nationaldirectdebit.models.SuspensionPeriodRange
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.*
 
 import java.time.LocalDate
@@ -38,8 +38,10 @@ case class ChrisSubmissionRequest(
   regularPaymentAmount: Option[BigDecimal],
   amendPaymentAmount: Option[BigDecimal],
   calculation: Option[PaymentPlanCalculation],
+  suspensionPeriodRangeDate: Option[SuspensionPeriodRange],
   amendPlan: Boolean = false,
-  cancelPlan: Boolean = false
+  cancelPlan: Boolean = false,
+  suspendPlan: Boolean = false
 )
 
 object ChrisSubmissionRequest {
