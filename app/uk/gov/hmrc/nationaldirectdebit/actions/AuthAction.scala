@@ -21,7 +21,7 @@ import play.api.mvc.*
 import play.api.mvc.Results.Unauthorized
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.retrieve.~
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisationException, AuthorisedFunctions, Enrolments, Enrolment}
+import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisationException, AuthorisedFunctions, Enrolment, Enrolments}
 import uk.gov.hmrc.http.{HeaderCarrier, SessionId, UnauthorizedException}
 import uk.gov.hmrc.nationaldirectdebit.models.requests.AuthenticatedRequest
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
