@@ -112,7 +112,7 @@ object PaymentPlanBuilder {
       <paymentCurrency>GBP</paymentCurrency>
       <scheduledPaymentAmount>{f"${request.amendPaymentAmount.getOrElse(BigDecimal(0)).toDouble}%.2f"}</scheduledPaymentAmount>
       <scheduledPaymentStartDate>{request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
-      <scheduledPaymentEndDate>{request.planEndDate.getOrElse("")}</scheduledPaymentEndDate>
+      {if (request.planEndDate.nonEmpty) <scheduledPaymentEndDate>{request.planEndDate.getOrElse("")}</scheduledPaymentEndDate> else Null}
       {if (freqCode.nonEmpty) <scheduledPaymentFrequency>{freqCode}</scheduledPaymentFrequency> else Null}
     </paymentPlan>
   }
