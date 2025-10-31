@@ -26,6 +26,8 @@ object PaymentPlanBuilder {
 
   def build(request: ChrisSubmissionRequest, hodService: Option[String]): Elem = {
     request.serviceType match {
+      case DirectDebitSource.SA if request.paymentPlanType == PaymentPlanType.BudgetPaymentPlan && request.suspendPlan =>
+        buildSuspendBudgetPlan(request, hodService)
       case DirectDebitSource.SA if request.paymentPlanType == PaymentPlanType.BudgetPaymentPlan && request.amendPlan =>
         buildAmendBudgetPlan(request, hodService)
 
@@ -112,6 +114,24 @@ object PaymentPlanBuilder {
       <scheduledPaymentStartDate>{request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
       {if (request.planEndDate.nonEmpty) <scheduledPaymentEndDate>{request.planEndDate.getOrElse("")}</scheduledPaymentEndDate>}
       {if (freqCode.nonEmpty) <scheduledPaymentFrequency>{freqCode}</scheduledPaymentFrequency> else Null}
+    </paymentPlan>
+  }
+
+  private def buildSuspendBudgetPlan(request: ChrisSubmissionRequest, hodService: Option[String]): Elem = {
+    val freqCode = frequencyCode(request)
+    <paymentPlan>
+      <actionType>{ChrisEnvelopeConstants.ActionType_3}</actionType>
+      <pPType>{ChrisEnvelopeConstants.PPType_2}</pPType>
+      <paymentReference>{request.paymentReference}</paymentReference>
+      <corePPReferenceNo>{request.paymentPlanReferenceNumber.getOrElse("")}</corePPReferenceNo>
+      <hodService>{hodService.getOrElse("")}</hodService>
+      <paymentCurrency>GBP</paymentCurrency>
+      <scheduledPaymentAmount>{f"${request.paymentAmount.getOrElse(BigDecimal(0)).toDouble}%.2f"}</scheduledPaymentAmount>
+      <scheduledPaymentStartDate>{request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
+      {if (request.planEndDate.nonEmpty) <scheduledPaymentEndDate>{request.planEndDate.getOrElse("")}</scheduledPaymentEndDate> else Null}
+      {if (freqCode.nonEmpty) <scheduledPaymentFrequency>{freqCode}</scheduledPaymentFrequency> else Null}
+      <suspensionStartDate>{request.suspensionPeriodRangeDate.map(_.startDate).getOrElse("")}</suspensionStartDate>
+      <suspensionEndDate>{request.suspensionPeriodRangeDate.map(_.endDate).getOrElse("")}</suspensionEndDate>
     </paymentPlan>
   }
 
