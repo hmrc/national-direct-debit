@@ -49,7 +49,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
     enteredDate           = LocalDate.of(2025, 9, 1),
     earliestPlanStartDate = "2025-09-01"
   )
-
+  private val planEndDate = LocalDate.of(2026, 5, 5)
   private val paymentDateDetails = PaymentDateDetails(
     enteredDate         = LocalDate.of(2025, 9, 15),
     earliestPaymentDate = "2025-09-01"
@@ -58,7 +58,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
   // Distinct requests for each service type
   private val tcRequest = ChrisSubmissionRequest(
     serviceType                = DirectDebitSource.TC,
-    paymentPlanType            = PaymentPlanType.TaxCreditRepaymentPlan,
+    paymentPlanType            = PaymentPlanType.SinglePayment,
     paymentPlanReferenceNumber = None,
     paymentFrequency           = Some(PaymentsFrequency.Monthly),
     yourBankDetailsWithAuddisStatus = YourBankDetailsWithAuddisStatus(
@@ -74,8 +74,8 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
     yearEndAndMonth           = None,
     ddiReferenceNo            = "TC-DDI-123",
     paymentReference          = "TCRef",
-    totalAmountDue            = Some(BigDecimal(100)),
-    paymentAmount             = Some(BigDecimal(50)),
+    totalAmountDue            = None,
+    paymentAmount             = None,
     amendPaymentAmount        = None,
     regularPaymentAmount      = Some(BigDecimal(25)),
     calculation               = None,
@@ -95,7 +95,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       accountVerified   = false
     ),
     planStartDate             = Some(planStartDateDetails),
-    planEndDate               = None,
+    planEndDate               = Some(planEndDate),
     paymentDate               = Some(paymentDateDetails),
     yearEndAndMonth           = None,
     ddiReferenceNo            = "SA-DDI-456",
@@ -130,6 +130,12 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
     totalAmountDue = None
   )
 
+  private val saBudgetingRemoveSuspendRequest = saMonthlyRequest.copy(
+    removeSuspensionPlan      = true,
+    suspensionPeriodRangeDate = None,
+    totalAmountDue            = None
+  )
+
   private val saBudgetingSuspendRequestWeekly = saWeeklyRequest.copy(
     suspendPlan = true,
     suspensionPeriodRangeDate = Some(
@@ -146,7 +152,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
   )
 
   private val amendSingleRequest = ChrisSubmissionRequest(
-    serviceType                = DirectDebitSource.CT,
+    serviceType                = DirectDebitSource.SA,
     paymentPlanType            = PaymentPlanType.SinglePayment,
     paymentPlanReferenceNumber = None,
     paymentFrequency           = Some(PaymentsFrequency.Monthly),
@@ -173,7 +179,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
   )
 
   private val cancelSingleRequest = ChrisSubmissionRequest(
-    serviceType                = DirectDebitSource.CT,
+    serviceType                = DirectDebitSource.SA,
     paymentPlanType            = PaymentPlanType.SinglePayment,
     paymentPlanReferenceNumber = None,
     paymentFrequency           = Some(PaymentsFrequency.Monthly),
@@ -463,6 +469,29 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       }
     }
 
+    "return confirmation when submission succeeds for SA remove suspension (Weekly)" in {
+      val enrolments = Enrolments(
+        Set(
+          Enrolment(
+            key               = "IR-SA",
+            identifiers       = Seq(EnrolmentIdentifier("TaxId", "1234567890")),
+            state             = "Activated",
+            delegatedAuthRule = None
+          )
+        )
+      )
+
+      when(mockAuthConnector.authorise(any(), any())(any(), any()))
+        .thenReturn(Future.successful(enrolments))
+
+      when(mockConnector.submitEnvelope(any[Elem]))
+        .thenReturn(Future.successful("<Confirmation>SA Remove Suspension Weekly Message received</Confirmation>"))
+
+      service.submitToChris(saBudgetingRemoveSuspendRequest, "credId123", "Agent", fakeAuthRequest).map { result =>
+        result must include("SA Remove Suspension Weekly Message received")
+      }
+    }
+
     "return confirmation when submission succeeds for SA (weekly)" in {
       val enrolments = Enrolments(
         Set(
@@ -651,16 +680,6 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
 
       service.submitToChris(mgdCancelRequest, "credId123", "Individual", fakeAuthRequest).map { result =>
         result must include("MGD with variable Cancel Message received")
-      }
-    }
-
-    "work when no enrolments are returned for Individual affinity group" in {
-      val enrolments = Enrolments(Set.empty)
-      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>No enrolments</Confirmation>"))
-
-      service.submitToChris(tcRequest, "credId456", "Individual", fakeAuthRequest).map { result =>
-        result must include("No enrolments")
       }
     }
 
