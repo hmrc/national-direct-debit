@@ -138,8 +138,6 @@ object PaymentPlanBuilder {
   }
 
   private def buildRemoveSuspensionBudgetPlan(request: ChrisSubmissionRequest, hodService: Option[String]): Elem = {
-    println("*******remove suspension**************")
-    val freqCode = frequencyCode(request)
     <paymentPlan>
       <actionType>{ChrisEnvelopeConstants.ActionType_3}</actionType>
       <pPType>{ChrisEnvelopeConstants.PPType_2}</pPType>
@@ -150,7 +148,6 @@ object PaymentPlanBuilder {
       <scheduledPaymentAmount>{f"${request.paymentAmount.getOrElse(BigDecimal(0)).toDouble}%.2f"}</scheduledPaymentAmount>
       <scheduledPaymentStartDate>{request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
       {if (request.planEndDate.nonEmpty) <scheduledPaymentEndDate>{request.planEndDate.getOrElse("")}</scheduledPaymentEndDate> else Null}
-      {if (freqCode.nonEmpty) <scheduledPaymentFrequency>{freqCode}</scheduledPaymentFrequency> else Null}
     </paymentPlan>
   }
 

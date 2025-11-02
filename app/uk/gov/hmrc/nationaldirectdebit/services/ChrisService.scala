@@ -24,6 +24,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.PaymentPlanType
 import uk.gov.hmrc.nationaldirectdebit.models.requests.{AuthenticatedRequest, ChrisSubmissionRequest}
+import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.XmlUtils.*
 import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.{ChRISXmlValidator, ChrisEnvelopeBuilder}
 
 import javax.inject.Inject
@@ -93,28 +94,23 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
       hodServices <- getEligibleHodServices(request: ChrisSubmissionRequest)
       envelopeXml = ChrisEnvelopeBuilder.build(request, credId, affinityGroup, hodServices, authRequest)
       _ <- Future.fromTry {
-             val baseSchemaName =
+             val schemaName = {
                if (request.amendPlan) {
-                 "ChRISEnvelope_Amend"
+                 Amend
                } else if (request.cancelPlan) {
-                 "ChRISEnvelope_Cancel"
+                 Cancel
                } else if (request.suspendPlan) {
-                 "ChRISEnvelope_Suspend"
+                 Suspend
                } else if (request.removeSuspensionPlan) {
-                 "ChRISEnvelope_RemoveSuspension"
+                 RemoveSuspension
                } else {
-                 "ChRISEnvelope_Create"
+                 request.paymentPlanType match {
+                   case PaymentPlanType.SinglePayment          => CreateSingle
+                   case PaymentPlanType.BudgetPaymentPlan      => CreateBudget
+                   case PaymentPlanType.TaxCreditRepaymentPlan => CreateTaxCredit
+                   case PaymentPlanType.VariablePaymentPlan    => CreateVariable
+                 }
                }
-
-             // ✅ Append "_01" if the paymentPlanType is SINGLE
-             val schemaName = request.paymentPlanType match {
-               case PaymentPlanType.SinglePayment if !request.cancelPlan && !request.amendPlan => s"${baseSchemaName}_01.xsd"
-               case PaymentPlanType.BudgetPaymentPlan
-                   if !request.cancelPlan && !request.amendPlan && !request.removeSuspensionPlan && !request.suspendPlan =>
-                 s"${baseSchemaName}_02.xsd"
-               case PaymentPlanType.TaxCreditRepaymentPlan if !request.cancelPlan && !request.amendPlan => s"${baseSchemaName}_03.xsd"
-               case PaymentPlanType.VariablePaymentPlan if !request.cancelPlan && !request.amendPlan    => s"${baseSchemaName}_04.xsd"
-               case _                                                                                   => s"$baseSchemaName.xsd"
              }
 
              ChRISXmlValidator.validate(envelopeXml.toString(), schemaName)

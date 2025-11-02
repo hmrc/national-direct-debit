@@ -4,12 +4,9 @@
            xmlns="http://www.hmrc.gov.uk/ChRIS/Envelope/2"
            elementFormDefault="qualified"
            attributeFormDefault="unqualified">
-
-    <!-- Root Element -->
     <xs:element name="ChRISEnvelope">
         <xs:complexType>
             <xs:sequence>
-                <!-- Envelope Metadata -->
                 <xs:element name="EnvelopeVersion" type="xs:string"/>
                 <xs:element name="Header">
                     <xs:complexType>
@@ -30,7 +27,6 @@
                     </xs:complexType>
                 </xs:element>
 
-                <!-- Envelope Body -->
                 <xs:element name="Body">
                     <xs:complexType>
                         <xs:sequence>
@@ -38,7 +34,6 @@
                                 <xs:complexType>
                                     <xs:sequence>
 
-                                        <!-- Header Info -->
                                         <xs:element name="IRheader" form="unqualified">
                                             <xs:complexType>
                                                 <xs:sequence>
@@ -63,12 +58,10 @@
                                             </xs:complexType>
                                         </xs:element>
 
-                                        <!-- Budgeting Plan Details -->
                                         <xs:element name="dDIPPDetails" form="unqualified">
                                             <xs:complexType>
                                                 <xs:sequence>
 
-                                                    <!-- General Submission Info -->
                                                     <xs:element name="submissionDateTime" type="xs:dateTime" form="unqualified"/>
                                                     <xs:element name="credentialID" type="xs:string" form="unqualified"/>
 
@@ -81,7 +74,6 @@
                                                         </xs:complexType>
                                                     </xs:element>
 
-                                                    <!-- DDI Information -->
                                                     <xs:element name="directDebitInstruction" form="unqualified">
                                                         <xs:complexType>
                                                             <xs:sequence>
@@ -95,7 +87,6 @@
                                                         </xs:complexType>
                                                     </xs:element>
 
-                                                    <!-- Payment Plan for Budgeting -->
                                                     <xs:element name="paymentPlan" form="unqualified">
                                                         <xs:complexType>
                                                             <xs:sequence>
@@ -106,7 +97,6 @@
                                                                 <xs:element name="hodService" type="xs:string" form="unqualified"/>
                                                                 <xs:element name="paymentCurrency" type="xs:string" form="unqualified"/>
 
-                                                                <!-- Budgeting Plan-Specific Fields -->
                                                                 <xs:element name="scheduledPaymentAmount" type="xs:decimal" form="unqualified"/>
                                                                 <xs:element name="scheduledPaymentStartDate" type="xs:date" form="unqualified"/>
                                                                 <xs:element name="scheduledPaymentEndDate" type="xs:date" form="unqualified"/>

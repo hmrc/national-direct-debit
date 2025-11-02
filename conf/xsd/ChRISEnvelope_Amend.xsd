@@ -34,8 +34,6 @@
                             <xs:element name="IRenvelope" form="unqualified">
                                 <xs:complexType>
                                     <xs:sequence>
-
-                                        <!-- IRheader -->
                                         <xs:element name="IRheader" form="unqualified">
                                             <xs:complexType>
                                                 <xs:sequence>
@@ -60,7 +58,6 @@
                                             </xs:complexType>
                                         </xs:element>
 
-                                        <!-- dDIPPDetails -->
                                         <xs:element name="dDIPPDetails" form="unqualified">
                                             <xs:complexType>
                                                 <xs:sequence>
@@ -75,7 +72,6 @@
                                                         </xs:complexType>
                                                     </xs:element>
 
-                                                    <!-- directDebitInstruction -->
                                                     <xs:element name="directDebitInstruction" form="unqualified">
                                                         <xs:complexType>
                                                             <xs:sequence>
@@ -89,7 +85,6 @@
                                                         </xs:complexType>
                                                     </xs:element>
 
-                                                    <!-- paymentPlan -->
                                                     <xs:element name="paymentPlan" form="unqualified">
                                                         <xs:complexType>
                                                             <xs:sequence>
