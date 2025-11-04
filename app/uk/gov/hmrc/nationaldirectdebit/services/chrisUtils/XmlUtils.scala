@@ -75,4 +75,16 @@ object XmlUtils {
       }
     }.flatten
 
+  // Create schemas
+  val CreateSingle = "ChRISEnvelope_Create_01.xsd"
+  val CreateBudget = "ChRISEnvelope_Create_02.xsd"
+  val CreateTaxCredit = "ChRISEnvelope_Create_03.xsd"
+  val CreateVariable = "ChRISEnvelope_Create_04.xsd"
+
+  // Amend / Cancel / Suspend / RemoveSuspension schemas
+  val Amend = "ChRISEnvelope_Amend.xsd"
+  val Cancel = "ChRISEnvelope_Cancel.xsd"
+  val Suspend = "ChRISEnvelope_Suspend.xsd"
+  val RemoveSuspension = "ChRISEnvelope_RemoveSuspension.xsd"
+
 }
