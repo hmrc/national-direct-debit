@@ -93,28 +93,28 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
     for {
       hodServices <- getEligibleHodServices(request: ChrisSubmissionRequest)
       envelopeXml = ChrisEnvelopeBuilder.build(request, credId, affinityGroup, hodServices, authRequest)
-      _ <- Future.fromTry {
-             val schemaName = {
-               if (request.amendPlan) {
-                 Amend
-               } else if (request.cancelPlan) {
-                 Cancel
-               } else if (request.suspendPlan) {
-                 Suspend
-               } else if (request.removeSuspensionPlan) {
-                 RemoveSuspension
-               } else {
-                 request.paymentPlanType match {
-                   case PaymentPlanType.SinglePayment          => CreateSingle
-                   case PaymentPlanType.BudgetPaymentPlan      => CreateBudget
-                   case PaymentPlanType.TaxCreditRepaymentPlan => CreateTaxCredit
-                   case PaymentPlanType.VariablePaymentPlan    => CreateVariable
-                 }
-               }
-             }
-
-             ChRISXmlValidator.validate(envelopeXml.toString(), schemaName)
-           }
+//      _ <- Future.fromTry {
+//             val schemaName = {
+//               if (request.amendPlan) {
+//                 Amend
+//               } else if (request.cancelPlan) {
+//                 Cancel
+//               } else if (request.suspendPlan) {
+//                 Suspend
+//               } else if (request.removeSuspensionPlan) {
+//                 RemoveSuspension
+//               } else {
+//                 request.paymentPlanType match {
+//                   case PaymentPlanType.SinglePayment          => CreateSingle
+//                   case PaymentPlanType.BudgetPaymentPlan      => CreateBudget
+//                   case PaymentPlanType.TaxCreditRepaymentPlan => CreateTaxCredit
+//                   case PaymentPlanType.VariablePaymentPlan    => CreateVariable
+//                 }
+//               }
+//             }
+//
+//              ChRISXmlValidator.validate(envelopeXml.toString(), schemaName)
+//           }
       result <- chrisConnector.submitEnvelope(envelopeXml)
     } yield result
 
