@@ -130,4 +130,11 @@ class DirectDebitController @Inject() (
           }
         }
 
+  def isAdvanceNoticePresent(directDebitReference: String, paymentPlanReference: String): Action[AnyContent] =
+    authorise.async { implicit request =>
+      service.isAdvanceNoticePresent(directDebitReference, paymentPlanReference).map { response =>
+        Ok(Json.toJson(response))
+      }
+    }
+
 }
