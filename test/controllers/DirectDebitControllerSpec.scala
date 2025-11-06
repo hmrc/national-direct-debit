@@ -200,6 +200,51 @@ class DirectDebitControllerSpec extends SpecBase {
       }
     }
 
+    "isAdvanceNoticePresent method" - {
+      "return 200 and a successful response when advance notice details exist" in new SetUp {
+        when(mockDirectDebitService.isAdvanceNoticePresent(any(), any())(any()))
+          .thenReturn(
+            Future.successful(
+              AdvanceNoticeResponse(
+                totalAmount = Some("500"),
+                dueDate     = Some("03-11-2026")
+              )
+            )
+          )
+
+        val result: Future[Result] = controller.isAdvanceNoticePresent("test-dd-reference", "test-pp-reference")(fakeRequest)
+
+        status(result) mustBe OK
+        contentAsJson(result) mustBe Json.toJson(
+          AdvanceNoticeResponse(
+            totalAmount = Some("500"),
+            dueDate     = Some("03-11-2026")
+          )
+        )
+      }
+
+      "return 200 and a successful response when advance notice details does not exist" in new SetUp {
+        when(mockDirectDebitService.isAdvanceNoticePresent(any(), any())(any()))
+          .thenReturn(
+            Future.successful(
+              AdvanceNoticeResponse(
+                totalAmount = None,
+                dueDate     = None
+              )
+            )
+          )
+
+        val result: Future[Result] = controller.isAdvanceNoticePresent("test-dd-reference", "test-pp-reference")(fakeRequest)
+
+        status(result) mustBe OK
+        contentAsJson(result) mustBe Json.toJson(
+          AdvanceNoticeResponse(
+            totalAmount = None,
+            dueDate     = None
+          )
+        )
+      }
+    }
   }
 
   class SetUp {

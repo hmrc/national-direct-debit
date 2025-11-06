@@ -189,5 +189,25 @@ class DirectDebitServiceSpec extends SpecBase {
         result mustBe DuplicateCheckResponse(true)
       }
     }
+
+    "isAdvanceNoticePresent method" - {
+      "must return the response from the connector" in {
+        when(mockConnector.isAdvanceNoticePresent(any(), any())(any()))
+          .thenReturn(
+            Future.successful(
+              AdvanceNoticeResponse(
+                totalAmount = Some("500"),
+                dueDate     = Some("03-11-2026")
+              )
+            )
+          )
+        val result = testService.isAdvanceNoticePresent("test-dd-reference", "test-pp-reference").futureValue
+
+        result mustBe AdvanceNoticeResponse(
+          totalAmount = Some("500"),
+          dueDate     = Some("03-11-2026")
+        )
+      }
+    }
   }
 }
