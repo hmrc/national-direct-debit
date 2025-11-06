@@ -196,16 +196,16 @@ class DirectDebitServiceSpec extends SpecBase {
           .thenReturn(
             Future.successful(
               AdvanceNoticeResponse(
-                totalAmount = Some("500"),
-                dueDate     = Some("03-11-2026")
+                totalAmount = Some(500),
+                dueDate     = Some(currentTime.toLocalDate.plusMonths(1))
               )
             )
           )
         val result = testService.isAdvanceNoticePresent("test-dd-reference", "test-pp-reference").futureValue
 
         result mustBe AdvanceNoticeResponse(
-          totalAmount = Some("500"),
-          dueDate     = Some("03-11-2026")
+          totalAmount = Some(500),
+          dueDate     = Some(currentTime.toLocalDate.plusMonths(1))
         )
       }
     }

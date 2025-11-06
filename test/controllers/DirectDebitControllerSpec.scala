@@ -202,12 +202,13 @@ class DirectDebitControllerSpec extends SpecBase {
 
     "isAdvanceNoticePresent method" - {
       "return 200 and a successful response when advance notice details exist" in new SetUp {
+        val currentTime = LocalDateTime.now().withNano(0)
         when(mockDirectDebitService.isAdvanceNoticePresent(any(), any())(any()))
           .thenReturn(
             Future.successful(
               AdvanceNoticeResponse(
-                totalAmount = Some("500"),
-                dueDate     = Some("03-11-2026")
+                totalAmount = Some(500),
+                dueDate     = Some(currentTime.toLocalDate.plusMonths(1))
               )
             )
           )
@@ -217,13 +218,14 @@ class DirectDebitControllerSpec extends SpecBase {
         status(result) mustBe OK
         contentAsJson(result) mustBe Json.toJson(
           AdvanceNoticeResponse(
-            totalAmount = Some("500"),
-            dueDate     = Some("03-11-2026")
+            totalAmount = Some(500),
+            dueDate     = Some(currentTime.toLocalDate.plusMonths(1))
           )
         )
       }
 
       "return 200 and a successful response when advance notice details does not exist" in new SetUp {
+        val currentTime = LocalDateTime.now().withNano(0)
         when(mockDirectDebitService.isAdvanceNoticePresent(any(), any())(any()))
           .thenReturn(
             Future.successful(

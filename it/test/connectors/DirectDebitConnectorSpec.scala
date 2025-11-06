@@ -533,18 +533,24 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock with Matchers wit
             .willReturn(
               aResponse()
                 .withStatus(OK)
-                .withBody(Json.toJson(AdvanceNoticeResponse(
-                  totalAmount = Some("500"),
-                  dueDate     = Some("03-11-2026")
-                )).toString)
+                .withBody(
+                  Json
+                    .toJson(
+                      AdvanceNoticeResponse(
+                        totalAmount = Some(500),
+                        dueDate     = Some(currentTime.toLocalDate.plusMonths(1))
+                      )
+                    )
+                    .toString
+                )
             )
         )
 
         val result = connector.isAdvanceNoticePresent("test-dd-Ref", "test-pp-reference").futureValue
 
         result mustBe AdvanceNoticeResponse(
-          totalAmount = Some("500"),
-          dueDate     = Some("03-11-2026")
+          totalAmount = Some(500),
+          dueDate     = Some(currentTime.toLocalDate.plusMonths(1))
         )
       }
 
@@ -554,10 +560,16 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock with Matchers wit
             .willReturn(
               aResponse()
                 .withStatus(OK)
-                .withBody(Json.toJson(AdvanceNoticeResponse(
-                  totalAmount = None,
-                  dueDate     = None
-                )).toString)
+                .withBody(
+                  Json
+                    .toJson(
+                      AdvanceNoticeResponse(
+                        totalAmount = None,
+                        dueDate     = None
+                      )
+                    )
+                    .toString
+                )
             )
         )
 
