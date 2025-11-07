@@ -185,6 +185,7 @@ object PaymentPlanBuilder {
     hodService: Option[String],
     ppType: String
   ): Elem = {
+    val freqCode = frequencyCode(request)
     <paymentPlan>
       <actionType>{ChrisEnvelopeConstants.ActionType_4}</actionType>
       <pPType>{ppType}</pPType>
@@ -192,8 +193,19 @@ object PaymentPlanBuilder {
       <corePPReferenceNo>{request.paymentPlanReferenceNumber.getOrElse("")}</corePPReferenceNo>
       <hodService>{hodService.getOrElse("")}</hodService>
       <paymentCurrency>GBP</paymentCurrency>
-      <scheduledPaymentAmount>{f"${request.paymentAmount.getOrElse(BigDecimal(0)).toDouble}%.2f"}</scheduledPaymentAmount>
+      {
+      if (request.paymentPlanType == PaymentPlanType.BudgetPaymentPlan) <scheduledPaymentAmount>{
+        f"${request.paymentAmount.getOrElse(BigDecimal(0)).toDouble}%.2f"
+      }</scheduledPaymentAmount>
+      else Null
+    }
       <scheduledPaymentStartDate>{request.planStartDate.map(_.enteredDate).getOrElse("")}</scheduledPaymentStartDate>
+      {
+      if (freqCode.nonEmpty && request.paymentPlanType == PaymentPlanType.BudgetPaymentPlan) <scheduledPaymentFrequency>{
+        freqCode
+      }</scheduledPaymentFrequency>
+      else Null
+    }
     </paymentPlan>
   }
 
