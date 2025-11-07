@@ -194,7 +194,7 @@ object PaymentPlanBuilder {
       <hodService>{hodService.getOrElse("")}</hodService>
       <paymentCurrency>GBP</paymentCurrency>
       {
-      if (request.serviceType == PaymentPlanType.BudgetPaymentPlan) <scheduledPaymentAmount>{
+      if (request.paymentPlanType == PaymentPlanType.BudgetPaymentPlan) <scheduledPaymentAmount>{
         f"${request.paymentAmount.getOrElse(BigDecimal(0)).toDouble}%.2f"
       }</scheduledPaymentAmount>
       else Null
