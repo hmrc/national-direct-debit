@@ -56,7 +56,7 @@ object ChrisEnvelopeBuilder extends Logging {
           </Sender>
         </Header>
         <Body>
-          <IRenvelope xmlns = {""}>
+          <IRenvelope>
             <IRheader>
               <Keys>{XmlUtils.formatKeys(hodServices, "               ")}</Keys>
               <PeriodEnd>{periodEnd}</PeriodEnd>
