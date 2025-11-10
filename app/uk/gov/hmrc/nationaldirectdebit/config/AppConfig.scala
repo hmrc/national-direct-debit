@@ -16,10 +16,20 @@
 
 package uk.gov.hmrc.nationaldirectdebit.config
 
+import play.api.{Configuration, Environment}
+import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.SchemaLoader
+
 import javax.inject.{Inject, Singleton}
-import play.api.Configuration
+import javax.xml.validation.Schema
 
 @Singleton
-class AppConfig @Inject() (config: Configuration):
+class AppConfig @Inject() (val configuration: Configuration, val environment: Environment):
 
-  val appName: String = config.get[String]("appName")
+  val appName: String = configuration.get[String]("appName")
+
+  // ✅ Expose schema names from config
+  val schemaNames: Seq[String] =
+    configuration.get[Seq[String]]("microservice.xsd.schemaNames")
+
+  // ✅ Load combined XSD schema
+  val schema: Schema = SchemaLoader.loadSchemas(schemaNames, environment)

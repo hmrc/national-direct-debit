@@ -25,12 +25,13 @@ import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.PaymentPlanType
 import uk.gov.hmrc.nationaldirectdebit.models.requests.{AuthenticatedRequest, ChrisSubmissionRequest}
 import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.XmlUtils.*
-import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.{ChRISXmlValidator, ChrisEnvelopeBuilder}
+import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.{ChrisEnvelopeBuilder, XmlValidator}
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: AuthConnector)(implicit ec: ExecutionContext) extends Logging {
+class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: AuthConnector, validator: XmlValidator)(implicit ec: ExecutionContext)
+    extends Logging {
 
   private def getEligibleHodServices(
     request: ChrisSubmissionRequest
@@ -87,35 +88,36 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
     }
   }
 
-  def submitToChris(request: ChrisSubmissionRequest, credId: String, affinityGroup: String, authRequest: AuthenticatedRequest[?])(implicit
-    hc: HeaderCarrier
-  ): Future[String] =
+  import scala.util.{Failure, Success, Try}
+
+  def submitToChris(
+    request: ChrisSubmissionRequest,
+    credId: String,
+    affinityGroup: String,
+    authRequest: AuthenticatedRequest[?]
+  )(implicit hc: HeaderCarrier): Future[String] = {
+
     for {
-      hodServices <- getEligibleHodServices(request: ChrisSubmissionRequest)
+      // Step 1: Build the XML envelope from the request
+      hodServices <- getEligibleHodServices(request)
       envelopeXml = ChrisEnvelopeBuilder.build(request, credId, affinityGroup, hodServices, authRequest)
-//      _ <- Future.fromTry {
-//             val schemaName = {
-//               if (request.amendPlan) {
-//                 Amend
-//               } else if (request.cancelPlan) {
-//                 Cancel
-//               } else if (request.suspendPlan) {
-//                 Suspend
-//               } else if (request.removeSuspensionPlan) {
-//                 RemoveSuspension
-//               } else {
-//                 request.paymentPlanType match {
-//                   case PaymentPlanType.SinglePayment          => CreateSingle
-//                   case PaymentPlanType.BudgetPaymentPlan      => CreateBudget
-//                   case PaymentPlanType.TaxCreditRepaymentPlan => CreateTaxCredit
-//                   case PaymentPlanType.VariablePaymentPlan    => CreateVariable
-//                 }
-//               }
-//             }
-//
-//              ChRISXmlValidator.validate(envelopeXml.toString(), schemaName)
-//           }
-      result <- chrisConnector.submitEnvelope(envelopeXml)
+
+      // Step 2: Validate the XML (returns Try[Unit])
+      validationResult = validator.validate(envelopeXml)
+
+      // Step 3: Handle validation outcome
+      result <- validationResult match {
+                  case Success(_) =>
+                    logger.info("✅ ChRIS XML validation succeeded. Submitting envelope to ChRIS...")
+                    chrisConnector.submitEnvelope(envelopeXml)
+
+                  case Failure(e) =>
+                    logger.error(s"❌ ChRIS XML validation failed: ${e.getMessage}", e)
+                    Future.failed(
+                      new RuntimeException(s"ChRIS submission skipped due to invalid XML: ${e.getMessage}", e)
+                    )
+                }
     } yield result
+  }
 
 }

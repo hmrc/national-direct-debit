@@ -1,0 +1,166 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:ns1="http://www.govtalk.gov.uk/financial/GDSCFinancialTypes" xmlns:ns2="http://example.com/iso4217CurrencyCodeSample" xmlns:ns3="http://www.govtalk.gov.uk/financial/FinancialIdentifiers" xmlns:ns4="http://www.hmrc.gov.uk/ChRIS/Envelope/2" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:import namespace="http://example.com/iso4217CurrencyCodeSample" schemaLocation="codelist-ISO4217-v0-3.xsd"/>
+	<xs:import namespace="http://www.govtalk.gov.uk/financial/GDSCFinancialTypes" schemaLocation="FinancialTypes-v1-1.xsd"/>
+	<xs:import namespace="http://www.govtalk.gov.uk/financial/FinancialIdentifiers" schemaLocation="FinancialIdentifierTypes-v1-0.xsd"/>
+	<xs:element name="dDIPPDetails">
+		<xs:annotation>
+			<xs:documentation>Direct Debit Instruction and Payment Plan Details document for NDDS</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="chrisMessageID" minOccurs="0">
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:maxLength value="60"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:element>
+				<xs:element name="nddsMessageID" minOccurs="0">
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:maxLength value="60"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:element>
+				<xs:element name="submissionDateTime" type="xs:dateTime" minOccurs="0"/>
+				<xs:element name="coreExtractDateTime" type="xs:dateTime" minOccurs="0"/>
+				<xs:element name="credentialID">
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:maxLength value="60"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:element>
+				<xs:element name="knownFact" minOccurs="0" maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="service">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:maxLength value="5"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="value">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:maxLength value="18"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="directDebitInstruction">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="actionType" minOccurs="0">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:maxLength value="2"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="ddiReferenceNo">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:maxLength value="10"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="bankSortCode" type="ns3:UKBankBranchSortCodeType" minOccurs="0"/>
+							<xs:element name="bankAccountNo" type="ns3:UKBankAccountNumberType" minOccurs="0"/>
+							<xs:element name="bankAccountName" minOccurs="0">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:maxLength value="40"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="paperAuddisFlag" minOccurs="0">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:maxLength value="2"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="paymentPlan" minOccurs="0">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="actionType">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:maxLength value="2"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="pPType">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:maxLength value="2"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="paymentReference">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:maxLength value="18"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="corePPReferenceNo" minOccurs="0">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:length value="9"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="hodService">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:maxLength value="4"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="paymentCurrency" type="ns2:CodeType"/>
+							<xs:element name="initialPaymentAmount" type="ns1:AmountType" minOccurs="0"/>
+							<xs:element name="initialPaymentStartDate" type="xs:date" minOccurs="0"/>
+							<xs:element name="scheduledPaymentAmount" type="ns1:AmountType" minOccurs="0"/>
+							<xs:element name="scheduledPaymentStartDate" type="xs:date" minOccurs="0"/>
+							<xs:element name="scheduledPaymentEndDate" type="xs:date" minOccurs="0"/>
+							<xs:element name="scheduledPaymentFrequency" minOccurs="0">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:maxLength value="2"/>
+										<xs:enumeration value="01"/>
+										<xs:enumeration value="02"/>
+										<xs:enumeration value="03"/>
+										<xs:enumeration value="05"/>
+										<xs:enumeration value="06"/>
+										<xs:enumeration value="07"/>
+										<xs:enumeration value="09"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="balancingPaymentAmount" type="ns1:AmountType" minOccurs="0"/>
+							<xs:element name="balancingPaymentDate" type="xs:date" minOccurs="0"/>
+							<xs:element name="totalLiability" type="ns1:AmountType" minOccurs="0"/>
+							<xs:element name="suspensionStartDate" type="xs:date" minOccurs="0"/>
+							<xs:element name="suspensionEndDate" type="xs:date" minOccurs="0"/>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="printFlag" minOccurs="0">
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:maxLength value="2"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>
