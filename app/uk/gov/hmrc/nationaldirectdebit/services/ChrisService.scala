@@ -95,21 +95,18 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
   )(implicit hc: HeaderCarrier): Future[String] = {
 
     for {
-      // Step 1: Build the XML envelope from the request
       hodServices <- getEligibleHodServices(request)
       envelopeXml = ChrisEnvelopeBuilder.build(request, credId, affinityGroup, hodServices)
 
-      // Step 2: Validate the XML (returns Try[Unit])
       validationResult = validator.validate(envelopeXml)
 
-      // Step 3: Handle validation outcome
       result <- validationResult match {
                   case Success(_) =>
-                    logger.info("✅ ChRIS XML validation succeeded. Submitting envelope to ChRIS...")
+                    logger.info("ChRIS XML validation succeeded. Submitting envelope to ChRIS...")
                     chrisConnector.submitEnvelope(envelopeXml)
 
                   case Failure(e) =>
-                    logger.error(s"❌ ChRIS XML validation failed: ${e.getMessage}", e)
+                    logger.error(s"ChRIS XML validation failed: ${e.getMessage}", e)
                     Future.failed(
                       new RuntimeException(s"ChRIS submission skipped due to invalid XML: ${e.getMessage}", e)
                     )

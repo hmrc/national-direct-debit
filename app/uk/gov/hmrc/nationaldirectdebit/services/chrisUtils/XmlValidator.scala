@@ -29,26 +29,16 @@ class XmlValidator @Inject() (appConfig: AppConfig, schemaValidator: SchemaValid
   def validate(xml: NodeSeq): Try[Unit] = Try {
     val envelope = xml.mkString
 
-    logger.info("🔍 Checking XSD schema availability...")
-
-    appConfig.schemaNames.foreach { name =>
-      val file = appConfig.environment.getFile(s"conf/xsds/$name")
-      if (!file.exists())
-        logger.error(s"❌ Missing schema: ${file.getAbsolutePath}")
-      else
-        logger.info(s"✅ Found schema: ${file.getAbsolutePath}")
-    }
-
     val isValid = schemaValidator.validate(envelope, appConfig.schema)
 
     if (!isValid) {
-      logger.error("❌ XML validation failed against schema")
+      logger.error("XML validation failed against schema")
       throw new RuntimeException("XML validation failed against schema")
     }
 
-    logger.info("✅ XML validated successfully against schema")
+    logger.info("XML validated successfully against schema")
   } recoverWith { case ex =>
-    logger.error("⚠️ XML validation failed due to exception", ex)
+    logger.error("XML validation failed due to exception", ex)
     Failure(ex)
   }
 }

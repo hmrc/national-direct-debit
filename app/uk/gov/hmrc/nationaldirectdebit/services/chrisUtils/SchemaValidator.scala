@@ -17,16 +17,14 @@
 package uk.gov.hmrc.nationaldirectdebit.services.chrisUtils
 
 import org.xml.sax.{ErrorHandler, SAXParseException}
-import play.api.Logger
+import play.api.{Logger, Logging}
 
 import java.io.StringReader
 import javax.inject.Singleton
 import javax.xml.transform.stream.StreamSource
 import javax.xml.validation.Schema
 
-class ValidationHandler extends ErrorHandler {
-
-  private val logger = Logger(getClass)
+class ValidationHandler extends ErrorHandler with Logging {
 
   var error = false
 
