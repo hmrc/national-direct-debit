@@ -84,4 +84,12 @@ class DirectDebitConnector @Inject() (
       .execute[DuplicateCheckResponse]
   }
 
+  def isAdvanceNoticePresent(directDebitReference: String, paymentPlanReference: String)(implicit
+    hc: HeaderCarrier
+  ): Future[AdvanceNoticeResponse] = {
+    http
+      .get(url"$rdsDatacacheProxyBaseUrl/direct-debits/$directDebitReference/payment-plans/$paymentPlanReference/advance-notice-details")
+      .execute[AdvanceNoticeResponse]
+  }
+
 }

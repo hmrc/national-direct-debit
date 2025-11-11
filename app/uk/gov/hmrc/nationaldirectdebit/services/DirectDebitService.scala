@@ -60,4 +60,10 @@ class DirectDebitService @Inject() (
     connector.isDuplicatePaymentPlan(request)
   }
 
+  def isAdvanceNoticePresent(directDebitReference: String, paymentPlanReference: String)(implicit
+    hc: HeaderCarrier
+  ): Future[AdvanceNoticeResponse] = {
+    connector.isAdvanceNoticePresent(directDebitReference, paymentPlanReference)
+  }
+
 }
