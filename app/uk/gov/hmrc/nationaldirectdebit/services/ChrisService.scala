@@ -22,9 +22,7 @@ import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
-import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.PaymentPlanType
-import uk.gov.hmrc.nationaldirectdebit.models.requests.{AuthenticatedRequest, ChrisSubmissionRequest}
-import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.XmlUtils.*
+import uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest
 import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.{ChrisEnvelopeBuilder, XmlValidator}
 
 import javax.inject.Inject
@@ -88,7 +86,7 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
     }
   }
 
-  import scala.util.{Failure, Success, Try}
+  import scala.util.{Failure, Success}
 
   def submitToChris(
     request: ChrisSubmissionRequest,

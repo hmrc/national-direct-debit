@@ -17,11 +17,11 @@
 package uk.gov.hmrc.nationaldirectdebit.services.chrisUtils
 
 import play.api.{Environment, Logging}
-import javax.xml.validation.{Schema, SchemaFactory}
+
 import javax.xml.XMLConstants
 import javax.xml.transform.Source
 import javax.xml.transform.stream.StreamSource
-import java.io.File
+import javax.xml.validation.{Schema, SchemaFactory}
 
 object SchemaLoader extends Logging {
 
