@@ -30,8 +30,7 @@ object ChrisEnvelopeBuilder extends Logging {
     request: uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest,
     credId: String,
     affinityGroup: String,
-    hodServices: Seq[Map[String, String]],
-    authRequest: uk.gov.hmrc.nationaldirectdebit.models.requests.AuthenticatedRequest[?]
+    hodServices: Seq[Map[String, String]]
   ): Elem = {
 
     val correlatingId = java.util.UUID.randomUUID().toString.replace("-", "")

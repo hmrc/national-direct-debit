@@ -93,14 +93,13 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
   def submitToChris(
     request: ChrisSubmissionRequest,
     credId: String,
-    affinityGroup: String,
-    authRequest: AuthenticatedRequest[?]
+    affinityGroup: String
   )(implicit hc: HeaderCarrier): Future[String] = {
 
     for {
       // Step 1: Build the XML envelope from the request
       hodServices <- getEligibleHodServices(request)
-      envelopeXml = ChrisEnvelopeBuilder.build(request, credId, affinityGroup, hodServices, authRequest)
+      envelopeXml = ChrisEnvelopeBuilder.build(request, credId, affinityGroup, hodServices)
 
       // Step 2: Validate the XML (returns Try[Unit])
       validationResult = validator.validate(envelopeXml)
