@@ -80,7 +80,7 @@ class DirectDebitController @Inject() (
         )
 
         chrisService
-          .submitToChris(chrisRequest, request.credId, request.affinityGroup, request)
+          .submitToChris(chrisRequest, request.credId, request.affinityGroup)
           .map { response =>
             // Success: return 200 with response
             logger.info(s"ChRIS submission successful for request: ${chrisRequest.ddiReferenceNo}")

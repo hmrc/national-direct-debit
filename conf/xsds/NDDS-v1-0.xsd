@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xsd:include schemaLocation="core-v2-0.xsd"/>
+	<xsd:include schemaLocation="DDIPPDetails_v1.xsd"/>
+	<xsd:element name="IRenvelope">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="IRheader"/>
+				<xsd:element ref="dDIPPDetails"/>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+</xsd:schema>
