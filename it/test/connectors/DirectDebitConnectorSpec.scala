@@ -525,5 +525,90 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock with Matchers wit
         result.getMessage must include("The future returned an exception")
       }
     }
+
+    "isAdvanceNoticePresent" should {
+      "return advance notice details when present" in {
+        stubFor(
+          get(urlPathMatching("/rds-datacache-proxy/direct-debits/test-dd-Ref/payment-plans/test-pp-reference/advance-notice-details"))
+            .willReturn(
+              aResponse()
+                .withStatus(OK)
+                .withBody(
+                  Json
+                    .toJson(
+                      AdvanceNoticeResponse(
+                        totalAmount = Some(500),
+                        dueDate     = Some(currentTime.toLocalDate.plusMonths(1))
+                      )
+                    )
+                    .toString
+                )
+            )
+        )
+
+        val result = connector.isAdvanceNoticePresent("test-dd-Ref", "test-pp-reference").futureValue
+
+        result mustBe AdvanceNoticeResponse(
+          totalAmount = Some(500),
+          dueDate     = Some(currentTime.toLocalDate.plusMonths(1))
+        )
+      }
+
+      "return advance Notice details as None when not present" in {
+        stubFor(
+          get(urlPathMatching("/rds-datacache-proxy/direct-debits/test-dd-Ref/payment-plans/test-pp-reference/advance-notice-details"))
+            .willReturn(
+              aResponse()
+                .withStatus(OK)
+                .withBody(
+                  Json
+                    .toJson(
+                      AdvanceNoticeResponse(
+                        totalAmount = None,
+                        dueDate     = None
+                      )
+                    )
+                    .toString
+                )
+            )
+        )
+
+        val result = connector.isAdvanceNoticePresent("test-dd-Ref", "test-pp-reference").futureValue
+
+        result mustBe AdvanceNoticeResponse(
+          totalAmount = None,
+          dueDate     = None
+        )
+      }
+
+      "must fail when the result is parsed as an UpstreamErrorResponse" in {
+        stubFor(
+          get(urlPathMatching("/rds-datacache-proxy/direct-debits/test-dd-Ref/payment-plans/test-pp-reference/advance-notice-details"))
+            .willReturn(
+              aResponse()
+                .withStatus(INTERNAL_SERVER_ERROR)
+                .withBody("test error")
+            )
+        )
+
+        val result = intercept[Exception](connector.isAdvanceNoticePresent("test-dd-Ref", "test-pp-reference").futureValue)
+
+        result.getMessage must include("returned 500. Response body: 'test error'")
+      }
+
+      "must fail when the result is a failed future" in {
+        stubFor(
+          get(urlPathMatching("/rds-datacache-proxy/direct-debits/test-dd-Ref/payment-plans/test-pp-reference/advance-notice-details"))
+            .willReturn(
+              aResponse()
+                .withStatus(0)
+            )
+        )
+
+        val result = intercept[Exception](connector.isAdvanceNoticePresent("test-dd-Ref", "test-pp-reference").futureValue)
+
+        result.getMessage must include("The future returned an exception")
+      }
+    }
   }
 }
