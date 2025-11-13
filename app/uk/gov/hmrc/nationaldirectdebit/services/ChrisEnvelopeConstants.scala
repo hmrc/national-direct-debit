@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.nationaldirectdebit.services
 
+import uk.gov.hmrc.nationaldirectdebit.models.HodService
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.DirectDebitSource
 
 object ChrisEnvelopeConstants {
@@ -43,4 +44,17 @@ object ChrisEnvelopeConstants {
     DirectDebitSource.OL   -> "SAFE",
     DirectDebitSource.SDLT -> "SDLT"
   )
+
+  val allAvailAbleServices: List[HodService] = List(
+    HodService("COTA", true, true),
+    HodService("PAYE", true, true),
+    HodService("CESA", true, true),
+    HodService("NTC", true, true),
+    HodService("VAT", true, true),
+    HodService("MGD", true, true),
+    HodService("NIDN", true, true),
+    HodService("SAFE", true, true),
+    HodService("SDLT", true, true)
+  )
+
 }

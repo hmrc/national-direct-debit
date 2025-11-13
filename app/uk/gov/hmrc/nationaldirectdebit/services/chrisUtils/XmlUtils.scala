@@ -28,12 +28,12 @@ object XmlUtils {
       val prefix = if (idx > 0) s"\n$indent" else ""
 
       (for {
-        service <- serviceMap.get("service")
-        idName  <- serviceMap.get("identifierName")
-        idValue <- serviceMap.get("identifierValue")
+        enrolmentKey <- serviceMap.get("enrolmentKey")
+        idName       <- serviceMap.get("identifierName")
+        idValue      <- serviceMap.get("identifierValue")
       } yield {
         val valueToUse =
-          if (service.equalsIgnoreCase("NTC") && idName.equalsIgnoreCase("NINO"))
+          if (idName.equalsIgnoreCase("NINO"))
             idValue.take(8)
           else
             idValue.trim
