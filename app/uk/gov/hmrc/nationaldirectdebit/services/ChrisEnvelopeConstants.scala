@@ -38,23 +38,23 @@ object ChrisEnvelopeConstants {
     DirectDebitSource.PAYE -> "PAYE",
     DirectDebitSource.SA   -> "CESA",
     DirectDebitSource.TC   -> "NTC",
-    DirectDebitSource.VAT  -> "VAT",
+    DirectDebitSource.VAT  -> "VAT", // no mapping available
     DirectDebitSource.MGD  -> "MGD",
     DirectDebitSource.NIC  -> "NIDN",
-    DirectDebitSource.OL   -> "SAFE",
-    DirectDebitSource.SDLT -> "SDLT"
+    DirectDebitSource.OL   -> "SAFE", // no mapping available
+    DirectDebitSource.SDLT -> "SDLT" // no mapping available
   )
 
-  val allAvailAbleServices: List[HodService] = List(
-    HodService("COTA", true, true),
-    HodService("PAYE", true, true),
-    HodService("CESA", true, true),
-    HodService("NTC", true, true),
-    HodService("VAT", true, true),
-    HodService("MGD", true, true),
-    HodService("NIDN", true, true),
-    HodService("SAFE", true, true),
-    HodService("SDLT", true, true)
+  val enrolmentToHodService: Map[String, String] = Map(
+    "HMRC-CIS-ORG"     -> "CIS",
+    "HMRC-MGD-ORG"     -> "MGD",
+    "HMRC-PSA-ORG"     -> "TPSS",
+    "IR-CT"            -> "COTA",
+    "IR-NTC-CITIZEN-1" -> "NTC",
+    "IR-PAYE"          -> "PAYE",
+    "IR-SA"            -> "CESA",
+    "IR-SA-PART-ORG"   -> "CESA",
+    "IR-SA-TRUST-ORG"  -> "CESA"
   )
 
 }

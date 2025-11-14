@@ -24,6 +24,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
 import uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.DirectDebitSource
+import uk.gov.hmrc.nationaldirectdebit.services.ChrisEnvelopeConstants.enrolmentToHodService
 import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.{ChrisEnvelopeBuilder, XmlValidator}
 
 import javax.inject.Inject
@@ -38,17 +39,16 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
 
     authConnector.authorise(EmptyPredicate, Retrievals.allEnrolments).map { enrolments =>
 
-      logger.info(s"Retrieved enrolments.....: ${enrolments.enrolments.map(_.key).mkString(", ")}")
+      logger.info(s"Retrieved enrolments: ${enrolments.enrolments.map(_.key).mkString(", ")}")
 
-      val expectedHodService = ChrisEnvelopeConstants.listHodServices.get(serviceType)
+      // Expected HOD service for the given DirectDebitSource
+      val expectedHodServiceOpt = ChrisEnvelopeConstants.listHodServices.get(serviceType)
+      logger.info(s"Expected HOD service for [$serviceType] = ${expectedHodServiceOpt.getOrElse("not found")}")
 
-      logger.info(s"Expected HOD service for [$serviceType] = ${expectedHodService.getOrElse("not found")}")
+      // STEP 1: Filter active enrolments
+      val activeEnrolments = enrolments.enrolments.toSeq.filter(_.isActivated)
 
-      // STEP 1: Active only
-      val activeEnrolments =
-        enrolments.enrolments.toSeq.filter(_.isActivated)
-
-      // STEP 2: Group by enrolmentKey, flatten identifiers
+      // STEP 2: Group by enrolmentKey and flatten identifiers
       val grouped: Map[String, Seq[(String, String)]] =
         activeEnrolments
           .groupBy(_.key)
@@ -56,19 +56,16 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
           .mapValues(_.flatMap(_.identifiers.map(i => i.key -> i.value)))
           .toMap
 
-      // STEP 3: Build list of maps using enrolmentKey
+      // STEP 3: Build list of maps
       val enrolmentMaps: Seq[Map[String, String]] =
         grouped.map { case (key, identifiers) =>
-          val identifierName =
-            identifiers.map(_._1).mkString("/")
-
-          val identifierValue =
-            identifiers
-              .map {
-                case ("NINO", v) => v.take(8)
-                case (_, v)      => v
-              }
-              .mkString("/")
+          val identifierName = identifiers.map(_._1).mkString("/")
+          val identifierValue = identifiers
+            .map {
+              case ("NINO", v) => v.take(8)
+              case (_, v)      => v
+            }
+            .mkString("/")
 
           Map(
             "enrolmentKey"    -> key,
@@ -77,10 +74,14 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
           )
         }.toSeq
 
-      // STEP 4: Reorder so expected HOD enrolmentKey appears first
-      val (matching, others) = expectedHodService match {
-        case Some(hodKey) =>
-          enrolmentMaps.partition(_.get("enrolmentKey").contains(hodKey))
+      // STEP 4: Reorder based on HOD service match
+      val (matching, others) = expectedHodServiceOpt match {
+        case Some(expectedHodService) =>
+          enrolmentMaps.partition { enrolmentMap =>
+            val enrolmentKey = enrolmentMap("enrolmentKey")
+            // Find HOD service for this enrolmentKey
+            enrolmentToHodService.get(enrolmentKey).contains(expectedHodService)
+          }
         case None =>
           (Seq.empty, enrolmentMaps)
       }
@@ -97,7 +98,6 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
     request: ChrisSubmissionRequest
   )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Seq[Map[String, String]]] = {
 
-    val availServiceForUser = ChrisEnvelopeConstants.allAvailAbleServices
     authConnector.authorise(EmptyPredicate, Retrievals.allEnrolments).map { enrolments =>
 
       logger.info(s"Retrieved enrolments.....: ${enrolments.enrolments.map(_.key).mkString(", ")}")

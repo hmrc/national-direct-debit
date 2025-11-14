@@ -21,12 +21,9 @@ import scala.xml.{Node, Text}
 object XmlUtils {
 
   def formatKeys(
-    hodServices: Seq[Map[String, String]],
-    indent: String
+    enrolments: Seq[Map[String, String]]
   ): Seq[scala.xml.Node] =
-    hodServices.zipWithIndex.flatMap { case (serviceMap, idx) =>
-      val prefix = if (idx > 0) s"\n$indent" else ""
-
+    enrolments.flatMap { serviceMap =>
       (for {
         enrolmentKey <- serviceMap.get("enrolmentKey")
         idName       <- serviceMap.get("identifierName")
@@ -39,7 +36,6 @@ object XmlUtils {
             idValue.trim
 
         Seq(
-          scala.xml.Text(prefix),
           <Key Type={idName.trim}>{valueToUse}</Key>
         )
       }).getOrElse(Seq.empty)
