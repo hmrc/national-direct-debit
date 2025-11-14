@@ -19,8 +19,8 @@ package uk.gov.hmrc.nationaldirectdebit.services
 import com.google.inject.Inject
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.DirectDebitConnector
-import uk.gov.hmrc.nationaldirectdebit.models.responses.*
 import uk.gov.hmrc.nationaldirectdebit.models.requests.*
+import uk.gov.hmrc.nationaldirectdebit.models.responses.*
 
 import scala.concurrent.Future
 

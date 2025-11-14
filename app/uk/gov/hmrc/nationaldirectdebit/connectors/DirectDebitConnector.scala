@@ -18,12 +18,12 @@ package uk.gov.hmrc.nationaldirectdebit.connectors
 
 import com.google.inject.Inject
 import play.api.libs.json.Json
+import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.{HeaderCarrier, HttpReadsInstances, StringContextOps}
-import uk.gov.hmrc.nationaldirectdebit.models.responses.*
 import uk.gov.hmrc.nationaldirectdebit.models.requests.{GenerateDdiRefRequest, PaymentPlanDuplicateCheckRequest, WorkingDaysOffsetRequest}
+import uk.gov.hmrc.nationaldirectdebit.models.responses.*
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 
 import scala.concurrent.{ExecutionContext, Future}
 

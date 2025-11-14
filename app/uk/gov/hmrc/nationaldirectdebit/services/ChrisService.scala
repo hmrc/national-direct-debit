@@ -22,10 +22,8 @@ import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
-import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.PaymentPlanType
 import uk.gov.hmrc.nationaldirectdebit.models.requests.{AuthenticatedRequest, ChrisSubmissionRequest}
-import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.XmlUtils.*
-import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.{ChRISXmlValidator, ChrisEnvelopeBuilder}
+import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.ChrisEnvelopeBuilder
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}

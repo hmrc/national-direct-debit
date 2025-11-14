@@ -16,8 +16,9 @@
 
 package uk.gov.hmrc.nationaldirectdebit.config
 
-import javax.inject.{Inject, Singleton}
 import play.api.Configuration
+
+import javax.inject.{Inject, Singleton}
 
 @Singleton
 class AppConfig @Inject() (config: Configuration):
@@ -25,9 +26,13 @@ class AppConfig @Inject() (config: Configuration):
   val appName: String = config.get[String]("appName")
 
   def baseUrl(serviceName: String): String = {
-    val chrisHost = config.get[String](s"microservice.services.$serviceName.host")
-    val chrisPort = config.get[String](s"microservice.services.$serviceName.port")
-    val chrisProtocol = config.get[String](s"microservice.services.$serviceName.protocol")
-    val chrisSubmitURL = config.get[String](s"microservice.services.$serviceName.submissionURL")
-    s"$chrisProtocol://$chrisHost:$chrisPort$chrisSubmitURL"
+    val host = config.get[String](s"microservice.services.$serviceName.host")
+    val port = config.get[String](s"microservice.services.$serviceName.port")
+    val protocol = config.get[String](s"microservice.services.$serviceName.protocol")
+    val submitURL = config.get[String](s"microservice.services.$serviceName.submissionURL")
+    if (serviceName == "chris") {
+      s"$protocol://$host:$port$submitURL"
+    } else {
+      s"$protocol://$host:$port"
+    }
   }

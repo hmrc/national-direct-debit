@@ -16,9 +16,9 @@
 
 package uk.gov.hmrc.nationaldirectdebit.models.requests
 
+import play.api.libs.json.*
 import play.api.libs.json.Reads.*
 import play.api.libs.json.Writes.*
-import play.api.libs.json.*
 
 case class CreateDirectDebitRequest(paymentReference: String)
 

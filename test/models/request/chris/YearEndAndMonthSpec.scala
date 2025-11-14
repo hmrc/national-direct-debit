@@ -19,8 +19,9 @@ package models.request.chris
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import play.api.libs.json.{JsValue, Json}
-import java.time.LocalDate
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.YearEndAndMonth
+
+import java.time.LocalDate
 
 class YearEndAndMonthSpec extends AnyWordSpec with Matchers {
 

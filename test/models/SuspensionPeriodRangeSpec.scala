@@ -16,8 +16,8 @@
 
 package models
 
-import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import play.api.libs.json.Json
 import uk.gov.hmrc.nationaldirectdebit.models.SuspensionPeriodRange
 
