@@ -20,6 +20,7 @@ import com.google.inject.Inject
 import play.api.Logging
 import play.api.libs.ws.DefaultBodyWritables.*
 import play.api.libs.ws.ahc.StandaloneAhcWSClient
+import uk.gov.hmrc.nationaldirectdebit.config.AppConfig
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -27,11 +28,13 @@ import scala.xml.Elem
 
 class ChrisConnector @Inject() (
   ws: StandaloneAhcWSClient,
-  config: ServicesConfig
+  config: ServicesConfig,
+  appConfig: AppConfig
 )(implicit ec: ExecutionContext)
     extends Logging {
 
-  private val chrisBaseUrl: String = config.baseUrl("chris") + "/submission/ChRIS/NDDS/Filing/async/HMRC-NDDS-DDI"
+//  private val chrisBaseUrl: String = config.baseUrl("chris") + "/submission/ChRIS/NDDS/Filing/async/HMRC-NDDS-DDI" - Staging
+  private val chrisBaseUrl: String = appConfig.baseUrl("chris")
 
   def submitEnvelope(envelope: Elem): Future[String] = {
     ws.url(chrisBaseUrl)

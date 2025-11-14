@@ -23,3 +23,11 @@ import play.api.Configuration
 class AppConfig @Inject() (config: Configuration):
 
   val appName: String = config.get[String]("appName")
+
+  def baseUrl(serviceName: String): String = {
+    val chrisHost = config.get[String](s"microservice.services.$serviceName.host")
+    val chrisPort = config.get[String](s"microservice.services.$serviceName.port")
+    val chrisProtocol = config.get[String](s"microservice.services.$serviceName.protocol")
+    val chrisSubmitURL = config.get[String](s"microservice.services.$serviceName.submissionURL")
+    s"$chrisProtocol://$chrisHost:$chrisPort$chrisSubmitURL"
+  }
