@@ -17,7 +17,8 @@
 package uk.gov.hmrc.nationaldirectdebit.services.chrisUtils
 
 import org.xml.sax.SAXException
-import java.io.{ByteArrayInputStream, InputStream}
+
+import java.io.ByteArrayInputStream
 import java.nio.charset.StandardCharsets
 import javax.xml.XMLConstants
 import javax.xml.transform.stream.StreamSource

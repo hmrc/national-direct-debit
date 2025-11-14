@@ -17,6 +17,7 @@
 package uk.gov.hmrc.nationaldirectdebit.models.responses
 
 import play.api.libs.json.{Json, OFormat}
+
 import java.time.LocalDateTime
 
 case class RDSDirectDebitDetails(ddiRefNumber: String,
