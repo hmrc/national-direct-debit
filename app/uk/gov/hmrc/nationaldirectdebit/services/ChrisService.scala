@@ -87,9 +87,6 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
       }
 
       val reordered = matching ++ others
-
-      logger.info(s"*** Final enrolment maps (reordered): ${reordered.mkString(", ")}")
-
       reordered
     }
   }
@@ -132,24 +129,23 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
         )
       }.toSeq
 
-      // ✅ Separate matching and others
+      // ✅ Reorder: matching first, then others
       val (matching, others) = expectedHodService match {
         case Some(expected) =>
           val matchList = enrolmentMaps.filter(_.get("service").contains(expected))
-          if (matchList.isEmpty) {
-            logger.warn(s"No active enrolment matches expected HOD service [$expected]. XML will be empty.")
-            (Seq.empty, Seq.empty) // No XML if no match
+          if (matchList.nonEmpty) {
+            logger.info(s"Found matching HOD service [$expected]. It will appear first in XML.")
           } else {
-            logger.info(s"Found matching HOD service [$expected].")
-            (matchList, enrolmentMaps.filterNot(_.get("service").contains(expected)))
+            logger.warn(s"No active enrolment matches expected HOD service [$expected]. Including all in XML.")
           }
+          (matchList, enrolmentMaps.filterNot(_.get("service").contains(expected)))
         case None =>
-          logger.warn("Expected HOD service not found in configuration. XML will be empty.")
-          (Seq.empty, Seq.empty)
+          logger.warn("Expected HOD service not found in configuration. Including all in XML.")
+          (Seq.empty, enrolmentMaps)
       }
 
-      val reordered = if (matching.nonEmpty) matching ++ others else Seq.empty
-      logger.info(s"*** Final enrolment maps for XML: ${reordered.mkString(", ")}")
+      val reordered = matching ++ others
+      logger.info(s"*** Final enrolment maps for XML (matching first): ${reordered.mkString(", ")}")
       reordered
     }
   }
