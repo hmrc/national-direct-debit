@@ -28,7 +28,6 @@ import scala.xml.Elem
 
 class ChrisConnector @Inject() (
   ws: StandaloneAhcWSClient,
-  config: ServicesConfig,
   appConfig: AppConfig
 )(implicit ec: ExecutionContext)
     extends Logging {

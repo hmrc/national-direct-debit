@@ -127,8 +127,7 @@ class DirectDebitControllerSpec extends SpecBase {
           mockChrisService.submitToChris(
             any[ChrisSubmissionRequest](),
             any[String](),
-            any[String](),
-            any()
+            any[String]()
           )(any[HeaderCarrier]()) // <-- add matcher for the implicit too
         ).thenReturn(Future.successful("<Confirmation>Success</Confirmation>"))
 
@@ -146,8 +145,7 @@ class DirectDebitControllerSpec extends SpecBase {
           mockChrisService.submitToChris(
             any[ChrisSubmissionRequest](),
             any[String](),
-            any[String](),
-            any()
+            any[String]()
           )(any[HeaderCarrier]()) // <-- same fix here
         ).thenReturn(Future.failed(new RuntimeException("Boom!")))
 

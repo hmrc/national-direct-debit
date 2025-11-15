@@ -30,8 +30,8 @@ object ChrisEnvelopeBuilder extends Logging {
     request: uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest,
     credId: String,
     affinityGroup: String,
-    hodServices: Seq[Map[String, String]],
-    authRequest: uk.gov.hmrc.nationaldirectdebit.models.requests.AuthenticatedRequest[?]
+    knownFactData: Seq[Map[String, String]],
+    keysData: Seq[Map[String, String]]
   ): Elem = {
 
     val correlatingId = java.util.UUID.randomUUID().toString.replace("-", "")
@@ -56,16 +56,16 @@ object ChrisEnvelopeBuilder extends Logging {
           </Sender>
         </Header>
         <Body>
-          <IRenvelope>
+          <IRenvelope xmlns={""}>
             <IRheader>
-              <Keys>{XmlUtils.formatKeys(hodServices, "               ")}</Keys>
+              <Keys>{XmlUtils.formatKeys(keysData)}</Keys>
               <PeriodEnd>{periodEnd}</PeriodEnd>
               <Sender>{senderType}</Sender>
             </IRheader>
             <dDIPPDetails>
               <submissionDateTime>{submissionDateTime}</submissionDateTime>
               <credentialID>{credId}</credentialID>
-                {XmlUtils.formatKnownFacts(hodServices, "           ")}
+                {XmlUtils.formatKnownFacts(knownFactData)}
               <directDebitInstruction>
                 {
         if (request.amendPlan || request.cancelPlan || request.suspendPlan || request.removeSuspensionPlan) {
