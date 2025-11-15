@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.nationaldirectdebit.services
 
-import uk.gov.hmrc.nationaldirectdebit.models.HodService
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.DirectDebitSource
 
 object ChrisEnvelopeConstants {

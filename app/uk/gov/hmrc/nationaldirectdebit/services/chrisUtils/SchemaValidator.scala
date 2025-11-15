@@ -17,7 +17,7 @@
 package uk.gov.hmrc.nationaldirectdebit.services.chrisUtils
 
 import org.xml.sax.{ErrorHandler, SAXParseException}
-import play.api.{Logger, Logging}
+import play.api.Logging
 
 import java.io.StringReader
 import javax.inject.Singleton

@@ -23,13 +23,19 @@ import javax.inject.{Inject, Singleton}
 import javax.xml.validation.Schema
 
 @Singleton
-class AppConfig @Inject() (val configuration: Configuration, val environment: Environment):
+class AppConfig @Inject() (val config: Configuration, val environment: Environment):
 
-  val appName: String = configuration.get[String]("appName")
+  val appName: String = config.get[String]("appName")
 
-  // ✅ Expose schema names from config
   val schemaNames: Seq[String] =
-    configuration.get[Seq[String]]("microservice.xsd.schemaNames")
+    config.get[Seq[String]]("microservice.xsd.schemaNames")
 
-  // ✅ Load combined XSD schema
   val schema: Schema = SchemaLoader.loadSchemas(schemaNames, environment)
+
+  def baseUrl(serviceName: String): String = {
+    val chrisHost = config.get[String](s"microservice.services.$serviceName.host")
+    val chrisPort = config.get[String](s"microservice.services.$serviceName.port")
+    val chrisProtocol = config.get[String](s"microservice.services.$serviceName.protocol")
+    val chrisSubmitURL = config.get[String](s"microservice.services.$serviceName.submissionURL")
+    s"$chrisProtocol://$chrisHost:$chrisPort$chrisSubmitURL"
+  }
