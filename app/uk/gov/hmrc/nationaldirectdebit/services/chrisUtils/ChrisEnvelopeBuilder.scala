@@ -30,7 +30,7 @@ object ChrisEnvelopeBuilder extends Logging {
     request: uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest,
     credId: String,
     affinityGroup: String,
-    hodServices: Seq[Map[String, String]],
+    knownFactData: Seq[Map[String, String]],
     keysData: Seq[Map[String, String]]
   ): Elem = {
 
@@ -65,7 +65,7 @@ object ChrisEnvelopeBuilder extends Logging {
             <dDIPPDetails>
               <submissionDateTime>{submissionDateTime}</submissionDateTime>
               <credentialID>{credId}</credentialID>
-                {XmlUtils.formatKnownFacts(hodServices, "           ")}
+                {XmlUtils.formatKnownFacts(knownFactData)}
               <directDebitInstruction>
                 {
         if (request.amendPlan || request.cancelPlan || request.suspendPlan || request.removeSuspensionPlan) {

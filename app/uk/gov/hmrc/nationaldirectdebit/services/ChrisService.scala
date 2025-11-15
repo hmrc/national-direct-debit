@@ -94,63 +94,65 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
     }
   }
 
-  private def getEligibleHodServices(
-    request: ChrisSubmissionRequest
+  private def knownFactDataWithEnrolment(
+    serviceType: DirectDebitSource
   )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Seq[Map[String, String]]] = {
 
     authConnector.authorise(EmptyPredicate, Retrievals.allEnrolments).map { enrolments =>
 
-      logger.info(s"Retrieved enrolments.....: ${enrolments.enrolments.map(_.key).mkString(", ")}")
+      logger.info(s"Retrieved enrolments: ${enrolments.enrolments.map(_.key).mkString(", ")}")
 
-      val serviceType = request.serviceType
       val expectedHodService: Option[String] = ChrisEnvelopeConstants.listHodServices.get(serviceType)
-
       logger.info(s"Expected HOD service for [$serviceType] = ${expectedHodService.getOrElse("not found")}")
 
-      // Step 1: Filter active enrolments
       val activeEnrolments: Seq[Enrolment] = enrolments.enrolments.toSeq.filter(_.isActivated)
-      println("....." + activeEnrolments)
-    // Step 2: Group identifiers by service
 
-    val grouped: Map[String, Seq[(String, String)]] =
-      activeEnrolments
-        .groupBy(_.key)
-        .view
-        .mapValues { enrols =>
-          enrols.flatMap(_.identifiers.map(i => i.key -> i.value))
-        }
-        .toMap
+      val grouped: Map[String, Seq[(String, String)]] =
+        activeEnrolments
+          .groupBy(_.key)
+          .view
+          .mapValues(_.flatMap(_.identifiers.map(i => i.key -> i.value)))
+          .toMap
 
-    // Step 3: Build final Seq[Map(service, identifierName, identifierValue)]
-    val enrolmentMaps: Seq[Map[String, String]] = grouped.map { case (service, identifiers) =>
-      val concatenatedNames = identifiers.map(_._1).mkString("/")
-      val concatenatedValues = identifiers
-        .map { case (name, value) =>
-          if (service == "NTS" && name == "NINO") value.take(8) else value
-        }
-        .mkString("/")
+      val enrolmentMaps: Seq[Map[String, String]] = grouped.map { case (enrolmentKey, identifiers) =>
+        val concatenatedNames = identifiers.map(_._1).mkString("/")
+        val concatenatedValues = identifiers
+          .map {
+            case (name, value) if name == "NINO" => value.take(8)
+            case (_, value)                      => value
+          }
+          .mkString("/")
 
-      Map(
-        "service"         -> service,
-        "identifierName"  -> concatenatedNames,
-        "identifierValue" -> concatenatedValues
-      )
-    }.toSeq
+        val hodServiceName = enrolmentToHodService.getOrElse(enrolmentKey, enrolmentKey)
 
-    // Step 4: Reorder so expected HOD service comes first
-    val (matching, others) = expectedHodService match {
-      case Some(hodKey) =>
-        enrolmentMaps.partition(_.get("service").exists(_.contains(hodKey)))
-      case None => (Seq.empty, enrolmentMaps)
-    }
+        Map(
+          "service"         -> hodServiceName,
+          "identifierName"  -> concatenatedNames,
+          "identifierValue" -> concatenatedValues
+        )
+      }.toSeq
 
-    val reordered = matching ++ others
+      // ✅ Separate matching and others
+      val (matching, others) = expectedHodService match {
+        case Some(expected) =>
+          val matchList = enrolmentMaps.filter(_.get("service").contains(expected))
+          if (matchList.isEmpty) {
+            logger.warn(s"No active enrolment matches expected HOD service [$expected]. XML will be empty.")
+            (Seq.empty, Seq.empty) // No XML if no match
+          } else {
+            logger.info(s"Found matching HOD service [$expected].")
+            (matchList, enrolmentMaps.filterNot(_.get("service").contains(expected)))
+          }
+        case None =>
+          logger.warn("Expected HOD service not found in configuration. XML will be empty.")
+          (Seq.empty, Seq.empty)
+      }
 
-    logger.info(s"*** Final enrolment maps (reordered): ${reordered.mkString(", ")}")
-    reordered
+      val reordered = if (matching.nonEmpty) matching ++ others else Seq.empty
+      logger.info(s"*** Final enrolment maps for XML: ${reordered.mkString(", ")}")
+      reordered
     }
   }
-
   import scala.util.{Failure, Success}
 
   def submitToChris(
@@ -160,9 +162,9 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
   )(implicit hc: HeaderCarrier): Future[String] = {
 
     for {
-      hodServices <- getEligibleHodServices(request)
-      keysData    <- getActiveEnrolmentForKeys(request.serviceType)
-      envelopeXml = ChrisEnvelopeBuilder.build(request, credId, affinityGroup, hodServices, keysData)
+      knownFactData <- knownFactDataWithEnrolment(request.serviceType)
+      keysData      <- getActiveEnrolmentForKeys(request.serviceType)
+      envelopeXml = ChrisEnvelopeBuilder.build(request, credId, affinityGroup, knownFactData, keysData)
 
       validationResult = validator.validate(envelopeXml)
 

@@ -41,33 +41,16 @@ object XmlUtils {
       }).getOrElse(Seq.empty)
     }
 
-  def formatKnownFacts(
-    hodServices: Seq[Map[String, String]],
-    indent: String
-  ): Seq[scala.xml.Node] =
-    hodServices.zipWithIndex.flatMap { case (serviceMap, idx) =>
-      val prefix = if (idx > 0) s"\n$indent" else ""
-
+  def formatKnownFacts(hodServices: Seq[Map[String, String]]): Seq[scala.xml.Node] =
+    hodServices.flatMap { serviceMap =>
       for {
-        service  <- serviceMap.get("service")
-        idNames  <- serviceMap.get("identifierName")
-        idValues <- serviceMap.get("identifierValue")
+        hodService <- serviceMap.get("service")
+        idValues   <- serviceMap.get("identifierValue")
       } yield {
-        val names = idNames.split("/").map(_.trim)
-        val values = idValues.split("/").map(_.trim)
-
-        val processedValues = names.zip(values).map { case (name, value) =>
-          if (service.equalsIgnoreCase("NTC") && name.equalsIgnoreCase("NINO")) value.take(8)
-          else value
-        }
-        val finalValues = processedValues.mkString("/")
-        Seq(
-          scala.xml.Text(prefix),
-          <knownFact>
-            <service>{service.trim}</service>
-            <value>{finalValues}</value>
-          </knownFact>
-        )
+        <knownFact>
+          <service>{hodService.trim}</service>
+          <value>{idValues}</value>
+        </knownFact>
       }
-    }.flatten
+    }
 }
