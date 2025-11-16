@@ -37,7 +37,7 @@
 							<xs:element name="service">
 								<xs:simpleType>
 									<xs:restriction base="xs:string">
-										<xs:maxLength value="5"/>
+										<xs:maxLength value="4"/>
 									</xs:restriction>
 								</xs:simpleType>
 							</xs:element>

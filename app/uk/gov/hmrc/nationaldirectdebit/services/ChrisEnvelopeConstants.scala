@@ -37,11 +37,11 @@ object ChrisEnvelopeConstants {
     DirectDebitSource.PAYE -> "PAYE",
     DirectDebitSource.SA   -> "CESA",
     DirectDebitSource.TC   -> "NTC",
-    DirectDebitSource.VAT  -> "VAT", // no mapping available
+    DirectDebitSource.VAT  -> "VAT",
     DirectDebitSource.MGD  -> "MGD",
     DirectDebitSource.NIC  -> "NIDN",
-    DirectDebitSource.OL   -> "SAFE", // no mapping available
-    DirectDebitSource.SDLT -> "SDLT" // no mapping available
+    DirectDebitSource.OL   -> "SAFE",
+    DirectDebitSource.SDLT -> "SDLT"
   )
 
   val enrolmentToHodService: Map[String, String] = Map(

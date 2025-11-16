@@ -39,16 +39,11 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
 
     authConnector.authorise(EmptyPredicate, Retrievals.allEnrolments).map { enrolments =>
 
-      logger.info(s"Retrieved enrolments: ${enrolments.enrolments.map(_.key).mkString(", ")}")
-
-      // Expected HOD service for the given DirectDebitSource
       val expectedHodServiceOpt = ChrisEnvelopeConstants.listHodServices.get(serviceType)
       logger.info(s"Expected HOD service for [$serviceType] = ${expectedHodServiceOpt.getOrElse("not found")}")
 
-      // STEP 1: Filter active enrolments
       val activeEnrolments = enrolments.enrolments.toSeq.filter(_.isActivated)
 
-      // STEP 2: Group by enrolmentKey and flatten identifiers
       val grouped: Map[String, Seq[(String, String)]] =
         activeEnrolments
           .groupBy(_.key)
@@ -56,7 +51,6 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
           .mapValues(_.flatMap(_.identifiers.map(i => i.key -> i.value)))
           .toMap
 
-      // STEP 3: Build list of maps
       val enrolmentMaps: Seq[Map[String, String]] =
         grouped.map { case (key, identifiers) =>
           val identifierName = identifiers.map(_._1).mkString("/")
@@ -74,12 +68,10 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
           )
         }.toSeq
 
-      // STEP 4: Reorder based on HOD service match
       val (matching, others) = expectedHodServiceOpt match {
         case Some(expectedHodService) =>
           enrolmentMaps.partition { enrolmentMap =>
             val enrolmentKey = enrolmentMap("enrolmentKey")
-            // Find HOD service for this enrolmentKey
             enrolmentToHodService.get(enrolmentKey).contains(expectedHodService)
           }
         case None =>
@@ -129,7 +121,6 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
         )
       }.toSeq
 
-      // ✅ Reorder: matching first, then others
       val (matching, others) = expectedHodService match {
         case Some(expected) =>
           val matchList = enrolmentMaps.filter(_.get("service").contains(expected))
@@ -140,7 +131,6 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
           }
           (matchList, enrolmentMaps.filterNot(_.get("service").contains(expected)))
         case None =>
-          logger.warn("Expected HOD service not found in configuration. Including all in XML.")
           (Seq.empty, enrolmentMaps)
       }
 
