@@ -21,70 +21,36 @@ import scala.xml.{Node, Text}
 object XmlUtils {
 
   def formatKeys(
-    hodServices: Seq[Map[String, String]],
-    indent: String
+    enrolments: Seq[Map[String, String]]
   ): Seq[scala.xml.Node] =
-    hodServices.zipWithIndex.flatMap { case (serviceMap, idx) =>
-      val prefix = if (idx > 0) s"\n$indent" else ""
-
+    enrolments.flatMap { serviceMap =>
       (for {
-        service <- serviceMap.get("service")
-        idName  <- serviceMap.get("identifierName")
-        idValue <- serviceMap.get("identifierValue")
+        enrolmentKey <- serviceMap.get("enrolmentKey")
+        idName       <- serviceMap.get("identifierName")
+        idValue      <- serviceMap.get("identifierValue")
       } yield {
         val valueToUse =
-          if (service.equalsIgnoreCase("NTC") && idName.equalsIgnoreCase("NINO"))
+          if (idName.equalsIgnoreCase("NINO"))
             idValue.take(8)
           else
             idValue.trim
 
         Seq(
-          scala.xml.Text(prefix),
           <Key Type={idName.trim}>{valueToUse}</Key>
         )
       }).getOrElse(Seq.empty)
     }
 
-  def formatKnownFacts(
-    hodServices: Seq[Map[String, String]],
-    indent: String
-  ): Seq[scala.xml.Node] =
-    hodServices.zipWithIndex.flatMap { case (serviceMap, idx) =>
-      val prefix = if (idx > 0) s"\n$indent" else ""
-
+  def formatKnownFacts(hodServices: Seq[Map[String, String]]): Seq[scala.xml.Node] =
+    hodServices.flatMap { serviceMap =>
       for {
-        service  <- serviceMap.get("service")
-        idNames  <- serviceMap.get("identifierName")
-        idValues <- serviceMap.get("identifierValue")
+        hodService <- serviceMap.get("service")
+        idValues   <- serviceMap.get("identifierValue")
       } yield {
-        val names = idNames.split("/").map(_.trim)
-        val values = idValues.split("/").map(_.trim)
-
-        val processedValues = names.zip(values).map { case (name, value) =>
-          if (service.equalsIgnoreCase("NTC") && name.equalsIgnoreCase("NINO")) value.take(8)
-          else value
-        }
-        val finalValues = processedValues.mkString("/")
-        Seq(
-          scala.xml.Text(prefix),
-          <knownFact>
-            <service>{service.trim}</service>
-            <value>{finalValues}</value>
-          </knownFact>
-        )
+        <knownFact>
+          <service>{hodService.trim}</service>
+          <value>{idValues}</value>
+        </knownFact>
       }
-    }.flatten
-
-  // Create schemas
-  val CreateSingle = "ChRISEnvelope_Create_01.xsd"
-  val CreateBudget = "ChRISEnvelope_Create_02.xsd"
-  val CreateTaxCredit = "ChRISEnvelope_Create_03.xsd"
-  val CreateVariable = "ChRISEnvelope_Create_04.xsd"
-
-  // Amend / Cancel / Suspend / RemoveSuspension schemas
-  val Amend = "ChRISEnvelope_Amend.xsd"
-  val Cancel = "ChRISEnvelope_Cancel.xsd"
-  val Suspend = "ChRISEnvelope_Suspend.xsd"
-  val RemoveSuspension = "ChRISEnvelope_RemoveSuspension.xsd"
-
+    }
 }

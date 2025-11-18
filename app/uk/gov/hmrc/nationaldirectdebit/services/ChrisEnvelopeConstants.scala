@@ -43,4 +43,17 @@ object ChrisEnvelopeConstants {
     DirectDebitSource.OL   -> "SAFE",
     DirectDebitSource.SDLT -> "SDLT"
   )
+
+  val enrolmentToHodService: Map[String, String] = Map(
+    "HMRC-CIS-ORG"     -> "CIS",
+    "HMRC-MGD-ORG"     -> "MGD",
+    "HMRC-PSA-ORG"     -> "TPSS",
+    "IR-CT"            -> "COTA",
+    "IR-NTC-CITIZEN-1" -> "NTC",
+    "IR-PAYE"          -> "PAYE",
+    "IR-SA"            -> "CESA",
+    "IR-SA-PART-ORG"   -> "CESA",
+    "IR-SA-TRUST-ORG"  -> "CESA"
+  )
+
 }
