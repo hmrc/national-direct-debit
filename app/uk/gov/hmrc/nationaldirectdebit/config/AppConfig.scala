@@ -21,21 +21,28 @@ import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.SchemaLoader
 
 import javax.inject.{Inject, Singleton}
 import javax.xml.validation.Schema
+import play.api.Configuration
+
+import javax.inject.{Inject, Singleton}
 
 @Singleton
 class AppConfig @Inject() (val config: Configuration, val environment: Environment):
 
   val appName: String = config.get[String]("appName")
 
-  val schemaNames: Seq[String] =
+  private val schemaNames: Seq[String] =
     config.get[Seq[String]]("microservice.xsd.schemaNames")
 
   val schema: Schema = SchemaLoader.loadSchemas(schemaNames, environment)
 
   def baseUrl(serviceName: String): String = {
-    val chrisHost = config.get[String](s"microservice.services.$serviceName.host")
-    val chrisPort = config.get[String](s"microservice.services.$serviceName.port")
-    val chrisProtocol = config.get[String](s"microservice.services.$serviceName.protocol")
-    val chrisSubmitURL = config.get[String](s"microservice.services.$serviceName.submissionURL")
-    s"$chrisProtocol://$chrisHost:$chrisPort$chrisSubmitURL"
+    val host = config.get[String](s"microservice.services.$serviceName.host")
+    val port = config.get[String](s"microservice.services.$serviceName.port")
+    val protocol = config.get[String](s"microservice.services.$serviceName.protocol")
+    val submitURL = config.get[String](s"microservice.services.$serviceName.submissionURL")
+    if (serviceName == "chris") {
+      s"$protocol://$host:$port$submitURL"
+    } else {
+      s"$protocol://$host:$port"
+    }
   }

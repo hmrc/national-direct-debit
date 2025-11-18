@@ -16,8 +16,8 @@
 
 package uk.gov.hmrc.nationaldirectdebit.services.chrisUtils
 
-import java.time.format.DateTimeFormatter
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 object DateUtils {
 

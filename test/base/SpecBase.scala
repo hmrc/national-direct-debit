@@ -17,17 +17,17 @@
 package base
 
 import actions.FakeAuthAction
-import org.scalatest.{BeforeAndAfterEach, OptionValues, TestSuite, TryValues}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
+import org.scalatest.{BeforeAndAfterEach, OptionValues, TestSuite, TryValues}
 import org.scalatestplus.play.{BaseOneAppPerSuite, FakeApplicationFactory}
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.JsValue
 import play.api.mvc.{AnyContentAsEmpty, ControllerComponents, PlayBodyParsers}
-import play.api.test.{DefaultAwaitTimeout, FakeHeaders, FakeRequest}
 import play.api.test.Helpers.stubControllerComponents
+import play.api.test.{DefaultAwaitTimeout, FakeHeaders, FakeRequest}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext
