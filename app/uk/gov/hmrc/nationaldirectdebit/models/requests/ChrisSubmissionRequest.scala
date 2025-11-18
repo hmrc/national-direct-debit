@@ -18,6 +18,7 @@ package uk.gov.hmrc.nationaldirectdebit.models.requests
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.nationaldirectdebit.models.SuspensionPeriodRange
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.*
+import uk.gov.hmrc.nationaldirectdebit.models.audits.AuditType
 
 import java.time.LocalDate
 
@@ -42,7 +43,8 @@ case class ChrisSubmissionRequest(
   amendPlan: Boolean = false,
   cancelPlan: Boolean = false,
   suspendPlan: Boolean = false,
-  removeSuspensionPlan: Boolean = false
+  removeSuspensionPlan: Boolean = false,
+  auditType: Option[AuditType] = None
 )
 
 object ChrisSubmissionRequest {

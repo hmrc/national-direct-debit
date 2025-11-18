@@ -17,7 +17,10 @@
 package uk.gov.hmrc.nationaldirectdebit.services.chrisUtils
 
 import play.api.Logging
+import play.api.libs.json.Json
 import uk.gov.hmrc.nationaldirectdebit.services.ChrisEnvelopeConstants
+import uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest
+import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.{DirectDebitSource, EnvelopeDetails}
 
 import scala.xml.{Elem, PrettyPrinter, XML}
 
@@ -26,60 +29,108 @@ object ChrisEnvelopeBuilder extends Logging {
   private val dateTimeFormatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS")
   private val prettyPrinter = new PrettyPrinter(120, 4)
 
-  def build(
-    request: uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest,
+  def getEnvelopeDetails(
+    request: ChrisSubmissionRequest,
     credId: String,
     affinityGroup: String,
-    hodServices: Seq[Map[String, String]],
-    authRequest: uk.gov.hmrc.nationaldirectdebit.models.requests.AuthenticatedRequest[?]
-  ): Elem = {
+    hodServices: Seq[Map[String, String]]
+  ): EnvelopeDetails = {
 
-    val correlatingId = java.util.UUID.randomUUID().toString.replace("-", "")
-    val receiptDate = java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).format(dateTimeFormatter)
-    val submissionDateTime = java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).format(dateTimeFormatter)
-    val periodEnd = DateUtils.calculatePeriodEnd()
-    val senderType = if (affinityGroup == "Agent") "Agent" else "Individual"
-    val serviceType = request.serviceType
+    val correlatingId: String = java.util.UUID.randomUUID().toString.replace("-", "")
+    val receiptDate: String = java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).format(dateTimeFormatter)
+    val submissionDateTime: String = java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).format(dateTimeFormatter)
+    val periodEnd: String = DateUtils.calculatePeriodEnd()
+    val senderType: String = if (affinityGroup == "Agent") "Agent" else "Individual"
+    val serviceType: DirectDebitSource = request.serviceType
     val expectedHodService: Option[String] = ChrisEnvelopeConstants.listHodServices.get(serviceType)
+
+    EnvelopeDetails(
+      request,
+      credId,
+      hodServices,
+      correlatingId,
+      receiptDate,
+      submissionDateTime,
+      periodEnd,
+      senderType,
+      serviceType,
+      expectedHodService
+    )
+  }
+
+  def build(envelopeDetails: EnvelopeDetails): Elem = {
 
     val envelopeXml: Elem =
       <ChRISEnvelope xmlns="http://www.hmrc.gov.uk/ChRIS/Envelope/2">
         <EnvelopeVersion>2.0</EnvelopeVersion>
         <Header>
-          <MessageClass>{ChrisEnvelopeConstants.MessageClass}</MessageClass>
-          <Qualifier>{ChrisEnvelopeConstants.Qualifier}</Qualifier>
-          <Function>{ChrisEnvelopeConstants.Function}</Function>
+          <MessageClass>
+            {ChrisEnvelopeConstants.MessageClass}
+          </MessageClass>
+          <Qualifier>
+            {ChrisEnvelopeConstants.Qualifier}
+          </Qualifier>
+          <Function>
+            {ChrisEnvelopeConstants.Function}
+          </Function>
           <Sender>
-            <System>{ChrisEnvelopeConstants.SenderSystem}</System>
-            <CorrelatingID>{correlatingId}</CorrelatingID>
-            <ReceiptDate>{receiptDate}</ReceiptDate>
+            <System>
+              {ChrisEnvelopeConstants.SenderSystem}
+            </System>
+            <CorrelatingID>
+              {envelopeDetails.correlatingId}
+            </CorrelatingID>
+            <ReceiptDate>
+              {envelopeDetails.receiptDate}
+            </ReceiptDate>
           </Sender>
         </Header>
         <Body>
           <IRenvelope>
             <IRheader>
-              <Keys>{XmlUtils.formatKeys(hodServices, "               ")}</Keys>
-              <PeriodEnd>{periodEnd}</PeriodEnd>
-              <Sender>{senderType}</Sender>
+              <Keys>
+                {XmlUtils.formatKeys(envelopeDetails.hodServices, "               ")}
+              </Keys>
+              <PeriodEnd>
+                {envelopeDetails.periodEnd}
+              </PeriodEnd>
+              <Sender>
+                {envelopeDetails.senderType}
+              </Sender>
             </IRheader>
             <dDIPPDetails>
-              <submissionDateTime>{submissionDateTime}</submissionDateTime>
-              <credentialID>{credId}</credentialID>
-                {XmlUtils.formatKnownFacts(hodServices, "           ")}
-              <directDebitInstruction>
-                {
-        if (request.amendPlan || request.cancelPlan || request.suspendPlan || request.removeSuspensionPlan) {
-          <ddiReferenceNo>{request.ddiReferenceNo}</ddiReferenceNo>
+              <submissionDateTime>
+                {envelopeDetails.submissionDateTime}
+              </submissionDateTime>
+              <credentialID>
+                {envelopeDetails.credId}
+              </credentialID>{XmlUtils.formatKnownFacts(envelopeDetails.hodServices, "           ")}<directDebitInstruction>
+              {
+        if (
+          envelopeDetails.request.amendPlan || envelopeDetails.request.cancelPlan || envelopeDetails.request.suspendPlan || envelopeDetails.request.removeSuspensionPlan
+        ) {
+          <ddiReferenceNo>
+                  {envelopeDetails.request.ddiReferenceNo}
+                </ddiReferenceNo>
         } else {
-          <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
-                          <ddiReferenceNo>{request.ddiReferenceNo}</ddiReferenceNo>
-                           <bankSortCode>{request.yourBankDetailsWithAuddisStatus.sortCode}</bankSortCode>
-                          <bankAccountNo>{request.yourBankDetailsWithAuddisStatus.accountNumber}</bankAccountNo>
-                          <bankAccountName>{request.yourBankDetailsWithAuddisStatus.accountHolderName}</bankAccountName>
+          <actionType>
+                  {ChrisEnvelopeConstants.ActionType_1}
+                </actionType>
+                  <ddiReferenceNo>
+                    {envelopeDetails.request.ddiReferenceNo}
+                  </ddiReferenceNo>
+                  <bankSortCode>
+                    {envelopeDetails.request.yourBankDetailsWithAuddisStatus.sortCode}
+                  </bankSortCode>
+                  <bankAccountNo>
+                    {envelopeDetails.request.yourBankDetailsWithAuddisStatus.accountNumber}
+                  </bankAccountNo>
+                  <bankAccountName>
+                    {envelopeDetails.request.yourBankDetailsWithAuddisStatus.accountHolderName}
+                  </bankAccountName>
         }
-      }
-                        {if (request.yourBankDetailsWithAuddisStatus.auddisStatus) <paperAuddisFlag>01</paperAuddisFlag> else scala.xml.Null}
-              </directDebitInstruction>{PaymentPlanBuilder.build(request, expectedHodService)}
+      }{if (envelopeDetails.request.yourBankDetailsWithAuddisStatus.auddisStatus) <paperAuddisFlag>01</paperAuddisFlag> else scala.xml.Null}
+            </directDebitInstruction>{PaymentPlanBuilder.build(envelopeDetails.request, envelopeDetails.expectedHodService)}
             </dDIPPDetails>
           </IRenvelope>
         </Body>

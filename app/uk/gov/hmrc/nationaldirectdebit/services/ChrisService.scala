@@ -22,13 +22,19 @@ import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
+import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.{DirectDebitSource, PaymentPlanType}
+import uk.gov.hmrc.nationaldirectdebit.services.AuditService
 import uk.gov.hmrc.nationaldirectdebit.models.requests.{AuthenticatedRequest, ChrisSubmissionRequest}
 import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.ChrisEnvelopeBuilder
+import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.XmlUtils.*
+import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.{ChRISXmlValidator, ChrisEnvelopeBuilder}
+import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.DateUtils
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: AuthConnector)(implicit ec: ExecutionContext) extends Logging {
+class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: AuthConnector, auditService: AuditService)(implicit ec: ExecutionContext)
+    extends Logging {
 
   private def getEligibleHodServices(
     request: ChrisSubmissionRequest
@@ -90,29 +96,9 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
   ): Future[String] =
     for {
       hodServices <- getEligibleHodServices(request: ChrisSubmissionRequest)
-      envelopeXml = ChrisEnvelopeBuilder.build(request, credId, affinityGroup, hodServices, authRequest)
-//      _ <- Future.fromTry {
-//             val schemaName = {
-//               if (request.amendPlan) {
-//                 Amend
-//               } else if (request.cancelPlan) {
-//                 Cancel
-//               } else if (request.suspendPlan) {
-//                 Suspend
-//               } else if (request.removeSuspensionPlan) {
-//                 RemoveSuspension
-//               } else {
-//                 request.paymentPlanType match {
-//                   case PaymentPlanType.SinglePayment          => CreateSingle
-//                   case PaymentPlanType.BudgetPaymentPlan      => CreateBudget
-//                   case PaymentPlanType.TaxCreditRepaymentPlan => CreateTaxCredit
-//                   case PaymentPlanType.VariablePaymentPlan    => CreateVariable
-//                 }
-//               }
-//             }
-//
-//              ChRISXmlValidator.validate(envelopeXml.toString(), schemaName)
-//           }
+      envelopeDetails = ChrisEnvelopeBuilder.getEnvelopeDetails(request, credId, affinityGroup, hodServices)
+      envelopeXml = ChrisEnvelopeBuilder.build(envelopeDetails)
+      _      <- auditService.sendEvent(envelopeDetails)
       result <- chrisConnector.submitEnvelope(envelopeXml)
     } yield result
 

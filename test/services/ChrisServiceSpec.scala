@@ -29,7 +29,8 @@ import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
 import uk.gov.hmrc.nationaldirectdebit.models.SuspensionPeriodRange
 import uk.gov.hmrc.nationaldirectdebit.models.requests.*
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.*
-import uk.gov.hmrc.nationaldirectdebit.services.ChrisService
+import uk.gov.hmrc.nationaldirectdebit.services.{AuditService, ChrisService}
+import uk.gov.hmrc.play.audit.http.connector.AuditResult.*
 
 import java.time.LocalDate
 import scala.concurrent.Future
@@ -41,8 +42,9 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
 
   private val mockConnector = mock[ChrisConnector]
   private val mockAuthConnector = mock[AuthConnector]
+  private val mockAuditService = mock[AuditService]
 
-  private val service = new ChrisService(mockConnector, mockAuthConnector)
+  private val service = new ChrisService(mockConnector, mockAuthConnector, mockAuditService)
 
   // Plan and payment details
   private val planStartDateDetails = PlanStartDateDetails(
@@ -360,6 +362,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       )
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
       when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>TC Message received</Confirmation>"))
+      when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(Success))
 
       service.submitToChris(tcRequest, "credId123", "Organisation", fakeAuthRequest).map { result =>
         result must include("TC Message received")
@@ -379,6 +382,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       )
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
       when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>SA Monthly Message received</Confirmation>"))
+      when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(Success))
 
       service.submitToChris(saMonthlyRequest, "credId123", "Organisation", fakeAuthRequest).map { result =>
         result must include("SA Monthly Message received")
@@ -398,6 +402,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       )
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
       when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>SA amend Monthly Message received</Confirmation>"))
+      when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(Success))
 
       service.submitToChris(saAmendRequest, "credId123", "Agent", fakeAuthRequest).map { result =>
         result must include("SA amend Monthly Message received")
@@ -417,6 +422,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       )
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
       when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>SA Cancel Monthly Message received</Confirmation>"))
+      when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(Success))
 
       service.submitToChris(saCancelequest, "credId123", "Organisation", fakeAuthRequest).map { result =>
         result must include("SA Cancel Monthly Message received")
@@ -441,6 +447,8 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       when(mockConnector.submitEnvelope(any[Elem]))
         .thenReturn(Future.successful("<Confirmation>SA Suspend Monthly Message received</Confirmation>"))
 
+      when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(Success))
+
       service.submitToChris(saBudgetingSuspendRequest, "credId123", "Agent", fakeAuthRequest).map { result =>
         result must include("SA Suspend Monthly Message received")
       }
@@ -463,6 +471,8 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
 
       when(mockConnector.submitEnvelope(any[Elem]))
         .thenReturn(Future.successful("<Confirmation>SA Suspend Weekly Message received</Confirmation>"))
+
+      when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(Success))
 
       service.submitToChris(saBudgetingSuspendRequestWeekly, "credId123", "Agent", fakeAuthRequest).map { result =>
         result must include("SA Suspend Weekly Message received")
@@ -487,6 +497,8 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       when(mockConnector.submitEnvelope(any[Elem]))
         .thenReturn(Future.successful("<Confirmation>SA Remove Suspension Weekly Message received</Confirmation>"))
 
+      when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(Success))
+
       service.submitToChris(saBudgetingRemoveSuspendRequest, "credId123", "Agent", fakeAuthRequest).map { result =>
         result must include("SA Remove Suspension Weekly Message received")
       }
@@ -505,6 +517,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       )
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
       when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>SA Weekly Message received</Confirmation>"))
+      when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(Success))
 
       service.submitToChris(saWeeklyRequest, "credId123", "Organisation", fakeAuthRequest).map { result =>
         result must include("SA Weekly Message received")
@@ -524,6 +537,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       )
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
       when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>OTHER_LIABILITY Message received</Confirmation>"))
+      when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(Success))
 
       service.submitToChris(ctRequest, "credId123", "Individual", fakeAuthRequest).map { result =>
         result must include("OTHER_LIABILITY Message received")
@@ -543,6 +557,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       )
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
       when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>CT Message received</Confirmation>"))
+      when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(Success))
 
       service.submitToChris(ctRequest, "credId123", "Agent", fakeAuthRequest).map { result =>
         result must include("CT Message received")
@@ -562,6 +577,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       )
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
       when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>CT Message received</Confirmation>"))
+      when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(Success))
 
       service.submitToChris(amendSingleRequest, "credId123", "Agent", fakeAuthRequest).map { result =>
         result must include("CT Message received")
@@ -581,6 +597,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       )
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
       when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>Cancel Message received</Confirmation>"))
+      when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(Success))
 
       service.submitToChris(cancelSingleRequest, "credId123", "Agent", fakeAuthRequest).map { result =>
         result must include("Cancel Message received")
@@ -600,6 +617,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       )
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
       when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>VAT Message received</Confirmation>"))
+      when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(Success))
 
       service.submitToChris(vatRequest, "credId123", "Agent", fakeAuthRequest).map { result =>
         result must include("VAT Message received")
@@ -619,6 +637,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       )
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
       when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>SDLT Message received</Confirmation>"))
+      when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(Success))
 
       service.submitToChris(ctRequest, "credId123", "Agent", fakeAuthRequest).map { result =>
         result must include("SDLT Message received")
@@ -638,6 +657,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       )
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
       when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>PAYE Message received</Confirmation>"))
+      when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(Success))
 
       service.submitToChris(payeRequest, "credId123", "Agent", fakeAuthRequest).map { result =>
         result must include("PAYE Message received")
@@ -657,6 +677,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       )
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
       when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.successful("<Confirmation>MGD Message received</Confirmation>"))
+      when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(Success))
 
       service.submitToChris(mgdRequest, "credId123", "Individual", fakeAuthRequest).map { result =>
         result must include("MGD Message received")
@@ -677,6 +698,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
       when(mockConnector.submitEnvelope(any[Elem]))
         .thenReturn(Future.successful("<Confirmation>MGD with variable Cancel Message received</Confirmation>"))
+      when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(Success))
 
       service.submitToChris(mgdCancelRequest, "credId123", "Individual", fakeAuthRequest).map { result =>
         result must include("MGD with variable Cancel Message received")
@@ -687,6 +709,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       val enrolments = Enrolments(Set(Enrolment("HMRC-NDDS-ORG")))
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
       when(mockConnector.submitEnvelope(any[Elem])).thenReturn(Future.failed(new RuntimeException("Boom")))
+      when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(Success))
 
       recoverToSucceededIf[RuntimeException] {
         service.submitToChris(tcRequest, "credId789", "Agent", fakeAuthRequest)
