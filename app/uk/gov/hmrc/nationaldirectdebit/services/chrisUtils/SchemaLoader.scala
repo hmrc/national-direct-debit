@@ -34,10 +34,10 @@ object SchemaLoader extends Logging {
       val file = env.getFile(s"conf/xsds/$xsd")
 
       if (!file.exists()) {
-        logger.error(s"❌ Missing schema: ${file.getAbsolutePath}")
+        logger.error(s"Missing schema: ${file.getAbsolutePath}")
         throw new RuntimeException(s"Schema file not found: ${file.getAbsolutePath}")
       } else {
-        logger.info(s"✅ Found schema: ${file.getAbsolutePath}")
+        logger.info(s"Found schema: ${file.getAbsolutePath}")
       }
 
       new StreamSource(file)

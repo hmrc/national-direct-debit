@@ -21,9 +21,6 @@ import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.SchemaLoader
 
 import javax.inject.{Inject, Singleton}
 import javax.xml.validation.Schema
-import play.api.Configuration
-
-import javax.inject.{Inject, Singleton}
 
 @Singleton
 class AppConfig @Inject() (val config: Configuration, val environment: Environment):
