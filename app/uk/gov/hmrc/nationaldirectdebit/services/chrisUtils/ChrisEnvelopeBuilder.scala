@@ -30,11 +30,11 @@ object ChrisEnvelopeBuilder extends Logging {
   private val prettyPrinter = new PrettyPrinter(120, 4)
 
   def getEnvelopeDetails(
-    request: ChrisSubmissionRequest,
-    credId: String,
-    affinityGroup: String,
-    hodServices: Seq[Map[String, String]]
-  ): EnvelopeDetails = {
+                          request: ChrisSubmissionRequest,
+                          credId: String,
+                          affinityGroup: String,
+                          hodServices: Seq[Map[String, String]]
+                        ): EnvelopeDetails = {
 
     val correlatingId: String = java.util.UUID.randomUUID().toString.replace("-", "")
     val receiptDate: String = java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).format(dateTimeFormatter)
@@ -58,7 +58,21 @@ object ChrisEnvelopeBuilder extends Logging {
     )
   }
 
-  def build(envelopeDetails: EnvelopeDetails): Elem = {
+  def build(
+             request: uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest,
+             credId: String,
+             affinityGroup: String,
+             knownFactData: Seq[Map[String, String]],
+             keysData: Seq[Map[String, String]]
+           ): Elem = {
+
+    val correlatingId = java.util.UUID.randomUUID().toString.replace("-", "")
+    val receiptDate = java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).format(dateTimeFormatter)
+    val submissionDateTime = java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).format(dateTimeFormatter)
+    val periodEnd = DateUtils.calculatePeriodEnd()
+    val senderType = if (affinityGroup == "Agent") "Agent" else "Individual"
+    val serviceType = request.serviceType
+    val expectedHodService: Option[String] = ChrisEnvelopeConstants.listHodServices.get(serviceType)
 
     val envelopeXml: Elem =
       <ChRISEnvelope xmlns="http://www.hmrc.gov.uk/ChRIS/Envelope/2">
@@ -78,59 +92,55 @@ object ChrisEnvelopeBuilder extends Logging {
               {ChrisEnvelopeConstants.SenderSystem}
             </System>
             <CorrelatingID>
-              {envelopeDetails.correlatingId}
+              {correlatingId}
             </CorrelatingID>
             <ReceiptDate>
-              {envelopeDetails.receiptDate}
+              {receiptDate}
             </ReceiptDate>
           </Sender>
         </Header>
         <Body>
-          <IRenvelope>
+          <IRenvelope xmlns={""}>
             <IRheader>
               <Keys>
-                {XmlUtils.formatKeys(envelopeDetails.hodServices, "               ")}
+                {XmlUtils.formatKeys(keysData)}
               </Keys>
               <PeriodEnd>
-                {envelopeDetails.periodEnd}
+                {periodEnd}
               </PeriodEnd>
               <Sender>
-                {envelopeDetails.senderType}
+                {senderType}
               </Sender>
             </IRheader>
             <dDIPPDetails>
               <submissionDateTime>
-                {envelopeDetails.submissionDateTime}
+                {submissionDateTime}
               </submissionDateTime>
               <credentialID>
-                {envelopeDetails.credId}
-              </credentialID>{XmlUtils.formatKnownFacts(envelopeDetails.hodServices, "           ")}<directDebitInstruction>
-              {
-        if (
-          envelopeDetails.request.amendPlan || envelopeDetails.request.cancelPlan || envelopeDetails.request.suspendPlan || envelopeDetails.request.removeSuspensionPlan
-        ) {
-          <ddiReferenceNo>
-                  {envelopeDetails.request.ddiReferenceNo}
+                {credId}
+              </credentialID>{XmlUtils.formatKnownFacts(knownFactData)}<directDebitInstruction>
+              {if (request.amendPlan || request.cancelPlan || request.suspendPlan || request.removeSuspensionPlan) {
+                <ddiReferenceNo>
+                  {request.ddiReferenceNo}
                 </ddiReferenceNo>
-        } else {
-          <actionType>
+              } else {
+                <actionType>
                   {ChrisEnvelopeConstants.ActionType_1}
                 </actionType>
                   <ddiReferenceNo>
-                    {envelopeDetails.request.ddiReferenceNo}
+                    {request.ddiReferenceNo}
                   </ddiReferenceNo>
                   <bankSortCode>
-                    {envelopeDetails.request.yourBankDetailsWithAuddisStatus.sortCode}
+                    {request.yourBankDetailsWithAuddisStatus.sortCode}
                   </bankSortCode>
                   <bankAccountNo>
-                    {envelopeDetails.request.yourBankDetailsWithAuddisStatus.accountNumber}
+                    {request.yourBankDetailsWithAuddisStatus.accountNumber}
                   </bankAccountNo>
                   <bankAccountName>
-                    {envelopeDetails.request.yourBankDetailsWithAuddisStatus.accountHolderName}
+                    {request.yourBankDetailsWithAuddisStatus.accountHolderName}
                   </bankAccountName>
-        }
-      }{if (envelopeDetails.request.yourBankDetailsWithAuddisStatus.auddisStatus) <paperAuddisFlag>01</paperAuddisFlag> else scala.xml.Null}
-            </directDebitInstruction>{PaymentPlanBuilder.build(envelopeDetails.request, envelopeDetails.expectedHodService)}
+              }}{if (request.yourBankDetailsWithAuddisStatus.auddisStatus) <paperAuddisFlag>01</paperAuddisFlag> else scala.xml.Null}
+            </directDebitInstruction>{PaymentPlanBuilder.build(request, expectedHodService)}
             </dDIPPDetails>
           </IRenvelope>
         </Body>

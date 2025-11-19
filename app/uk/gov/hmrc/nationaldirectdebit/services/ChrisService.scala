@@ -22,84 +22,151 @@ import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
-import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.{DirectDebitSource, PaymentPlanType}
 import uk.gov.hmrc.nationaldirectdebit.services.AuditService
 import uk.gov.hmrc.nationaldirectdebit.models.requests.{AuthenticatedRequest, ChrisSubmissionRequest}
-import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.ChrisEnvelopeBuilder
-import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.XmlUtils.*
-import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.{ChRISXmlValidator, ChrisEnvelopeBuilder}
-import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.DateUtils
+import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.{DirectDebitSource, PaymentPlanType}
+import uk.gov.hmrc.nationaldirectdebit.services.ChrisEnvelopeConstants.enrolmentToHodService
+import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.{ChrisEnvelopeBuilder, XmlValidator}
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: AuthConnector, auditService: AuditService)(implicit ec: ExecutionContext)
+class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: AuthConnector, validator: XmlValidator, auditService: AuditService)(implicit ec: ExecutionContext)
     extends Logging {
 
-  private def getEligibleHodServices(
-    request: ChrisSubmissionRequest
+  private def getActiveEnrolmentForKeys(
+    serviceType: DirectDebitSource
   )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Seq[Map[String, String]]] = {
+
     authConnector.authorise(EmptyPredicate, Retrievals.allEnrolments).map { enrolments =>
 
-      logger.info(s"Retrieved enrolments: ${enrolments.enrolments.map(_.key).mkString(", ")}")
+      val expectedHodServiceOpt = ChrisEnvelopeConstants.listHodServices.get(serviceType)
+      logger.info(s"Expected HOD service for [$serviceType] = ${expectedHodServiceOpt.getOrElse("not found")}")
 
-      val serviceType = request.serviceType
-      val expectedHodService: Option[String] = ChrisEnvelopeConstants.listHodServices.get(serviceType)
+      val activeEnrolments = enrolments.enrolments.toSeq.filter(_.isActivated)
 
-      logger.info(s"Expected HOD service for [$serviceType] = ${expectedHodService.getOrElse("not found")}")
-
-      // Step 1: Filter active enrolments
-      val activeEnrolments: Seq[Enrolment] = enrolments.enrolments.toSeq.filter(_.isActivated)
-
-      // Step 2: Group identifiers by service
       val grouped: Map[String, Seq[(String, String)]] =
         activeEnrolments
           .groupBy(_.key)
           .view
-          .mapValues { enrols =>
-            enrols.flatMap(_.identifiers.map(i => i.key -> i.value))
-          }
+          .mapValues(_.flatMap(_.identifiers.map(i => i.key -> i.value)))
           .toMap
 
-      // Step 3: Build final Seq[Map(service, identifierName, identifierValue)]
-      val enrolmentMaps: Seq[Map[String, String]] = grouped.map { case (service, identifiers) =>
+      val enrolmentMaps: Seq[Map[String, String]] =
+        grouped.map { case (key, identifiers) =>
+          val identifierName = identifiers.map(_._1).mkString("/")
+          val identifierValue = identifiers
+            .map {
+              case ("NINO", v) => v.take(8)
+              case (_, v)      => v
+            }
+            .mkString("/")
+
+          Map(
+            "enrolmentKey"    -> key,
+            "identifierName"  -> identifierName,
+            "identifierValue" -> identifierValue
+          )
+        }.toSeq
+
+      val (matching, others) = expectedHodServiceOpt match {
+        case Some(expectedHodService) =>
+          enrolmentMaps.partition { enrolmentMap =>
+            val enrolmentKey = enrolmentMap("enrolmentKey")
+            enrolmentToHodService.get(enrolmentKey).contains(expectedHodService)
+          }
+        case None =>
+          (Seq.empty, enrolmentMaps)
+      }
+
+      val reordered = matching ++ others
+      reordered
+    }
+  }
+
+  private def knownFactDataWithEnrolment(
+    serviceType: DirectDebitSource
+  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Seq[Map[String, String]]] = {
+
+    authConnector.authorise(EmptyPredicate, Retrievals.allEnrolments).map { enrolments =>
+
+      logger.info(s"Retrieved enrolments: ${enrolments.enrolments.map(_.key).mkString(", ")}")
+
+      val expectedHodService: Option[String] = ChrisEnvelopeConstants.listHodServices.get(serviceType)
+      logger.info(s"Expected HOD service for [$serviceType] = ${expectedHodService.getOrElse("not found")}")
+
+      val activeEnrolments: Seq[Enrolment] = enrolments.enrolments.toSeq.filter(_.isActivated)
+
+      val grouped: Map[String, Seq[(String, String)]] =
+        activeEnrolments
+          .groupBy(_.key)
+          .view
+          .mapValues(_.flatMap(_.identifiers.map(i => i.key -> i.value)))
+          .toMap
+
+      val enrolmentMaps: Seq[Map[String, String]] = grouped.map { case (enrolmentKey, identifiers) =>
         val concatenatedNames = identifiers.map(_._1).mkString("/")
         val concatenatedValues = identifiers
-          .map { case (name, value) =>
-            if (service == "NTS" && name == "NINO") value.take(8) else value
+          .map {
+            case (name, value) if name == "NINO" => value.take(8)
+            case (_, value)                      => value
           }
           .mkString("/")
 
+        val hodServiceName = enrolmentToHodService.getOrElse(enrolmentKey, enrolmentKey)
+
         Map(
-          "service"         -> service,
+          "service"         -> hodServiceName,
           "identifierName"  -> concatenatedNames,
           "identifierValue" -> concatenatedValues
         )
       }.toSeq
 
-      // Step 4: Reorder so expected HOD service comes first
       val (matching, others) = expectedHodService match {
-        case Some(hodKey) =>
-          enrolmentMaps.partition(_.get("service").exists(_.contains(hodKey)))
-        case None => (Seq.empty, enrolmentMaps)
+        case Some(expected) =>
+          val matchList = enrolmentMaps.filter(_.get("service").contains(expected))
+          if (matchList.nonEmpty) {
+            logger.info(s"Found matching HOD service [$expected]. It will appear first in XML.")
+          } else {
+            logger.warn(s"No active enrolment matches expected HOD service [$expected]. Including all in XML.")
+          }
+          (matchList, enrolmentMaps.filterNot(_.get("service").contains(expected)))
+        case None =>
+          (Seq.empty, enrolmentMaps)
       }
 
       val reordered = matching ++ others
-
-      logger.info(s"*** Final enrolment maps (reordered): ${reordered.mkString(", ")}")
+      logger.info(s"*** Final enrolment maps for XML (matching first): ${reordered.mkString(", ")}")
       reordered
     }
   }
+  import scala.util.{Failure, Success}
 
-  def submitToChris(request: ChrisSubmissionRequest, credId: String, affinityGroup: String, authRequest: AuthenticatedRequest[?])(implicit
-    hc: HeaderCarrier
-  ): Future[String] =
+  def submitToChris(
+    request: ChrisSubmissionRequest,
+    credId: String,
+    affinityGroup: String
+  )(implicit hc: HeaderCarrier): Future[String] = {
+
     for {
-      hodServices <- getEligibleHodServices(request: ChrisSubmissionRequest)
-      envelopeDetails = ChrisEnvelopeBuilder.getEnvelopeDetails(request, credId, affinityGroup, hodServices)
-      envelopeXml = ChrisEnvelopeBuilder.build(envelopeDetails)
-      _      <- auditService.sendEvent(envelopeDetails)
-      result <- chrisConnector.submitEnvelope(envelopeXml)
+      knownFactData <- knownFactDataWithEnrolment(request.serviceType)
+      keysData      <- getActiveEnrolmentForKeys(request.serviceType)
+      envelopeXml = ChrisEnvelopeBuilder.build(request, credId, affinityGroup, knownFactData, keysData)
+
+      validationResult = validator.validate(envelopeXml)
+
+      result <- validationResult match {
+                  case Success(_) =>
+                    logger.info("ChRIS XML validation succeeded. Submitting envelope to ChRIS...")
+                    chrisConnector.submitEnvelope(envelopeXml)
+
+                  case Failure(e) =>
+                    logger.error(s"ChRIS XML validation failed: ${e.getMessage}", e)
+                    Future.failed(
+                      new RuntimeException(s"ChRIS submission skipped due to invalid XML: ${e.getMessage}", e)
+                    )
+                }
     } yield result
+  }
 
 }
