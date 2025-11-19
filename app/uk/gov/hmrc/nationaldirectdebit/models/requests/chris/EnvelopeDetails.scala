@@ -21,7 +21,8 @@ import uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest
 case class EnvelopeDetails(
   request: ChrisSubmissionRequest,
   credId: String,
-  hodServices: Seq[Map[String, String]],
+  knownFactData: Seq[Map[String, String]],
+  keysData: Seq[Map[String, String]],
   correlatingId: String,
   receiptDate: String,
   submissionDateTime: String,

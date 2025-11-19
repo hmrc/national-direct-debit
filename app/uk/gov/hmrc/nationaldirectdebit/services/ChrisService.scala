@@ -31,8 +31,9 @@ import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.{ChrisEnvelopeBuilder
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: AuthConnector, validator: XmlValidator, auditService: AuditService)(implicit ec: ExecutionContext)
-    extends Logging {
+class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: AuthConnector, validator: XmlValidator, auditService: AuditService)(
+  implicit ec: ExecutionContext
+) extends Logging {
 
   private def getActiveEnrolmentForKeys(
     serviceType: DirectDebitSource
@@ -151,14 +152,18 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
     for {
       knownFactData <- knownFactDataWithEnrolment(request.serviceType)
       keysData      <- getActiveEnrolmentForKeys(request.serviceType)
-      envelopeXml = ChrisEnvelopeBuilder.build(request, credId, affinityGroup, knownFactData, keysData)
+      envelopeDetails = ChrisEnvelopeBuilder.getEnvelopeDetails(request, credId, affinityGroup, knownFactData, keysData)
+      _ <- auditService.sendEvent(envelopeDetails)
+      envelopeXml = ChrisEnvelopeBuilder.build(envelopeDetails)
 
       validationResult = validator.validate(envelopeXml)
 
       result <- validationResult match {
                   case Success(_) =>
                     logger.info("ChRIS XML validation succeeded. Submitting envelope to ChRIS...")
-                    chrisConnector.submitEnvelope(envelopeXml)
+                    auditService.sendEvent(envelopeDetails).flatMap { _ =>
+                      chrisConnector.submitEnvelope(envelopeXml)
+                    }
 
                   case Failure(e) =>
                     logger.error(s"ChRIS XML validation failed: ${e.getMessage}", e)

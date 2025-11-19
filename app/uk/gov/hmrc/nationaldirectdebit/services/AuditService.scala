@@ -37,7 +37,7 @@ class AuditService @Inject (
   private val auditSource: String = "national-direct-debit"
 
   private def buildAuditEvent(envelopeDetails: EnvelopeDetails): AuditEvent = {
-    
+
     val commonAuditFields: CommonAuditFields = CommonAuditFields(
       envelopeDetails.request.auditType.map(_.name).getOrElse("Other"),
       envelopeDetails.correlatingId,
@@ -90,7 +90,7 @@ class AuditService @Inject (
           bankAddress,
           envelopeDetails.request.yourBankDetailsWithAuddisStatus.auddisStatus // Check the position
         )
-        
+
       case Some(AddPaymentPlanAudit) =>
         AddPaymentPlanAuditEvent(commonAuditFields)
 
@@ -134,8 +134,8 @@ class AuditService @Inject (
 
     val extendedDataEvent = ExtendedDataEvent(
       auditSource = auditSource,
-      auditType = auditEvent.common.auditType,
-      detail = Json.toJson(auditEvent)
+      auditType   = auditEvent.common.auditType,
+      detail      = Json.toJson(auditEvent)
     )
 
     auditConnector.sendExtendedEvent(extendedDataEvent)
