@@ -68,7 +68,7 @@ object ChrisEnvelopeBuilder extends Logging {
                 {XmlUtils.formatKnownFacts(knownFactData)}
               <directDebitInstruction>
                 {
-        if (request.amendPlan || request.cancelPlan || request.suspendPlan || request.removeSuspensionPlan) {
+        if (request.amendPlan || request.cancelPlan || request.suspendPlan || request.removeSuspensionPlan || request.addPlan) {
           <ddiReferenceNo>{request.ddiReferenceNo}</ddiReferenceNo>
         } else {
           <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
