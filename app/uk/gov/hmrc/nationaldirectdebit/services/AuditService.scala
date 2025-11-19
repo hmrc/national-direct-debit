@@ -17,11 +17,9 @@
 package uk.gov.hmrc.nationaldirectdebit.services
 
 import com.google.inject.Inject
-import play.api.libs.json.{Json, Writes}
-import play.api.mvc.Request
+import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.models.audits.AuditEvent
-import uk.gov.hmrc.play.audit.AuditExtensions.auditHeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
 import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.EnvelopeDetails
@@ -47,7 +45,7 @@ class AuditService @Inject (
       envelopeDetails.request.serviceType.toString,
       envelopeDetails.request.paymentPlanType.toString,
       envelopeDetails.request.paymentReference,
-      Some("GBP"), // Hard coded
+      Some("GBP"),
       Some(
         PaymentPlanDetails(
           paymentAmount        = envelopeDetails.request.paymentAmount,
@@ -57,8 +55,7 @@ class AuditService @Inject (
           planStartDate        = envelopeDetails.request.planStartDate.map(_.enteredDate),
           planEndDate          = envelopeDetails.request.planEndDate,
           totalAmountDue       = envelopeDetails.request.totalAmountDue,
-          monthlyPaymentAmount = None, // Need to check with Sean
-          weeklyPaymentAmount  = None, // Need to check with Sean
+          monthlyPaymentAmount = envelopeDetails.request.calculation.flatMap(_.monthlyPaymentAmount),
           finalPaymentAmount   = envelopeDetails.request.calculation.flatMap(_.finalPaymentAmount),
           finalPaymentDate     = envelopeDetails.request.calculation.flatMap(_.finalPaymentDate)
         )
@@ -73,21 +70,10 @@ class AuditService @Inject (
           envelopeDetails.request.yourBankDetailsWithAuddisStatus.sortCode
         )
 
-        val bankAddress = BankAddress(
-          "addressLine1",
-          None,
-          Some("addressLine1"),
-          None,
-          "AB1 2CD",
-          None,
-          Some("United Kingdom")
-        )
-
         NewDirectDebitAuditEvent(
           commonAuditFields,
           "bankAccountType",
           bankAccount,
-          bankAddress,
           envelopeDetails.request.yourBankDetailsWithAuddisStatus.auddisStatus // Check the position
         )
 

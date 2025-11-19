@@ -27,10 +27,10 @@ final case class CommonAuditFields(
   credentialId: String,
   directDebitReference: String,
   submissionDateTime: String,
-  paymentPlanService: String, // serviceType: DirectDebitSource in ChrisSubmissionRequest - Doesn't go in Chris SOAP XML - We fetch expectedHodService from it.
+  paymentPlanService: String,
   paymentPlanType: String,
   paymentReference: String,
-  paymentCurrency: Option[String], // GBP - PaymentPlanBuilder - Line no 69
+  paymentCurrency: Option[String],
   paymentPlanDetails: Option[PaymentPlanDetails]
 )
 
@@ -42,7 +42,6 @@ final case class NewDirectDebitAuditEvent(
   common: CommonAuditFields,
   bankAccountType: String,
   bankAccount: BankAccount,
-  bankAddress: BankAddress,
   bankAuddisEnabled: Boolean
 ) extends AuditEvent
 
@@ -97,16 +96,14 @@ object AuditEvent {
         common            <- commonFormat.reads(json)
         bankAccountType   <- (json \ "bankAccountType").validate[String]
         bankAccount       <- (json \ "bankAccount").validate[BankAccount]
-        bankAddress       <- (json \ "bankAddress").validate[BankAddress]
         bankAuddisEnabled <- (json \ "bankAuddisEnabled").validate[Boolean]
-      } yield NewDirectDebitAuditEvent(common, bankAccountType, bankAccount, bankAddress, bankAuddisEnabled)
+      } yield NewDirectDebitAuditEvent(common, bankAccountType, bankAccount, bankAuddisEnabled)
     },
     OWrites[NewDirectDebitAuditEvent] { event =>
       Json.toJsObject(event.common) ++
         Json.obj(
           "bankAccountType"   -> event.bankAccountType,
           "bankAccount"       -> event.bankAccount,
-          "bankAddress"       -> event.bankAddress,
           "bankAuddisEnabled" -> event.bankAuddisEnabled
         )
     }

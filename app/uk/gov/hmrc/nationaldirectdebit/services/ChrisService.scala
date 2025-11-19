@@ -27,6 +27,7 @@ import uk.gov.hmrc.nationaldirectdebit.models.requests.{AuthenticatedRequest, Ch
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.{DirectDebitSource, PaymentPlanType}
 import uk.gov.hmrc.nationaldirectdebit.services.ChrisEnvelopeConstants.enrolmentToHodService
 import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.{ChrisEnvelopeBuilder, XmlValidator}
+import uk.gov.hmrc.play.audit.http.connector.AuditResult
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
@@ -153,7 +154,6 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
       knownFactData <- knownFactDataWithEnrolment(request.serviceType)
       keysData      <- getActiveEnrolmentForKeys(request.serviceType)
       envelopeDetails = ChrisEnvelopeBuilder.getEnvelopeDetails(request, credId, affinityGroup, knownFactData, keysData)
-      _ <- auditService.sendEvent(envelopeDetails)
       envelopeXml = ChrisEnvelopeBuilder.build(envelopeDetails)
 
       validationResult = validator.validate(envelopeXml)
@@ -161,8 +161,22 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
       result <- validationResult match {
                   case Success(_) =>
                     logger.info("ChRIS XML validation succeeded. Submitting envelope to ChRIS...")
-                    auditService.sendEvent(envelopeDetails).flatMap { _ =>
-                      chrisConnector.submitEnvelope(envelopeXml)
+                    auditService.sendEvent(envelopeDetails) flatMap {
+
+                      case AuditResult.Success =>
+                        chrisConnector.submitEnvelope(envelopeXml)
+
+                      case AuditResult.Disabled =>
+                        logger.error("Audit service returned Disabled result.")
+                        Future.failed(
+                          new RuntimeException("Audit service returned Disabled result.")
+                        )
+
+                      case AuditResult.Failure(msg: String, _) =>
+                        logger.error(s"Audit service returned Failure result. Explicit audit failed: $msg")
+                        Future.failed(
+                          new RuntimeException(s"Audit service returned Failure result. Explicit audit failed: $msg")
+                        )
                     }
 
                   case Failure(e) =>

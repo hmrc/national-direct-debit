@@ -66,70 +66,38 @@ object ChrisEnvelopeBuilder extends Logging {
       <ChRISEnvelope xmlns="http://www.hmrc.gov.uk/ChRIS/Envelope/2">
         <EnvelopeVersion>2.0</EnvelopeVersion>
         <Header>
-          <MessageClass>
-            {ChrisEnvelopeConstants.MessageClass}
-          </MessageClass>
-          <Qualifier>
-            {ChrisEnvelopeConstants.Qualifier}
-          </Qualifier>
-          <Function>
-            {ChrisEnvelopeConstants.Function}
-          </Function>
+          <MessageClass>{ChrisEnvelopeConstants.MessageClass}</MessageClass>
+          <Qualifier>{ChrisEnvelopeConstants.Qualifier}</Qualifier>
+          <Function>{ChrisEnvelopeConstants.Function}</Function>
           <Sender>
-            <System>
-              {ChrisEnvelopeConstants.SenderSystem}
-            </System>
-            <CorrelatingID>
-              {envelopeDetails.correlatingId}
-            </CorrelatingID>
-            <ReceiptDate>
-              {envelopeDetails.receiptDate}
-            </ReceiptDate>
+            <System>{ChrisEnvelopeConstants.SenderSystem}</System>
+            <CorrelatingID>{envelopeDetails.correlatingId}</CorrelatingID>
+            <ReceiptDate>{envelopeDetails.receiptDate}</ReceiptDate>
           </Sender>
         </Header>
         <Body>
           <IRenvelope xmlns={""}>
             <IRheader>
-              <Keys>
-                {XmlUtils.formatKeys(envelopeDetails.keysData)}
-              </Keys>
-              <PeriodEnd>
-                {envelopeDetails.periodEnd}
-              </PeriodEnd>
-              <Sender>
-                {envelopeDetails.senderType}
-              </Sender>
+              <Keys>{XmlUtils.formatKeys(envelopeDetails.keysData)}</Keys>
+              <PeriodEnd>{envelopeDetails.periodEnd}</PeriodEnd>
+              <Sender>{envelopeDetails.senderType}</Sender>
             </IRheader>
             <dDIPPDetails>
-              <submissionDateTime>
-                {envelopeDetails.submissionDateTime}
-              </submissionDateTime>
-              <credentialID>
-                {envelopeDetails.credId}
-              </credentialID>{XmlUtils.formatKnownFacts(envelopeDetails.knownFactData)}<directDebitInstruction>
+              <submissionDateTime>{envelopeDetails.submissionDateTime}</submissionDateTime>
+              <credentialID>{envelopeDetails.credId}</credentialID>
+              {XmlUtils.formatKnownFacts(envelopeDetails.knownFactData)}
+              <directDebitInstruction>
               {
         if (
           envelopeDetails.request.amendPlan || envelopeDetails.request.cancelPlan || envelopeDetails.request.suspendPlan || envelopeDetails.request.removeSuspensionPlan
         ) {
-          <ddiReferenceNo>
-                  {envelopeDetails.request.ddiReferenceNo}
-                </ddiReferenceNo>
+          <ddiReferenceNo>{envelopeDetails.request.ddiReferenceNo}</ddiReferenceNo>
         } else {
-          <actionType>
-                  {ChrisEnvelopeConstants.ActionType_1}
-                </actionType>
-                  <ddiReferenceNo>
-                    {envelopeDetails.request.ddiReferenceNo}
-                  </ddiReferenceNo>
-                  <bankSortCode>
-                    {envelopeDetails.request.yourBankDetailsWithAuddisStatus.sortCode}
-                  </bankSortCode>
-                  <bankAccountNo>
-                    {envelopeDetails.request.yourBankDetailsWithAuddisStatus.accountNumber}
-                  </bankAccountNo>
-                  <bankAccountName>
-                    {envelopeDetails.request.yourBankDetailsWithAuddisStatus.accountHolderName}
-                  </bankAccountName>
+          <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType> 
+            <ddiReferenceNo>{envelopeDetails.request.ddiReferenceNo}</ddiReferenceNo>
+                  <bankSortCode>{envelopeDetails.request.yourBankDetailsWithAuddisStatus.sortCode}</bankSortCode>
+                  <bankAccountNo>{envelopeDetails.request.yourBankDetailsWithAuddisStatus.accountNumber}</bankAccountNo>
+                  <bankAccountName>{envelopeDetails.request.yourBankDetailsWithAuddisStatus.accountHolderName}</bankAccountName>
         }
       }{if (envelopeDetails.request.yourBankDetailsWithAuddisStatus.auddisStatus) <paperAuddisFlag>01</paperAuddisFlag> else scala.xml.Null}
             </directDebitInstruction>{PaymentPlanBuilder.build(envelopeDetails.request, envelopeDetails.expectedHodService)}
