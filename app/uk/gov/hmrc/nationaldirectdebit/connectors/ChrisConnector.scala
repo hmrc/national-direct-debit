@@ -18,35 +18,73 @@ package uk.gov.hmrc.nationaldirectdebit.connectors
 
 import com.google.inject.Inject
 import play.api.Logging
-import play.api.libs.ws.DefaultBodyWritables.*
-import play.api.libs.ws.ahc.StandaloneAhcWSClient
+import play.api.libs.ws.DefaultBodyWritables.writeableOf_String
+import uk.gov.hmrc.nationaldirectdebit.models.{FATAL_ERROR, SUBMITTED, SubmissionResult}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, StringContextOps}
+import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.nationaldirectdebit.config.AppConfig
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 import scala.xml.Elem
+import uk.gov.hmrc.http.HttpReads.Implicits.*
 
 class ChrisConnector @Inject() (
-  ws: StandaloneAhcWSClient,
+  httpClient: HttpClientV2,
   appConfig: AppConfig
 )(implicit ec: ExecutionContext)
     extends Logging {
 
   private val chrisBaseUrl: String = appConfig.baseUrl("chris")
 
-  def submitEnvelope(envelope: Elem): Future[String] = {
-    ws.url(chrisBaseUrl)
-      .withHttpHeaders("Content-Type" -> "application/xml")
-      .post(envelope.toString())
-      .flatMap { response =>
-        if (response.status >= 200 && response.status < 300) {
-          logger.info(s"ChRIS submission successful: ${response.status}")
-          Future.successful(response.body)
+  import uk.gov.hmrc.http.HttpReads.Implicits.*
+  import scala.util.control.NonFatal
+
+  def submitEnvelope(envelope: Elem, correlationId: String)(implicit hc: HeaderCarrier): Future[SubmissionResult] = {
+
+    val xmlString =
+      """<?xml version="1.0" encoding="UTF-8"?>""" + "\n" + envelope.toString()
+    logger.info("FINAL XML SENT TO CHRIS:\n" + xmlString)
+    httpClient
+      .post(url"$chrisBaseUrl")
+      .setHeader(
+        "Content-Type"  -> "application/xml",
+        "Accept"        -> "application/xml",
+        "CorrelationId" -> correlationId
+      )
+      .withBody(xmlString)
+      .execute[HttpResponse]
+      .map { resp =>
+        if (is2xx(resp.status)) {
+          logger.info(s"[ChrisConnector] corrId=$correlationId status=${resp.status}")
+          SubmissionResult(
+            status = SUBMITTED,
+            rawXml = Some(resp.body),
+            meta   = None
+          )
         } else {
-          val msg = s"ChRIS submission failed with status ${response.status}: ${response.body}"
-          logger.error(msg)
-          Future.failed(new RuntimeException(msg)) // throws to calling service
+          logger.error(
+            s"[ChrisConnector] NON-2xx corrId=$correlationId status=${resp.status} response-body:\n${resp.body}"
+          )
+          SubmissionResult(
+            status = FATAL_ERROR,
+            rawXml = Some(resp.body),
+            meta   = None
+          )
         }
+      }
+      .recover { case NonFatal(e) =>
+        logger.error(
+          s"[ChrisConnector] Transport exception calling $chrisBaseUrl corrId=$correlationId",
+          e
+        )
+        SubmissionResult(
+          status = FATAL_ERROR,
+          rawXml = Some("<connection-error/>"),
+          meta   = None
+        )
       }
   }
 
+  private def is2xx(status: Int): Boolean = status >= 200 && status < 300
 }

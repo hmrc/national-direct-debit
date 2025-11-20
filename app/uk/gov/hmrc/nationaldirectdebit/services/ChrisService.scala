@@ -22,6 +22,7 @@ import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
+import uk.gov.hmrc.nationaldirectdebit.models.SubmissionResult
 import uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.DirectDebitSource
 import uk.gov.hmrc.nationaldirectdebit.services.ChrisEnvelopeConstants.enrolmentToHodService
@@ -145,27 +146,39 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
     request: ChrisSubmissionRequest,
     credId: String,
     affinityGroup: String
-  )(implicit hc: HeaderCarrier): Future[String] = {
+  )(implicit hc: HeaderCarrier): Future[SubmissionResult] = {
+
+    val correlatingId = java.util.UUID.randomUUID().toString.replace("-", "")
 
     for {
       knownFactData <- knownFactDataWithEnrolment(request.serviceType)
       keysData      <- getActiveEnrolmentForKeys(request.serviceType)
-      envelopeXml = ChrisEnvelopeBuilder.build(request, credId, affinityGroup, knownFactData, keysData)
+      envelopeXml = ChrisEnvelopeBuilder.build(
+                      request,
+                      credId,
+                      affinityGroup,
+                      knownFactData,
+                      keysData,
+                      correlatingId
+                    )
 
       validationResult = validator.validate(envelopeXml)
 
-      result <- validationResult match {
-                  case Success(_) =>
-                    logger.info("ChRIS XML validation succeeded. Submitting envelope to ChRIS...")
-                    chrisConnector.submitEnvelope(envelopeXml)
+      submissionResult <- validationResult match {
+                            case Success(_) =>
+                              logger.info("ChRIS XML validation succeeded. Submitting envelope to ChRIS...")
+                              chrisConnector.submitEnvelope(envelopeXml, correlatingId)
 
-                  case Failure(e) =>
-                    logger.error(s"ChRIS XML validation failed: ${e.getMessage}", e)
-                    Future.failed(
-                      new RuntimeException(s"ChRIS submission skipped due to invalid XML: ${e.getMessage}", e)
-                    )
-                }
-    } yield result
+                            case Failure(e) =>
+                              logger.error(s"ChRIS XML validation failed: ${e.getMessage}", e)
+                              Future.failed(
+                                new RuntimeException(
+                                  s"ChRIS submission skipped due to invalid XML: ${e.getMessage}",
+                                  e
+                                )
+                              )
+                          }
+    } yield submissionResult
   }
 
 }

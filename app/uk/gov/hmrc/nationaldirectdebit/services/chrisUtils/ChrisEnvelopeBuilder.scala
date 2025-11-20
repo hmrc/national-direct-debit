@@ -25,16 +25,15 @@ object ChrisEnvelopeBuilder extends Logging {
 
   private val dateTimeFormatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS")
   private val prettyPrinter = new PrettyPrinter(120, 4)
-
   def build(
     request: uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest,
     credId: String,
     affinityGroup: String,
     knownFactData: Seq[Map[String, String]],
-    keysData: Seq[Map[String, String]]
+    keysData: Seq[Map[String, String]],
+    correlatingId: String
   ): Elem = {
 
-    val correlatingId = java.util.UUID.randomUUID().toString.replace("-", "")
     val receiptDate = java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).format(dateTimeFormatter)
     val submissionDateTime = java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).format(dateTimeFormatter)
     val periodEnd = DateUtils.calculatePeriodEnd()
@@ -85,7 +84,6 @@ object ChrisEnvelopeBuilder extends Logging {
         </Body>
       </ChRISEnvelope>
     val prettyXmlString = prettyPrinter.format(envelopeXml)
-    logger.info(s"Chris Envelope XML:\n$prettyXmlString")
     XML.loadString(prettyXmlString)
   }
 }
