@@ -16,19 +16,18 @@
 
 package uk.gov.hmrc.nationaldirectdebit.models.requests.chris
 
-import play.api.libs.json.{Json, OFormat}
+import uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest
 
-import java.time.LocalDate
-
-case class PaymentPlanCalculation(
-  regularPaymentAmount: Option[BigDecimal], // optional if single payment
-  finalPaymentAmount: Option[BigDecimal], // optional if no split
-  secondPaymentDate: Option[LocalDate], // optional depending on plan type
-  penultimatePaymentDate: Option[LocalDate], // optional depending on plan type
-  finalPaymentDate: Option[LocalDate], // optional for single payment
-  monthlyPaymentAmount: Option[BigDecimal] = None
+case class EnvelopeDetails(
+  request: ChrisSubmissionRequest,
+  credId: String,
+  knownFactData: Seq[Map[String, String]],
+  keysData: Seq[Map[String, String]],
+  correlatingId: String,
+  receiptDate: String,
+  submissionDateTime: String,
+  periodEnd: String,
+  senderType: String,
+  serviceType: DirectDebitSource,
+  expectedHodService: Option[String]
 )
-
-object PaymentPlanCalculation {
-  implicit val format: OFormat[PaymentPlanCalculation] = Json.format[PaymentPlanCalculation]
-}
