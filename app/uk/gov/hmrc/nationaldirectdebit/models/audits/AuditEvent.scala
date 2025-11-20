@@ -77,18 +77,35 @@ final case class CancelPaymentPlanAuditEvent(
 
 object AuditEvent {
 
-  implicit val commonFormat: OFormat[CommonAuditFields] = (
-    (__ \ "auditType").format[String] and
-      (__ \ "correlatingId").format[String] and
-      (__ \ "credentialId").format[String] and
-      (__ \ "directDebitReference").format[String] and
-      (__ \ "submissionDateTime").format[String] and
-      (__ \ "paymentPlanService").format[String] and
-      (__ \ "paymentPlanType").format[String] and
-      (__ \ "paymentReference").format[String] and
-      (__ \ "paymentCurrency").formatNullable[String] and
-      (__ \ "paymentPlanDetails").formatNullable[PaymentPlanDetails]
-  )(CommonAuditFields.apply, o => Tuple.fromProductTyped(o))
+  implicit val commonReads: Reads[CommonAuditFields] = (
+    (__ \ "auditType").read[String] and
+      (__ \ "correlatingId").read[String] and
+      (__ \ "credentialId").read[String] and
+      (__ \ "directDebitReference").read[String] and
+      (__ \ "submissionDateTime").read[String] and
+      (__ \ "paymentPlanService").read[String] and
+      (__ \ "paymentPlanType").read[String] and
+      (__ \ "paymentReference").read[String] and
+      (__ \ "paymentCurrency").readNullable[String] and
+      (__ \ "paymentPlanDetails").readNullable[PaymentPlanDetails]
+  )(CommonAuditFields.apply)
+
+  implicit val commonWrites: OWrites[CommonAuditFields] = OWrites { o =>
+    Json.obj(
+      "correlatingId"        -> o.correlatingId,
+      "credentialId"         -> o.credentialId,
+      "directDebitReference" -> o.directDebitReference,
+      "submissionDateTime"   -> o.submissionDateTime,
+      "paymentPlanService"   -> o.paymentPlanService,
+      "paymentPlanType"      -> o.paymentPlanType,
+      "paymentReference"     -> o.paymentReference,
+      "paymentCurrency"      -> o.paymentCurrency,
+      "paymentPlanDetails"   -> o.paymentPlanDetails
+    )
+  }
+
+  implicit val commonFormat: OFormat[CommonAuditFields] =
+    OFormat(commonReads, commonWrites)
 
   implicit val newDDFormat: OFormat[NewDirectDebitAuditEvent] = OFormat(
     Reads[NewDirectDebitAuditEvent] { json =>
@@ -221,8 +238,7 @@ object AuditEvent {
       val auditType = event.common.auditType
       registry.get(auditType) match {
         case Some(format) =>
-          val specificJson = format.asInstanceOf[OFormat[AuditEvent]].writes(event)
-          specificJson + ("auditType" -> JsString(auditType))
+          format.asInstanceOf[OFormat[AuditEvent]].writes(event)
         case None =>
           throw new IllegalArgumentException(s"No format registered for auditType: $auditType")
       }

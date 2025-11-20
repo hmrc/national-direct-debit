@@ -93,7 +93,7 @@ object ChrisEnvelopeBuilder extends Logging {
         ) {
           <ddiReferenceNo>{envelopeDetails.request.ddiReferenceNo}</ddiReferenceNo>
         } else {
-          <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType> 
+          <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
             <ddiReferenceNo>{envelopeDetails.request.ddiReferenceNo}</ddiReferenceNo>
                   <bankSortCode>{envelopeDetails.request.yourBankDetailsWithAuddisStatus.sortCode}</bankSortCode>
                   <bankAccountNo>{envelopeDetails.request.yourBankDetailsWithAuddisStatus.accountNumber}</bankAccountNo>
