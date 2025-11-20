@@ -15,6 +15,7 @@
  */
 
 package uk.gov.hmrc.nationaldirectdebit.models.requests
+import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.PersonalOrBusinessAccount
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.nationaldirectdebit.models.SuspensionPeriodRange
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.*
@@ -44,7 +45,8 @@ case class ChrisSubmissionRequest(
   cancelPlan: Boolean = false,
   suspendPlan: Boolean = false,
   removeSuspensionPlan: Boolean = false,
-  auditType: Option[AuditType] = None
+  auditType: Option[AuditType] = None,
+  bankAccountType: Option[PersonalOrBusinessAccount] = None
 )
 
 object ChrisSubmissionRequest {

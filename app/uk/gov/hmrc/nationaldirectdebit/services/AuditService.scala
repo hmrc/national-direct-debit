@@ -24,6 +24,7 @@ import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
 import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.EnvelopeDetails
 import uk.gov.hmrc.nationaldirectdebit.models.audits.*
+import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.DirectDebitSource
 import uk.gov.hmrc.http.NotFoundException
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -42,7 +43,7 @@ class AuditService @Inject (
       envelopeDetails.credId,
       envelopeDetails.request.ddiReferenceNo,
       envelopeDetails.submissionDateTime,
-      envelopeDetails.request.serviceType.toString,
+      DirectDebitSource.auditName(envelopeDetails.request.serviceType),
       envelopeDetails.request.paymentPlanType.toString,
       envelopeDetails.request.paymentReference,
       Some("GBP"),
@@ -72,7 +73,7 @@ class AuditService @Inject (
 
         NewDirectDebitAuditEvent(
           commonAuditFields,
-          "bankAccountType",
+          envelopeDetails.request.bankAccountType.map(_.toString).getOrElse("NoAccountType"),
           bankAccount,
           envelopeDetails.request.yourBankDetailsWithAuddisStatus.auddisStatus // Check the position
         )
@@ -116,12 +117,10 @@ class AuditService @Inject (
 
   def sendEvent(envelopeDetails: EnvelopeDetails)(implicit hc: HeaderCarrier): Future[AuditResult] = {
 
-    val auditEvent = buildAuditEvent(envelopeDetails)
-
     val extendedDataEvent = ExtendedDataEvent(
       auditSource = auditSource,
-      auditType   = auditEvent.common.auditType,
-      detail      = Json.toJson(auditEvent)
+      auditType   = envelopeDetails.request.auditType.map(_.name).getOrElse("Other"),
+      detail      = Json.toJson(buildAuditEvent(envelopeDetails))
     )
 
     auditConnector.sendExtendedEvent(extendedDataEvent)
