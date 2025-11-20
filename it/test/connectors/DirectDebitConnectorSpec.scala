@@ -69,7 +69,7 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock with Matchers wit
     paymentPlanCount  = 2,
     paymentPlanList = Seq(
       RDSPaymentPlan(
-        scheduledPaymentAmount = 100,
+        scheduledPaymentAmount = Some(100),
         planRefNumber          = "ref number 1",
         planType               = "type 1",
         paymentReference       = "payment ref 1",
@@ -77,7 +77,7 @@ class DirectDebitConnectorSpec extends ApplicationWithWiremock with Matchers wit
         submissionDateTime     = LocalDateTime.of(2025, 12, 12, 12, 12)
       ),
       RDSPaymentPlan(
-        scheduledPaymentAmount = 100,
+        scheduledPaymentAmount = Some(100),
         planRefNumber          = "ref number 1",
         planType               = "type 1",
         paymentReference       = "payment ref 1",
