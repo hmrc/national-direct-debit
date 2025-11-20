@@ -22,16 +22,19 @@ import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
-import uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest
-import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.DirectDebitSource
+import uk.gov.hmrc.nationaldirectdebit.services.AuditService
+import uk.gov.hmrc.nationaldirectdebit.models.requests.{AuthenticatedRequest, ChrisSubmissionRequest}
+import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.{DirectDebitSource, PaymentPlanType}
 import uk.gov.hmrc.nationaldirectdebit.services.ChrisEnvelopeConstants.enrolmentToHodService
 import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.{ChrisEnvelopeBuilder, XmlValidator}
+import uk.gov.hmrc.play.audit.http.connector.AuditResult
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: AuthConnector, validator: XmlValidator)(implicit ec: ExecutionContext)
-    extends Logging {
+class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: AuthConnector, validator: XmlValidator, auditService: AuditService)(
+  implicit ec: ExecutionContext
+) extends Logging {
 
   private def getActiveEnrolmentForKeys(
     serviceType: DirectDebitSource
@@ -150,14 +153,31 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
     for {
       knownFactData <- knownFactDataWithEnrolment(request.serviceType)
       keysData      <- getActiveEnrolmentForKeys(request.serviceType)
-      envelopeXml = ChrisEnvelopeBuilder.build(request, credId, affinityGroup, knownFactData, keysData)
+      envelopeDetails = ChrisEnvelopeBuilder.getEnvelopeDetails(request, credId, affinityGroup, knownFactData, keysData)
+      envelopeXml = ChrisEnvelopeBuilder.build(envelopeDetails)
 
       validationResult = validator.validate(envelopeXml)
 
       result <- validationResult match {
                   case Success(_) =>
                     logger.info("ChRIS XML validation succeeded. Submitting envelope to ChRIS...")
-                    chrisConnector.submitEnvelope(envelopeXml)
+                    auditService.sendEvent(envelopeDetails) flatMap {
+
+                      case AuditResult.Success =>
+                        chrisConnector.submitEnvelope(envelopeXml)
+
+                      case AuditResult.Disabled =>
+                        logger.error("Audit service returned Disabled result.")
+                        Future.failed(
+                          new RuntimeException("Audit service returned Disabled result.")
+                        )
+
+                      case AuditResult.Failure(msg: String, _) =>
+                        logger.error(s"Audit service returned Failure result. Explicit audit failed: $msg")
+                        Future.failed(
+                          new RuntimeException(s"Audit service returned Failure result. Explicit audit failed: $msg")
+                        )
+                    }
 
                   case Failure(e) =>
                     logger.error(s"ChRIS XML validation failed: ${e.getMessage}", e)

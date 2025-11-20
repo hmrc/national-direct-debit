@@ -54,4 +54,17 @@ object DirectDebitSource extends Enumerable.Implicits {
     Enumerable(values.map(v => v.toString -> v)*)
 
   val objectMap: Map[String, DirectDebitSource] = values.map(v => v.toString -> v).toMap
+
+  def auditName(source: DirectDebitSource): String =
+    source match {
+      case CT   => "Corporation Tax"
+      case MGD  => "Machine Games Duty"
+      case NIC  => "National Insurance Contributions"
+      case OL   => "Other liability"
+      case PAYE => "Pay As You Earn"
+      case SA   => "Self Assessment"
+      case SDLT => "Stamp Duty Land Tax"
+      case TC   => "Tax credits"
+      case VAT  => "Value Added Tax"
+    }
 }
