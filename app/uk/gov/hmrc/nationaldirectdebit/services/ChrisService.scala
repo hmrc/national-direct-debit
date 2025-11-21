@@ -22,9 +22,9 @@ import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
-import uk.gov.hmrc.nationaldirectdebit.services.AuditService
-import uk.gov.hmrc.nationaldirectdebit.models.requests.{AuthenticatedRequest, ChrisSubmissionRequest}
-import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.{DirectDebitSource, PaymentPlanType}
+import uk.gov.hmrc.nationaldirectdebit.models.SubmissionResult
+import uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest
+import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.DirectDebitSource
 import uk.gov.hmrc.nationaldirectdebit.services.ChrisEnvelopeConstants.enrolmentToHodService
 import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.{ChrisEnvelopeBuilder, XmlValidator}
 import uk.gov.hmrc.play.audit.http.connector.AuditResult
@@ -148,42 +148,42 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
     request: ChrisSubmissionRequest,
     credId: String,
     affinityGroup: String
-  )(implicit hc: HeaderCarrier): Future[String] = {
+  )(implicit hc: HeaderCarrier): Future[SubmissionResult] = {
+
+    val correlatingId: String = java.util.UUID.randomUUID().toString.replace("-", "")
 
     for {
       knownFactData <- knownFactDataWithEnrolment(request.serviceType)
       keysData      <- getActiveEnrolmentForKeys(request.serviceType)
-      envelopeDetails = ChrisEnvelopeBuilder.getEnvelopeDetails(request, credId, affinityGroup, knownFactData, keysData)
+      envelopeDetails = ChrisEnvelopeBuilder.getEnvelopeDetails(request, credId, affinityGroup, knownFactData, keysData, correlatingId)
       envelopeXml = ChrisEnvelopeBuilder.build(envelopeDetails)
 
+      // Validate XML
       validationResult = validator.validate(envelopeXml)
 
       result <- validationResult match {
-                  case Success(_) =>
-                    logger.info("ChRIS XML validation succeeded. Submitting envelope to ChRIS...")
-                    auditService.sendEvent(envelopeDetails) flatMap {
-
-                      case AuditResult.Success =>
-                        chrisConnector.submitEnvelope(envelopeXml)
-
-                      case AuditResult.Disabled =>
-                        logger.error("Audit service returned Disabled result.")
-                        Future.failed(
-                          new RuntimeException("Audit service returned Disabled result.")
-                        )
-
-                      case AuditResult.Failure(msg: String, _) =>
-                        logger.error(s"Audit service returned Failure result. Explicit audit failed: $msg")
-                        Future.failed(
-                          new RuntimeException(s"Audit service returned Failure result. Explicit audit failed: $msg")
-                        )
-                    }
-
                   case Failure(e) =>
                     logger.error(s"ChRIS XML validation failed: ${e.getMessage}", e)
-                    Future.failed(
-                      new RuntimeException(s"ChRIS submission skipped due to invalid XML: ${e.getMessage}", e)
-                    )
+                    Future.failed(new RuntimeException(s"XML validation failed: ${e.getMessage}", e))
+
+                  case Success(_) =>
+                    logger.info("ChRIS XML validation succeeded. Sending audit before submission...")
+                    auditService.sendEvent(envelopeDetails).flatMap {
+                      case AuditResult.Success =>
+                        logger.info("Audit succeeded. Submitting envelope to ChRIS...")
+                        chrisConnector.submitEnvelope(envelopeXml, correlatingId).recoverWith { case e =>
+                          logger.error(s"ChRIS submission failed: ${e.getMessage}", e)
+                          Future.failed(new RuntimeException(s"ChRIS submission failed: ${e.getMessage}", e))
+                        }
+
+                      case AuditResult.Disabled =>
+                        logger.error("Audit service returned Disabled result. Submission stopped.")
+                        Future.failed(new RuntimeException("Audit service disabled. Submission aborted."))
+
+                      case AuditResult.Failure(msg, _) =>
+                        logger.error(s"Audit service failure: $msg. Submission stopped.")
+                        Future.failed(new RuntimeException(s"Audit failed: $msg. Submission aborted."))
+                    }
                 }
     } yield result
   }

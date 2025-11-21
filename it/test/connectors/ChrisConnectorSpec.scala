@@ -21,15 +21,14 @@ import itutil.{ApplicationWithWiremock, WireMockConstants}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
+import uk.gov.hmrc.nationaldirectdebit.models.SUBMITTED
 
 import scala.xml.Elem
 
-class ChrisConnectorSpec extends AnyWordSpec
-  with Matchers
-  with ScalaFutures
-  with IntegrationPatience
-  with ApplicationWithWiremock {
+class ChrisConnectorSpec extends AnyWordSpec with Matchers with ScalaFutures with IntegrationPatience with ApplicationWithWiremock {
+  implicit val hc: HeaderCarrier = HeaderCarrier()
 
   override lazy val extraConfig: Map[String, Any] = super.extraConfig ++ Map(
     "microservice.services.chris.host" -> WireMockConstants.stubHost,
@@ -37,7 +36,7 @@ class ChrisConnectorSpec extends AnyWordSpec
   )
 
   val connector: ChrisConnector = app.injector.instanceOf[ChrisConnector]
-
+  val CorrelatingID = "668102531dd2491f81811a90dac00a33"
   val testEnvelope: Elem =
     <Envelope>
       <Header>Test</Header>
@@ -55,11 +54,12 @@ class ChrisConnectorSpec extends AnyWordSpec
           )
       )
 
-      val result = connector.submitEnvelope(testEnvelope).futureValue
-      result must include("Message received")
+      val result = connector.submitEnvelope(testEnvelope, CorrelatingID).futureValue
+      result.status mustBe SUBMITTED
+      result.rawXml.get must include("Message received")
     }
 
-    "throw an exception on 500 response" in {
+    "return FATAL_ERROR on 500 response" in {
       stubFor(
         post(urlPathMatching("/submission/ChRIS/NDDS/Filing/async/HMRC-NDDS-DDI"))
           .willReturn(
@@ -69,13 +69,12 @@ class ChrisConnectorSpec extends AnyWordSpec
           )
       )
 
-      val ex = intercept[RuntimeException] {
-        connector.submitEnvelope(testEnvelope).futureValue
-      }
-      ex.getMessage must include("ChRIS submission failed with status 500: error occurred")
+      val result = connector.submitEnvelope(testEnvelope, CorrelatingID).futureValue
+      result.status mustBe uk.gov.hmrc.nationaldirectdebit.models.FATAL_ERROR
+      result.rawXml.get must include("error occurred")
     }
 
-    "fail the future on network error" in {
+    "return FATAL_ERROR on network error" in {
       stubFor(
         post(urlPathMatching("/submission/ChRIS/NDDS/Filing/async/HMRC-NDDS-DDI"))
           .willReturn(
@@ -83,9 +82,11 @@ class ChrisConnectorSpec extends AnyWordSpec
               .withFault(com.github.tomakehurst.wiremock.http.Fault.CONNECTION_RESET_BY_PEER)
           )
       )
-      intercept[Exception] {
-        connector.submitEnvelope(testEnvelope).futureValue
-      }.getMessage must include("The future returned an exception")
+
+      val result = connector.submitEnvelope(testEnvelope, CorrelatingID).futureValue
+      result.status mustBe uk.gov.hmrc.nationaldirectdebit.models.FATAL_ERROR
+      result.rawXml.get must include("<connection-error/>")
     }
+
   }
 }

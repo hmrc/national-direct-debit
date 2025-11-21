@@ -17,10 +17,9 @@
 package uk.gov.hmrc.nationaldirectdebit.services.chrisUtils
 
 import play.api.Logging
-import play.api.libs.json.Json
-import uk.gov.hmrc.nationaldirectdebit.services.ChrisEnvelopeConstants
 import uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.{DirectDebitSource, EnvelopeDetails}
+import uk.gov.hmrc.nationaldirectdebit.services.ChrisEnvelopeConstants
 
 import scala.xml.{Elem, PrettyPrinter, XML}
 
@@ -34,10 +33,10 @@ object ChrisEnvelopeBuilder extends Logging {
     credId: String,
     affinityGroup: String,
     knownFactData: Seq[Map[String, String]],
-    keysData: Seq[Map[String, String]]
+    keysData: Seq[Map[String, String]],
+    correlatingId: String
   ): EnvelopeDetails = {
 
-    val correlatingId: String = java.util.UUID.randomUUID().toString.replace("-", "")
     val receiptDate: String = java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).format(dateTimeFormatter)
     val submissionDateTime: String = java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).format(dateTimeFormatter)
     val periodEnd: String = DateUtils.calculatePeriodEnd()
@@ -106,7 +105,6 @@ object ChrisEnvelopeBuilder extends Logging {
         </Body>
       </ChRISEnvelope>
     val prettyXmlString = prettyPrinter.format(envelopeXml)
-    logger.info(s"Chris Envelope XML:\n$prettyXmlString")
     XML.loadString(prettyXmlString)
   }
 }

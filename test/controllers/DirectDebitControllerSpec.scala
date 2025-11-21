@@ -30,6 +30,7 @@ import uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.*
 import uk.gov.hmrc.nationaldirectdebit.models.requests.{ChrisSubmissionRequest, GenerateDdiRefRequest, PaymentPlanDuplicateCheckRequest, WorkingDaysOffsetRequest}
 import uk.gov.hmrc.nationaldirectdebit.models.responses.*
+import uk.gov.hmrc.nationaldirectdebit.models.{SUBMITTED, SubmissionResult}
 import uk.gov.hmrc.nationaldirectdebit.services.{ChrisService, DirectDebitService}
 
 import java.time.{LocalDate, LocalDateTime}
@@ -128,14 +129,22 @@ class DirectDebitControllerSpec extends SpecBase {
             any[ChrisSubmissionRequest](),
             any[String](),
             any[String]()
-          )(any[HeaderCarrier]()) // <-- add matcher for the implicit too
-        ).thenReturn(Future.successful("<Confirmation>Success</Confirmation>"))
+          )(any[HeaderCarrier]())
+        ).thenReturn(
+          Future.successful(
+            SubmissionResult(
+              status = SUBMITTED,
+              rawXml = Some("<Confirmation>TC Message received</Confirmation>")
+            )
+          )
+        )
 
-        val result: Future[Result] = controller.submitToChris()(fakeRequestWithJsonBody(Json.toJson(testChrisRequestSAMonthly)))
+        val result: Future[Result] =
+          controller.submitToChris()(fakeRequestWithJsonBody(Json.toJson(testChrisRequestSAMonthly)))
 
         status(result) mustBe OK
         (contentAsJson(result) \ "success").as[Boolean] mustBe true
-        (contentAsJson(result) \ "response").as[String] must include("Success")
+        (contentAsJson(result) \ "response" \ "rawXml").as[String] must include("TC Message received")
       }
 
       "return 500 and error response when submission fails" in new SetUp {
@@ -146,15 +155,17 @@ class DirectDebitControllerSpec extends SpecBase {
             any[ChrisSubmissionRequest](),
             any[String](),
             any[String]()
-          )(any[HeaderCarrier]()) // <-- same fix here
+          )(any[HeaderCarrier]())
         ).thenReturn(Future.failed(new RuntimeException("Boom!")))
 
-        val result: Future[Result] = controller.submitToChris()(fakeRequestWithJsonBody(Json.toJson(testChrisRequestSAMonthly)))
+        val result: Future[Result] =
+          controller.submitToChris()(fakeRequestWithJsonBody(Json.toJson(testChrisRequestSAMonthly)))
 
         status(result) mustBe 500
         (contentAsJson(result) \ "success").as[Boolean] mustBe false
         (contentAsJson(result) \ "message").as[String] must include("Boom")
       }
+
     }
 
     "retrievePaymentPlanDetails method" - {
