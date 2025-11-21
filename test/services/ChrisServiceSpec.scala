@@ -360,7 +360,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       val enrolments = Enrolments(
         Set(
           Enrolment(
-            key               = "NTC",
+            key               = "IR-NTC-CITIZEN-1",
             identifiers       = Seq(EnrolmentIdentifier("Nino", "AB1234567A")),
             state             = "Activated",
             delegatedAuthRule = None

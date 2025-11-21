@@ -18,75 +18,129 @@ package services.chrisUtils
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.{SchemaValidator, ValidationHandler}
-
-import java.nio.file.{Files, Path}
 import javax.xml.validation.SchemaFactory
 import javax.xml.XMLConstants
+import javax.xml.transform.stream.StreamSource
+import java.io.File
+import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.SchemaValidator
 
 class SchemaValidatorSpec extends AnyWordSpec with Matchers {
 
-  private def tempXsd(content: String): Path = {
-    val path = Files.createTempFile("test-schema", ".xsd")
-    Files.write(path, content.getBytes("UTF-8"))
-    path
+  private def loadSchema(): javax.xml.validation.Schema = {
+    val xsdFiles = Seq(
+      "/xsd/DDIPPDetails_v1.xsd",
+      "/xsd/codelist-ISO4217-v0-3.xsd",
+      "/xsd/FinancialTypes-v1-1.xsd",
+      "/xsd/FinancialIdentifierTypes-v1-0.xsd"
+    ).map(path => new StreamSource(new File(getClass.getResource(path).toURI)))
+
+    val schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
+
+    schemaFactory.newSchema(xsdFiles.toArray.map(_.asInstanceOf[javax.xml.transform.Source]))
   }
 
-  private val simpleXsd =
-    """<?xml version="1.0" encoding="UTF-8"?>
-      |<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
-      |    elementFormDefault="qualified">
-      |
-      |  <xs:element name="TestRoot">
-      |    <xs:complexType>
-      |      <xs:sequence>
-      |        <xs:element name="Message" type="xs:string"/>
-      |      </xs:sequence>
-      |    </xs:complexType>
-      |  </xs:element>
-      |
-      |</xs:schema>
-      |""".stripMargin
+  private def validateXml(xml: String, schema: javax.xml.validation.Schema): Boolean = {
+    val validator = new SchemaValidator
+    validator.validate(xml, schema)
+  }
+
+  private val schema = loadSchema()
 
   "SchemaValidator" should {
 
-    "return true for valid XML" in {
-      val xsdPath = tempXsd(simpleXsd)
-
-      val schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
-      val schema = schemaFactory.newSchema(xsdPath.toFile)
-
+    "validate XML against all related XSDs from resources" in {
       val validXml =
-        """<TestRoot>
-          |  <Message>Hello</Message>
-          |</TestRoot>
+        """<?xml version="1.0" encoding="UTF-8"?>
+          |<ChRISEnvelope xmlns="http://www.hmrc.gov.uk/ChRIS/Envelope/2">
+          |  <EnvelopeVersion>1.0</EnvelopeVersion>
+          |  <Header>
+          |    <MessageClass>HMRC-XXXX-DDI</MessageClass>
+          |    <Qualifier>request</Qualifier>
+          |    <Function>submit</Function>
+          |    <Sender>
+          |      <System>Portal</System>
+          |      <CorrelatingID>3606fc37ce644ffd95007d1af915b60e</CorrelatingID>
+          |      <ReceiptDate>2025-11-21T16:30:56.895</ReceiptDate>
+          |    </Sender>
+          |  </Header>
+          |  <Body>
+          |    <IRenvelope xmlns="http://www.hmrc.gov.uk/ChRIS/Envelope/2">
+          |      <IRheader>
+          |        <Keys>
+          |          <Key Type="UTR">utr123</Key>
+          |        </Keys>
+          |        <PeriodEnd>2026-04-06</PeriodEnd>
+          |        <Sender>Individual</Sender>
+          |      </IRheader>
+          |      <dDIPPDetails>
+          |        <submissionDateTime>2025-11-21T16:30:56.895</submissionDateTime>
+          |        <credentialID>0000000009000202</credentialID>
+          |        <knownFact>
+          |          <service>CESA</service>
+          |          <value>utr123</value>
+          |        </knownFact>
+          |        <directDebitInstruction>
+          |          <ddiReferenceNo>99055025</ddiReferenceNo>
+          |          <paperAuddisFlag>01</paperAuddisFlag>
+          |        </directDebitInstruction>
+          |        <paymentPlan>
+          |          <actionType>04</actionType>
+          |          <pPType>02</pPType>
+          |          <paymentReference>1400256374K</paymentReference>
+          |          <corePPReferenceNo>200000801</corePPReferenceNo>
+          |          <hodService>CESA</hodService>
+          |          <paymentCurrency>GBP</paymentCurrency>
+          |          <scheduledPaymentAmount>100.00</scheduledPaymentAmount>
+          |          <scheduledPaymentStartDate>2025-11-25</scheduledPaymentStartDate>
+          |          <scheduledPaymentFrequency>05</scheduledPaymentFrequency>
+          |        </paymentPlan>
+          |      </dDIPPDetails>
+          |    </IRenvelope>
+          |  </Body>
+          |</ChRISEnvelope>
           |""".stripMargin
 
-      val validator = new SchemaValidator
-      validator.validate(validXml, schema) shouldBe true
+      validateXml(validXml, schema) shouldBe true
     }
 
-    "return false for invalid XML" in {
-      val xsdPath = tempXsd(simpleXsd)
-
-      val schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
-      val schema = schemaFactory.newSchema(xsdPath.toFile)
-
-      // Message element missing → INVALID
+    "fail validation if knownFact service exceeds 4 characters" in {
       val invalidXml =
-        """<TestRoot>
-          |  <!-- Missing <Message> -->
-          |</TestRoot>
+        """<?xml version="1.0" encoding="UTF-8"?>
+          |<ChRISEnvelope xmlns="http://www.hmrc.gov.uk/ChRIS/Envelope/2">
+          |  <EnvelopeVersion>1.0</EnvelopeVersion>
+          |  <Header>
+          |    <MessageClass>HMRC-XXXX-DDI</MessageClass>
+          |    <Qualifier>request</Qualifier>
+          |    <Function>submit</Function>
+          |    <Sender>
+          |      <System>Portal</System>
+          |      <CorrelatingID>3606fc37ce644ffd95007d1af915b60e</CorrelatingID>
+          |      <ReceiptDate>2025-11-21T16:30:56.895</ReceiptDate>
+          |    </Sender>
+          |  </Header>
+          |  <Body>
+          |    <IRenvelope xmlns="http://www.hmrc.gov.uk/ChRIS/Envelope/2">
+          |      <IRheader>
+          |        <Keys>
+          |          <Key Type="UTR">utr123</Key>
+          |        </Keys>
+          |        <PeriodEnd>2026-04-06</PeriodEnd>
+          |        <Sender>Individual</Sender>
+          |      </IRheader>
+          |      <dDIPPDetails>
+          |        <submissionDateTime>2025-11-21T16:30:56.895</submissionDateTime>
+          |        <credentialID>0000000009000202</credentialID>
+          |        <knownFact>
+          |          <service>CESA12345</service>
+          |          <value>utr123</value>
+          |        </knownFact>
+          |      </dDIPPDetails>
+          |    </IRenvelope>
+          |  </Body>
+          |</ChRISEnvelope>
           |""".stripMargin
 
-      val validator = new SchemaValidator
-      validator.validate(invalidXml, schema) shouldBe false
-    }
-
-    "record parser errors in ValidationHandler" in {
-      val handler = new ValidationHandler
-      handler.error(new org.xml.sax.SAXParseException("test error", null))
-      handler.error shouldBe true
+      validateXml(invalidXml, schema) shouldBe false
     }
   }
 }
