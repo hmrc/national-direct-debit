@@ -89,7 +89,9 @@ object ChrisEnvelopeBuilder extends Logging {
               <directDebitInstruction>
               {
         if (
-          envelopeDetails.request.amendPlan || envelopeDetails.request.cancelPlan || envelopeDetails.request.suspendPlan || envelopeDetails.request.removeSuspensionPlan
+          envelopeDetails.request.amendPlan || envelopeDetails.request.cancelPlan
+          || envelopeDetails.request.suspendPlan || envelopeDetails.request.removeSuspensionPlan
+          || envelopeDetails.request.addPlan
         ) {
           <ddiReferenceNo>{envelopeDetails.request.ddiReferenceNo}</ddiReferenceNo>
         } else {
