@@ -28,10 +28,13 @@ class SchemaValidatorSpec extends AnyWordSpec with Matchers {
 
   private def loadSchema(): javax.xml.validation.Schema = {
     val xsdFiles = Seq(
-      "/xsd/DDIPPDetails_v1.xsd",
-      "/xsd/codelist-ISO4217-v0-3.xsd",
-      "/xsd/FinancialTypes-v1-1.xsd",
-      "/xsd/FinancialIdentifierTypes-v1-0.xsd"
+      "/xsds/NDDS-v1-0.xsd",
+      "/xsds/ChRISEnvelope.xsd",
+      "/xsds/DDIPPDetails_v1.xsd",
+      "/xsds/core-v2-0.xsd",
+      "/xsds/codelist-ISO4217-v0-3.xsd",
+      "/xsds/FinancialTypes-v1-1.xsd",
+      "/xsds/FinancialIdentifierTypes-v1-0.xsd"
     ).map(path => new StreamSource(new File(getClass.getResource(path).toURI)))
 
     val schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
@@ -52,7 +55,7 @@ class SchemaValidatorSpec extends AnyWordSpec with Matchers {
       val validXml =
         """<?xml version="1.0" encoding="UTF-8"?>
           |<ChRISEnvelope xmlns="http://www.hmrc.gov.uk/ChRIS/Envelope/2">
-          |  <EnvelopeVersion>1.0</EnvelopeVersion>
+          |  <EnvelopeVersion>2.0</EnvelopeVersion>
           |  <Header>
           |    <MessageClass>HMRC-XXXX-DDI</MessageClass>
           |    <Qualifier>request</Qualifier>
@@ -64,7 +67,7 @@ class SchemaValidatorSpec extends AnyWordSpec with Matchers {
           |    </Sender>
           |  </Header>
           |  <Body>
-          |    <IRenvelope xmlns="http://www.hmrc.gov.uk/ChRIS/Envelope/2">
+          |    <IRenvelope xmlns="">
           |      <IRheader>
           |        <Keys>
           |          <Key Type="UTR">utr123</Key>
@@ -107,7 +110,7 @@ class SchemaValidatorSpec extends AnyWordSpec with Matchers {
       val invalidXml =
         """<?xml version="1.0" encoding="UTF-8"?>
           |<ChRISEnvelope xmlns="http://www.hmrc.gov.uk/ChRIS/Envelope/2">
-          |  <EnvelopeVersion>1.0</EnvelopeVersion>
+          |  <EnvelopeVersion>2.0</EnvelopeVersion>
           |  <Header>
           |    <MessageClass>HMRC-XXXX-DDI</MessageClass>
           |    <Qualifier>request</Qualifier>
@@ -119,7 +122,7 @@ class SchemaValidatorSpec extends AnyWordSpec with Matchers {
           |    </Sender>
           |  </Header>
           |  <Body>
-          |    <IRenvelope xmlns="http://www.hmrc.gov.uk/ChRIS/Envelope/2">
+          |    <IRenvelope xmlns="">
           |      <IRheader>
           |        <Keys>
           |          <Key Type="UTR">utr123</Key>
