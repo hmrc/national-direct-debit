@@ -47,6 +47,7 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
 
       val activeEnrolments = enrolments.enrolments.toSeq.filter(_.isActivated)
 
+      // Flatten identifiers per enrolment key
       val grouped: Map[String, Seq[(String, String)]] =
         activeEnrolments
           .groupBy(_.key)
@@ -54,34 +55,50 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
           .mapValues(_.flatMap(_.identifiers.map(i => i.key -> i.value)))
           .toMap
 
-      val enrolmentMaps: Seq[Map[String, String]] =
-        grouped.map { case (key, identifiers) =>
-          val identifierName = identifiers.map(_._1).mkString("/")
-          val identifierValue = identifiers
-            .map {
-              case ("NINO", v) => v.take(8)
-              case (_, v)      => v
+      // Map enrolment → HOD service → known fact type → per identifier
+      val mappedKnownFacts: Seq[Map[String, String]] =
+        grouped.toSeq.flatMap { case (enrolmentKey, identifiers) =>
+          val maybeHodService =
+            ChrisEnvelopeConstants.enrolmentToHodService.get(enrolmentKey)
+
+          val maybeKnownFactType =
+            maybeHodService.flatMap(ChrisEnvelopeConstants.hodServiceToKnownFactType.get)
+
+          // No known fact type → no output for this enrolment
+          maybeKnownFactType.toSeq.flatMap { knownFactType =>
+            // Produce ONE entry per identifier (fixes EMPREF concatenation issue)
+            identifiers.map {
+              case ("NINO", v) =>
+                Map(
+                  "knownFactType"  -> knownFactType,
+                  "knownFactValue" -> v.take(8)
+                )
+
+              case (_, v) =>
+                Map(
+                  "knownFactType"  -> knownFactType,
+                  "knownFactValue" -> v.trim
+                )
             }
-            .mkString("/")
-
-          Map(
-            "enrolmentKey"    -> key,
-            "identifierName"  -> identifierName,
-            "identifierValue" -> identifierValue
-          )
-        }.toSeq
-
-      val (matching, others) = expectedHodServiceOpt match {
-        case Some(expectedHodService) =>
-          enrolmentMaps.partition { enrolmentMap =>
-            val enrolmentKey = enrolmentMap("enrolmentKey")
-            enrolmentToHodService.get(enrolmentKey).contains(expectedHodService)
           }
-        case None =>
-          (Seq.empty, enrolmentMaps)
-      }
+        }
 
-      val reordered = matching ++ others
+      // Keep ordering logic: expected HOD service first
+      val reordered =
+        expectedHodServiceOpt match {
+          case Some(expectedHodService) =>
+            val expectedKnownFactType =
+              ChrisEnvelopeConstants.hodServiceToKnownFactType.getOrElse(expectedHodService, "")
+
+            val (matching, others) =
+              mappedKnownFacts.partition(_("knownFactType") == expectedKnownFactType)
+
+            matching ++ others
+
+          case None =>
+            mappedKnownFacts
+        }
+
       reordered
     }
   }

@@ -23,20 +23,19 @@ object XmlUtils {
   def formatKeys(
     enrolments: Seq[Map[String, String]]
   ): Seq[scala.xml.Node] =
-    enrolments.flatMap { serviceMap =>
+    enrolments.flatMap { entry =>
       (for {
-        enrolmentKey <- serviceMap.get("enrolmentKey")
-        idName       <- serviceMap.get("identifierName")
-        idValue      <- serviceMap.get("identifierValue")
+        knownFactType  <- entry.get("knownFactType")
+        knownFactValue <- entry.get("knownFactValue")
       } yield {
         val valueToUse =
-          if (idName.equalsIgnoreCase("NINO"))
-            idValue.take(8)
+          if (knownFactType.equalsIgnoreCase("NINO"))
+            knownFactValue.take(8)
           else
-            idValue.trim
+            knownFactValue.trim
 
         Seq(
-          <Key Type={idName.trim}>{valueToUse}</Key>
+          <Key Type={knownFactType.trim}>{valueToUse}</Key>
         )
       }).getOrElse(Seq.empty)
     }
