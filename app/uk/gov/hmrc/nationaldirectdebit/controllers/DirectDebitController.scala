@@ -22,6 +22,7 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.nationaldirectdebit.actions.AuthAction
 import uk.gov.hmrc.nationaldirectdebit.models.requests.{ChrisSubmissionRequest, GenerateDdiRefRequest, PaymentPlanDuplicateCheckRequest, WorkingDaysOffsetRequest}
+import uk.gov.hmrc.nationaldirectdebit.models.{FATAL_ERROR, SUBMITTED}
 import uk.gov.hmrc.nationaldirectdebit.services.{ChrisService, DirectDebitService}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -82,24 +83,54 @@ class DirectDebitController @Inject() (
         chrisService
           .submitToChris(chrisRequest, request.credId, request.affinityGroup)
           .map { response =>
-            // Success: return 200 with response
-            logger.info(s"ChRIS submission successful for request: ${chrisRequest.ddiReferenceNo}")
-            Ok(
-              Json.obj(
-                "success"  -> true,
-                "response" -> response
-              )
-            )
+
+            response.status match {
+
+              case SUBMITTED =>
+                logger.info(
+                  s"ChRIS submission SUCCESS for request: ${chrisRequest.ddiReferenceNo}"
+                )
+                Ok(
+                  Json.obj(
+                    "success"  -> true,
+                    "response" -> response
+                  )
+                )
+
+              case FATAL_ERROR =>
+                logger.error(
+                  s"ChRIS submission FAILED (FATAL_ERROR) for request: ${chrisRequest.ddiReferenceNo}"
+                )
+                InternalServerError(
+                  Json.obj(
+                    "success" -> false,
+                    "message" -> "ChRIS submission failed",
+                    "status"  -> "FATAL_ERROR"
+                  )
+                )
+
+              case _ =>
+                logger.error(
+                  s"ChRIS submission FAILED (Unknown status: ) for request: ${chrisRequest.ddiReferenceNo}"
+                )
+                InternalServerError(
+                  Json.obj(
+                    "success" -> false,
+                    "message" -> s"Unknown status returned from ChRIS"
+                  )
+                )
+            }
+
           }
           .recover { case ex =>
-            // Log full stack trace
-            logger.error(s"ChRIS submission failed for request: ${chrisRequest.ddiReferenceNo}", ex)
-
-            // Return structured error JSON to frontend
+            logger.error(
+              s"ChRIS submission FAILED with exception for request: ${chrisRequest.ddiReferenceNo}",
+              ex
+            )
             InternalServerError(
               Json.obj(
                 "success"   -> false,
-                "message"   -> s"CHRIS submission failed: ${ex.getMessage}",
+                "message"   -> s"ChRIS submission failed: ${ex.getMessage}",
                 "exception" -> ex.getClass.getSimpleName
               )
             )
