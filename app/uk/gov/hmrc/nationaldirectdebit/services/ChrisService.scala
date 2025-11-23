@@ -42,8 +42,8 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
 
     authConnector.authorise(EmptyPredicate, Retrievals.allEnrolments).map { enrolments =>
 
-      val expectedHodServiceOpt = ChrisEnvelopeConstants.listHodServices.get(serviceType)
-      logger.info(s"Expected HOD service for [$serviceType] = ${expectedHodServiceOpt.getOrElse("not found")}")
+      val expectedHodServiceOpt =
+        ChrisEnvelopeConstants.listHodServices.get(serviceType)
 
       val activeEnrolments = enrolments.enrolments.toSeq.filter(_.isActivated)
 
@@ -55,40 +55,43 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
           .mapValues(_.flatMap(_.identifiers.map(i => i.key -> i.value)))
           .toMap
 
-      // Map enrolment → HOD service → known fact type → per identifier
+      // Map enrolment → HOD service → knownFactType → value
       val mappedKnownFacts: Seq[Map[String, String]] =
         grouped.toSeq.flatMap { case (enrolmentKey, identifiers) =>
-          val maybeHodService =
-            ChrisEnvelopeConstants.enrolmentToHodService.get(enrolmentKey)
+          // Only include enrolments mapped to HOD service
+          ChrisEnvelopeConstants.enrolmentToHodService.get(enrolmentKey).toSeq.flatMap { hodService =>
+            // Only include if HOD service maps to known fact type
+            ChrisEnvelopeConstants.hodServiceToKnownFactType.get(hodService).toSeq.map { knownFactType =>
 
-          val maybeKnownFactType =
-            maybeHodService.flatMap(ChrisEnvelopeConstants.hodServiceToKnownFactType.get)
+              val value: String = if (hodService == "PAYE" && knownFactType == "EMPREF") {
+                // Concatenate TaxOfficeNumber + TaxOfficeReference for PAYE only
+                val taxOfficeNumber = identifiers.find(_._1 == "TaxOfficeNumber").map(_._2.trim).getOrElse("")
+                val taxOfficeRef = identifiers.find(_._1 == "TaxOfficeReference").map(_._2.trim).getOrElse("")
+                taxOfficeNumber + taxOfficeRef
+              } else {
+                // For other knownFactTypes, take first identifier only
+                identifiers.headOption
+                  .map {
+                    case ("NINO", v) => v.take(8)
+                    case (_, v)      => v.trim
+                  }
+                  .getOrElse("")
+              }
 
-          // No known fact type → no output for this enrolment
-          maybeKnownFactType.toSeq.flatMap { knownFactType =>
-            // Produce ONE entry per identifier (fixes EMPREF concatenation issue)
-            identifiers.map {
-              case ("NINO", v) =>
-                Map(
-                  "knownFactType"  -> knownFactType,
-                  "knownFactValue" -> v.take(8)
-                )
-
-              case (_, v) =>
-                Map(
-                  "knownFactType"  -> knownFactType,
-                  "knownFactValue" -> v.trim
-                )
+              Map(
+                "knownFactType"  -> knownFactType,
+                "knownFactValue" -> value
+              )
             }
           }
         }
 
-      // Keep ordering logic: expected HOD service first
-      val reordered =
+      // Reorder expected HOD service first
+      val reordered: Seq[Map[String, String]] =
         expectedHodServiceOpt match {
-          case Some(expectedHodService) =>
+          case Some(expectedService) =>
             val expectedKnownFactType =
-              ChrisEnvelopeConstants.hodServiceToKnownFactType.getOrElse(expectedHodService, "")
+              ChrisEnvelopeConstants.hodServiceToKnownFactType.getOrElse(expectedService, "")
 
             val (matching, others) =
               mappedKnownFacts.partition(_("knownFactType") == expectedKnownFactType)
@@ -111,11 +114,14 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
 
       logger.info(s"Retrieved enrolments: ${enrolments.enrolments.map(_.key).mkString(", ")}")
 
-      val expectedHodService: Option[String] = ChrisEnvelopeConstants.listHodServices.get(serviceType)
-      logger.info(s"Expected HOD service for [$serviceType] = ${expectedHodService.getOrElse("not found")}")
+      val expectedHodServiceOpt =
+        ChrisEnvelopeConstants.listHodServices.get(serviceType)
 
-      val activeEnrolments: Seq[Enrolment] = enrolments.enrolments.toSeq.filter(_.isActivated)
+      logger.info(
+        s"Expected HOD service for [$serviceType] = ${expectedHodServiceOpt.getOrElse("not found")}"
+      )
 
+      val activeEnrolments = enrolments.enrolments.toSeq.filter(_.isActivated)
       val grouped: Map[String, Seq[(String, String)]] =
         activeEnrolments
           .groupBy(_.key)
@@ -123,42 +129,58 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
           .mapValues(_.flatMap(_.identifiers.map(i => i.key -> i.value)))
           .toMap
 
-      val enrolmentMaps: Seq[Map[String, String]] = grouped.map { case (enrolmentKey, identifiers) =>
-        val concatenatedNames = identifiers.map(_._1).mkString("/")
-        val concatenatedValues = identifiers
-          .map {
-            case (name, value) if name == "NINO" => value.take(8)
-            case (_, value)                      => value
+      // Build output ONLY for properly mapped enrolments + HOD services
+      val mappedFacts: Seq[Map[String, String]] =
+        grouped.toSeq.flatMap { case (enrolmentKey, identifiers) =>
+          // Step 1 — enrolment must map to a HoD service
+          ChrisEnvelopeConstants.enrolmentToHodService.get(enrolmentKey).toSeq.flatMap { hodService =>
+            // Step 2 — HOD service must map to known fact type
+            ChrisEnvelopeConstants.hodServiceToKnownFactType.get(hodService).toSeq.map { knownFactType =>
+
+              val value: String = if (hodService == "PAYE" && knownFactType == "EMPREF") {
+                // Concatenate TaxOfficeNumber + TaxOfficeReference for PAYE only
+                val taxOfficeNumber = identifiers.find(_._1 == "TaxOfficeNumber").map(_._2.trim).getOrElse("")
+                val taxOfficeRef = identifiers.find(_._1 == "TaxOfficeReference").map(_._2.trim).getOrElse("")
+                taxOfficeNumber + taxOfficeRef
+              } else {
+                // For other knownFactTypes, take first identifier only
+                identifiers.headOption
+                  .map {
+                    case ("NINO", v) => v.take(8)
+                    case (_, v)      => v.trim
+                  }
+                  .getOrElse("")
+              }
+
+              Map(
+                "service"         -> hodService,
+                "identifierName"  -> knownFactType,
+                "identifierValue" -> value
+              )
+            }
           }
-          .mkString("/")
+        }
 
-        val hodServiceName = enrolmentToHodService.getOrElse(enrolmentKey, enrolmentKey)
+      // Reorder: matching first, then all others
+      val reordered =
+        expectedHodServiceOpt match {
+          case Some(expected) =>
+            val (matching, others) =
+              mappedFacts.partition(_("service") == expected)
+            matching ++ others
 
-        Map(
-          "service"         -> hodServiceName,
-          "identifierName"  -> concatenatedNames,
-          "identifierValue" -> concatenatedValues
-        )
-      }.toSeq
+          case None =>
+            mappedFacts
+        }
 
-      val (matching, others) = expectedHodService match {
-        case Some(expected) =>
-          val matchList = enrolmentMaps.filter(_.get("service").contains(expected))
-          if (matchList.nonEmpty) {
-            logger.info(s"Found matching HOD service [$expected]. It will appear first in XML.")
-          } else {
-            logger.warn(s"No active enrolment matches expected HOD service [$expected]. Including all in XML.")
-          }
-          (matchList, enrolmentMaps.filterNot(_.get("service").contains(expected)))
-        case None =>
-          (Seq.empty, enrolmentMaps)
-      }
+      logger.info(
+        s"*** Final enrolment maps for XML (matching first): ${reordered.mkString(", ")}"
+      )
 
-      val reordered = matching ++ others
-      logger.info(s"*** Final enrolment maps for XML (matching first): ${reordered.mkString(", ")}")
       reordered
     }
   }
+
   import scala.util.{Failure, Success}
 
   def submitToChris(

@@ -28,7 +28,6 @@ class XmlValidator @Inject() (appConfig: AppConfig, schemaValidator: SchemaValid
 
   def validate(xml: NodeSeq): Try[Unit] = Try {
     val envelope = xml.mkString
-
     val isValid = schemaValidator.validate(envelope, appConfig.schema)
 
     if (!isValid) {
