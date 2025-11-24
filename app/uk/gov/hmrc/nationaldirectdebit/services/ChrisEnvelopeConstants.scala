@@ -53,7 +53,18 @@ object ChrisEnvelopeConstants {
     "IR-PAYE"          -> "PAYE",
     "IR-SA"            -> "CESA",
     "IR-SA-PART-ORG"   -> "CESA",
-    "IR-SA-TRUST-ORG"  -> "CESA"
+    "IR-SA-TRUST-ORG"  -> "CESA",
+    "HMRC-ECL-ORG"     -> "SAFE"
+  )
+
+  val hodServiceToKnownFactType: Map[String, String] = Map(
+    "COTA" -> "CTUTR",
+    "PAYE" -> "EMPREF",
+    "TPSS" -> "PSAID",
+    "CESA" -> "UTR",
+    "NTC"  -> "NINO",
+    "CIS"  -> "EMPREF",
+    "MGD"  -> "MGDRN"
   )
 
 }
