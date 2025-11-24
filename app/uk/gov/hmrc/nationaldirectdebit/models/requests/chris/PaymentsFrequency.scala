@@ -30,4 +30,12 @@ object PaymentsFrequency extends Enumerable.Implicits {
 
   implicit val enumerable: Enumerable[PaymentsFrequency] =
     Enumerable(values.map(v => v.toString -> v)*)
+
+  def auditName(oPaymentsFrequency: Option[PaymentsFrequency]): Option[String] =
+    oPaymentsFrequency match {
+      case Some(Weekly)  => Some("WEEKLY")
+      case Some(Monthly) => Some("MONTHLY")
+      case _             => None
+    }
+
 }
