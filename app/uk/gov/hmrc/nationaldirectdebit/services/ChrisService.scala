@@ -45,48 +45,67 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
       val expectedHodServiceOpt =
         ChrisEnvelopeConstants.listHodServices.get(serviceType)
 
-      val activeEnrolments = enrolments.enrolments.toSeq.filter(_.isActivated)
+      // Only activated enrolments
+      val active = enrolments.enrolments.toSeq.filter(_.isActivated)
 
-      // Flatten identifiers per enrolment key
-      val grouped: Map[String, Seq[(String, String)]] =
-        activeEnrolments
-          .groupBy(_.key)
-          .view
-          .mapValues(_.flatMap(_.identifiers.map(i => i.key -> i.value)))
-          .toMap
+      // Priority ordering for UTR-based enrolments
+      val utrPriority: Map[String, Int] = Map(
+        "IR-SA-PART-ORG"  -> 1,
+        "IR-SA-TRUST-ORG" -> 2,
+        "IR-SA"           -> 3
+      ).withDefaultValue(99)
 
-      // Map enrolment → HOD service → knownFactType → value
-      val mappedKnownFacts: Seq[Map[String, String]] =
-        grouped.toSeq.flatMap { case (enrolmentKey, identifiers) =>
-          // Only include enrolments mapped to HOD service
-          ChrisEnvelopeConstants.enrolmentToHodService.get(enrolmentKey).toSeq.flatMap { hodService =>
-            // Only include if HOD service maps to known fact type
+      // Group identifiers correctly per enrolment (fixes key-mixing bug)
+      val enrolMap: Map[String, Seq[(String, String)]] =
+        active.map(e => e.key -> e.identifiers.map(i => i.key -> i.value.trim)).toMap
+
+      // Map each enrolment → HoD service → knownFact
+      val mapped: Seq[(String, String, Int)] =
+        enrolMap.toSeq.flatMap { case (enrolKey, identifiers) =>
+          ChrisEnvelopeConstants.enrolmentToHodService.get(enrolKey).toSeq.flatMap { hodService =>
+
             ChrisEnvelopeConstants.hodServiceToKnownFactType.get(hodService).toSeq.map { knownFactType =>
 
-              val value: String = if (hodService == "PAYE" && knownFactType == "EMPREF") {
-                // Concatenate TaxOfficeNumber + TaxOfficeReference for PAYE only
-                val taxOfficeNumber = identifiers.find(_._1 == "TaxOfficeNumber").map(_._2.trim).getOrElse("")
-                val taxOfficeRef = identifiers.find(_._1 == "TaxOfficeReference").map(_._2.trim).getOrElse("")
-                taxOfficeNumber + taxOfficeRef
-              } else {
-                // For other knownFactTypes, take first identifier only
-                identifiers.headOption
-                  .map {
-                    case ("NINO", v) => v.take(8)
-                    case (_, v)      => v.trim
-                  }
-                  .getOrElse("")
-              }
+              val value: String =
+                if ((hodService == "PAYE" || hodService == "CIS") && knownFactType == "EMPREF") {
+                  val ton = identifiers.find(_._1 == "TaxOfficeNumber").map(_._2).getOrElse("")
+                  val tor = identifiers.find(_._1 == "TaxOfficeReference").map(_._2).getOrElse("")
+                  ton + tor
+                } else {
+                  identifiers
+                    .collectFirst {
+                      case ("NINO", v) => v.take(8)
+                      case (_, v)      => v
+                    }
+                    .getOrElse("")
+                }
 
-              Map(
-                "knownFactType"  -> knownFactType,
-                "knownFactValue" -> value
-              )
+              (knownFactType, value, utrPriority(enrolKey))
             }
           }
         }
 
-      // Reorder expected HOD service first
+      // Deduplicate by knownFactType and apply EMPREF rules
+      val deduped: Seq[Map[String, String]] =
+        mapped
+          .groupBy(_._1) // group by knownFactType
+          .toSeq
+          .flatMap { case (knownFactType, entries) =>
+            val sorted = entries.sortBy(_._3) // apply UTR priority
+
+            if (knownFactType == "EMPREF") {
+              // Keep ALL EMPREF entries
+              sorted.map { case (_, value, _) =>
+                Map("knownFactType" -> knownFactType, "knownFactValue" -> value)
+              }
+            } else {
+              // Keep only highest priority one
+              val (_, bestValue, _) = sorted.head
+              Seq(Map("knownFactType" -> knownFactType, "knownFactValue" -> bestValue))
+            }
+          }
+
+      // Reorder to put expected service's knownFactType first
       val reordered: Seq[Map[String, String]] =
         expectedHodServiceOpt match {
           case Some(expectedService) =>
@@ -94,12 +113,12 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
               ChrisEnvelopeConstants.hodServiceToKnownFactType.getOrElse(expectedService, "")
 
             val (matching, others) =
-              mappedKnownFacts.partition(_("knownFactType") == expectedKnownFactType)
+              deduped.partition(_("knownFactType") == expectedKnownFactType)
 
             matching ++ others
 
           case None =>
-            mappedKnownFacts
+            deduped
         }
 
       reordered
@@ -122,6 +141,7 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
       )
 
       val activeEnrolments = enrolments.enrolments.toSeq.filter(_.isActivated)
+
       val grouped: Map[String, Seq[(String, String)]] =
         activeEnrolments
           .groupBy(_.key)
@@ -129,28 +149,37 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
           .mapValues(_.flatMap(_.identifiers.map(i => i.key -> i.value)))
           .toMap
 
+      // --------------------------------------------------------
+      // FIX: Keep only IR-SA-PART-ORG for CESA
+      // --------------------------------------------------------
+      val cleanedGrouped =
+        grouped.filterNot {
+          case ("IR-SA", _)           => true // remove normal SA
+          case ("IR-SA-TRUST-ORG", _) => true // remove trust SA
+          case _                      => false // keep everything else
+        }
+      // IR-SA-PART-ORG remains (correct CESA source)
+
       // Build output ONLY for properly mapped enrolments + HOD services
       val mappedFacts: Seq[Map[String, String]] =
-        grouped.toSeq.flatMap { case (enrolmentKey, identifiers) =>
-          // Step 1 — enrolment must map to a HoD service
+        cleanedGrouped.toSeq.flatMap { case (enrolmentKey, identifiers) =>
           ChrisEnvelopeConstants.enrolmentToHodService.get(enrolmentKey).toSeq.flatMap { hodService =>
-            // Step 2 — HOD service must map to known fact type
+
             ChrisEnvelopeConstants.hodServiceToKnownFactType.get(hodService).toSeq.map { knownFactType =>
 
-              val value: String = if (hodService == "PAYE" && knownFactType == "EMPREF") {
-                // Concatenate TaxOfficeNumber + TaxOfficeReference for PAYE only
-                val taxOfficeNumber = identifiers.find(_._1 == "TaxOfficeNumber").map(_._2.trim).getOrElse("")
-                val taxOfficeRef = identifiers.find(_._1 == "TaxOfficeReference").map(_._2.trim).getOrElse("")
-                taxOfficeNumber + taxOfficeRef
-              } else {
-                // For other knownFactTypes, take first identifier only
-                identifiers.headOption
-                  .map {
-                    case ("NINO", v) => v.take(8)
-                    case (_, v)      => v.trim
-                  }
-                  .getOrElse("")
-              }
+              val value: String =
+                if ((hodService == "PAYE" || hodService == "CIS") && knownFactType == "EMPREF") {
+                  val taxOfficeNumber = identifiers.find(_._1 == "TaxOfficeNumber").map(_._2.trim).getOrElse("")
+                  val taxOfficeRef = identifiers.find(_._1 == "TaxOfficeReference").map(_._2.trim).getOrElse("")
+                  taxOfficeNumber + taxOfficeRef
+                } else {
+                  identifiers.headOption
+                    .map {
+                      case ("NINO", v) => v.take(8)
+                      case (_, v)      => v.trim
+                    }
+                    .getOrElse("")
+                }
 
               Map(
                 "service"         -> hodService,
