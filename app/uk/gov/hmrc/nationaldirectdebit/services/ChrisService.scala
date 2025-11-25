@@ -150,15 +150,26 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
           .toMap
 
       // --------------------------------------------------------
-      // FIX: Keep only IR-SA-PART-ORG for CESA
+      // NEW: Collapse all SA enrolments into ONE
       // --------------------------------------------------------
-      val cleanedGrouped =
-        grouped.filterNot {
-          case ("IR-SA", _)           => true // remove normal SA
-          case ("IR-SA-TRUST-ORG", _) => true // remove trust SA
-          case _                      => false // keep everything else
+      val saKeys = Seq("IR-SA-PART-ORG", "IR-SA", "IR-SA-TRUST-ORG")
+
+      val firstSaKeyOpt: Option[String] =
+        saKeys.find(grouped.contains)
+
+      val cleanedGrouped: Map[String, Seq[(String, String)]] = {
+        val withoutAllSA = grouped.filterNot { case (key, _) => saKeys.contains(key) }
+
+        firstSaKeyOpt match {
+          case Some(saKey) =>
+            withoutAllSA + (saKey -> grouped(saKey)) // Keep only one SA enrolment
+          case None =>
+            withoutAllSA
         }
-      // IR-SA-PART-ORG remains (correct CESA source)
+      }
+
+      logger.info(s"SA keys originally present: ${grouped.keySet.intersect(saKeys.toSet)}")
+      logger.info(s"SA key retained for known fact: ${firstSaKeyOpt.getOrElse("none")}")
 
       // Build output ONLY for properly mapped enrolments + HOD services
       val mappedFacts: Seq[Map[String, String]] =
