@@ -63,9 +63,18 @@ class AuditService @Inject (
           Some("GBP"),
           Some(
             PaymentPlanDetails(
-              paymentAmount    = envelopeDetails.request.paymentAmount,
-              paymentDate      = envelopeDetails.request.paymentDate.map(_.enteredDate),
-              paymentFrequency = PaymentsFrequency.auditName(envelopeDetails.request.paymentFrequency),
+              paymentAmount = envelopeDetails.request.paymentAmount,
+              paymentDate   = envelopeDetails.request.paymentDate.map(_.enteredDate),
+              paymentFrequency = envelopeDetails.request match {
+                case r
+                    if r.serviceType == DirectDebitSource.TC &&
+                      (r.paymentPlanType == PaymentPlanType.TaxCreditRepaymentPlan ||
+                        r.paymentPlanType == PaymentPlanType.BudgetPaymentPlan) =>
+                  PaymentsFrequency.auditName(Some(PaymentsFrequency.Monthly))
+
+                case r =>
+                  PaymentsFrequency.auditName(r.paymentFrequency)
+              },
               regularPaymentAmount =
                 envelopeDetails.request.regularPaymentAmount.orElse(envelopeDetails.request.calculation.flatMap(_.regularPaymentAmount)),
               planStartDate        = envelopeDetails.request.planStartDate.map(_.enteredDate),
@@ -84,9 +93,18 @@ class AuditService @Inject (
           Some("GBP"),
           Some(
             PaymentPlanDetails(
-              paymentAmount    = envelopeDetails.request.paymentAmount,
-              paymentDate      = envelopeDetails.request.paymentDate.map(_.enteredDate),
-              paymentFrequency = PaymentsFrequency.auditName(envelopeDetails.request.paymentFrequency),
+              paymentAmount = envelopeDetails.request.paymentAmount,
+              paymentDate   = envelopeDetails.request.paymentDate.map(_.enteredDate),
+              paymentFrequency = envelopeDetails.request match {
+                case r
+                    if r.serviceType == DirectDebitSource.TC &&
+                      (r.paymentPlanType == PaymentPlanType.TaxCreditRepaymentPlan ||
+                        r.paymentPlanType == PaymentPlanType.BudgetPaymentPlan) =>
+                  PaymentsFrequency.auditName(Some(PaymentsFrequency.Monthly))
+
+                case r =>
+                  PaymentsFrequency.auditName(r.paymentFrequency)
+              },
               regularPaymentAmount =
                 envelopeDetails.request.regularPaymentAmount.orElse(envelopeDetails.request.calculation.flatMap(_.regularPaymentAmount)),
               planStartDate        = envelopeDetails.request.planStartDate.map(_.enteredDate),

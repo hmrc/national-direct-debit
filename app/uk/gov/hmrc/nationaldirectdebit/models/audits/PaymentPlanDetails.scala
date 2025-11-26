@@ -16,8 +16,6 @@
 
 package uk.gov.hmrc.nationaldirectdebit.models.audits
 
-import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.PaymentsFrequency
-
 import java.time.LocalDate
 import play.api.libs.json.*
 
