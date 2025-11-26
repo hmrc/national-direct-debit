@@ -123,11 +123,20 @@ class AuditService @Inject (
           Some("GBP"),
           Some(
             PaymentPlanDetails(
-              paymentAmount    = envelopeDetails.request.paymentAmount,
+              paymentAmount = envelopeDetails.request match {
+                case r if r.paymentPlanType == PaymentPlanType.SinglePayment =>
+                  r.amendPaymentAmount
+                case r =>
+                  r.paymentAmount
+              },
               paymentDate      = envelopeDetails.request.paymentDate.map(_.enteredDate),
               paymentFrequency = PaymentsFrequency.auditName(envelopeDetails.request.paymentFrequency),
-              regularPaymentAmount =
-                envelopeDetails.request.regularPaymentAmount.orElse(envelopeDetails.request.calculation.flatMap(_.regularPaymentAmount)),
+              regularPaymentAmount = envelopeDetails.request match {
+                case r if r.paymentPlanType == PaymentPlanType.BudgetPaymentPlan =>
+                  r.amendPaymentAmount
+                case r =>
+                  r.regularPaymentAmount.orElse(r.calculation.flatMap(_.regularPaymentAmount))
+              },
               planStartDate        = envelopeDetails.request.planStartDate.map(_.enteredDate),
               planEndDate          = envelopeDetails.request.planEndDate,
               totalAmountDue       = envelopeDetails.request.totalAmountDue,
