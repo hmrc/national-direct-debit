@@ -29,9 +29,7 @@ final case class CommonAuditFields(
   submissionDateTime: String,
   paymentPlanService: String,
   paymentPlanType: String,
-  paymentReference: String,
-  paymentCurrency: Option[String],
-  paymentPlanDetails: Option[PaymentPlanDetails]
+  paymentReference: String
 )
 
 sealed trait AuditEvent {
@@ -42,15 +40,21 @@ final case class NewDirectDebitAuditEvent(
   common: CommonAuditFields,
   bankAccountType: String,
   bankAccount: BankAccount,
-  bankAuddisEnabled: Boolean
+  bankAuddisEnabled: Boolean,
+  paymentCurrency: Option[String],
+  paymentPlanDetails: Option[PaymentPlanDetails]
 ) extends AuditEvent
 
 final case class AddPaymentPlanAuditEvent(
-  common: CommonAuditFields
+  common: CommonAuditFields,
+  paymentCurrency: Option[String],
+  paymentPlanDetails: Option[PaymentPlanDetails]
 ) extends AuditEvent
 
 final case class AmendPaymentPlanAuditEvent(
-  common: CommonAuditFields
+  common: CommonAuditFields,
+  paymentCurrency: Option[String],
+  paymentPlanDetails: Option[PaymentPlanDetails]
 ) extends AuditEvent
 
 final case class SuspendPaymentPlanAuditEvent(
@@ -85,9 +89,7 @@ object AuditEvent {
       (__ \ "submissionDateTime").read[String] and
       (__ \ "paymentPlanService").read[String] and
       (__ \ "paymentPlanType").read[String] and
-      (__ \ "paymentReference").read[String] and
-      (__ \ "paymentCurrency").readNullable[String] and
-      (__ \ "paymentPlanDetails").readNullable[PaymentPlanDetails]
+      (__ \ "paymentReference").read[String]
   )(CommonAuditFields.apply)
 
   implicit val commonWrites: OWrites[CommonAuditFields] = OWrites { o =>
@@ -98,9 +100,7 @@ object AuditEvent {
       "submissionDateTime"   -> o.submissionDateTime,
       "paymentPlanService"   -> o.paymentPlanService,
       "paymentPlanType"      -> o.paymentPlanType,
-      "paymentReference"     -> o.paymentReference,
-      "paymentCurrency"      -> o.paymentCurrency,
-      "paymentPlanDetails"   -> o.paymentPlanDetails
+      "paymentReference"     -> o.paymentReference
     )
   }
 
@@ -110,18 +110,22 @@ object AuditEvent {
   implicit val newDDFormat: OFormat[NewDirectDebitAuditEvent] = OFormat(
     Reads[NewDirectDebitAuditEvent] { json =>
       for {
-        common            <- commonFormat.reads(json)
-        bankAccountType   <- (json \ "bankAccountType").validate[String]
-        bankAccount       <- (json \ "bankAccount").validate[BankAccount]
-        bankAuddisEnabled <- (json \ "bankAuddisEnabled").validate[Boolean]
-      } yield NewDirectDebitAuditEvent(common, bankAccountType, bankAccount, bankAuddisEnabled)
+        common             <- commonFormat.reads(json)
+        bankAccountType    <- (json \ "bankAccountType").validate[String]
+        bankAccount        <- (json \ "bankAccount").validate[BankAccount]
+        bankAuddisEnabled  <- (json \ "bankAuddisEnabled").validate[Boolean]
+        paymentCurrency    <- (json \ "paymentCurrency").validateOpt[String]
+        paymentPlanDetails <- (json \ "paymentPlanDetails").validateOpt[PaymentPlanDetails]
+      } yield NewDirectDebitAuditEvent(common, bankAccountType, bankAccount, bankAuddisEnabled, paymentCurrency, paymentPlanDetails)
     },
     OWrites[NewDirectDebitAuditEvent] { event =>
       Json.toJsObject(event.common) ++
         Json.obj(
-          "bankAccountType"   -> event.bankAccountType,
-          "bankAccount"       -> event.bankAccount,
-          "bankAuddisEnabled" -> event.bankAuddisEnabled
+          "bankAccountType"    -> event.bankAccountType,
+          "bankAccount"        -> event.bankAccount,
+          "bankAuddisEnabled"  -> event.bankAuddisEnabled,
+          "paymentCurrency"    -> event.paymentCurrency,
+          "paymentPlanDetails" -> event.paymentPlanDetails
         )
     }
   )
@@ -129,22 +133,34 @@ object AuditEvent {
   implicit val addPPFormat: OFormat[AddPaymentPlanAuditEvent] = OFormat(
     Reads[AddPaymentPlanAuditEvent] { json =>
       for {
-        common <- commonFormat.reads(json)
-      } yield AddPaymentPlanAuditEvent(common)
+        common             <- commonFormat.reads(json)
+        paymentCurrency    <- (json \ "paymentCurrency").validateOpt[String]
+        paymentPlanDetails <- (json \ "paymentPlanDetails").validateOpt[PaymentPlanDetails]
+      } yield AddPaymentPlanAuditEvent(common, paymentCurrency, paymentPlanDetails)
     },
     OWrites[AddPaymentPlanAuditEvent] { event =>
-      Json.toJsObject(event.common)
+      Json.toJsObject(event.common) ++
+        Json.obj(
+          "paymentCurrency"    -> event.paymentCurrency,
+          "paymentPlanDetails" -> event.paymentPlanDetails
+        )
     }
   )
 
   implicit val amendPPFormat: OFormat[AmendPaymentPlanAuditEvent] = OFormat(
     Reads[AmendPaymentPlanAuditEvent] { json =>
       for {
-        common <- commonFormat.reads(json)
-      } yield AmendPaymentPlanAuditEvent(common)
+        common             <- commonFormat.reads(json)
+        paymentCurrency    <- (json \ "paymentCurrency").validateOpt[String]
+        paymentPlanDetails <- (json \ "paymentPlanDetails").validateOpt[PaymentPlanDetails]
+      } yield AmendPaymentPlanAuditEvent(common, paymentCurrency, paymentPlanDetails)
     },
     OWrites[AmendPaymentPlanAuditEvent] { event =>
-      Json.toJsObject(event.common)
+      Json.toJsObject(event.common) ++
+        Json.obj(
+          "paymentCurrency"    -> event.paymentCurrency,
+          "paymentPlanDetails" -> event.paymentPlanDetails
+        )
     }
   )
 

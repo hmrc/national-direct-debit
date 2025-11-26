@@ -48,7 +48,16 @@ object PaymentPlanType extends Enumerable.Implicits {
     TaxCreditRepaymentPlan
   )
 
-  implicit val enumerable: Enumerable[PaymentPlanType] =
+  implicit val enumerable: Enumerable[PaymentPlanType] = {
     Enumerable(values.map(v => v.toString -> v)*)
+  }
+
+  def auditName(paymentPlanType: PaymentPlanType): String =
+    paymentPlanType match {
+      case SinglePayment          => "SINGLE"
+      case BudgetPaymentPlan      => "BUDGET"
+      case VariablePaymentPlan    => "VARIABLE"
+      case TaxCreditRepaymentPlan => "REPAYMENT"
+    }
 
 }
