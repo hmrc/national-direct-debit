@@ -170,7 +170,7 @@ class AuditService @Inject (
           Some(
             PaymentPlanDetails(
               paymentAmount = envelopeDetails.request.paymentPlanType match
-                case PaymentPlanType.SinglePayment => envelopeDetails.request.paymentAmount
+                case PaymentPlanType.SinglePayment => envelopeDetails.request.amendPaymentAmount
                 case _                             => None,
               paymentDate = envelopeDetails.request.paymentPlanType match
                 case PaymentPlanType.SinglePayment => envelopeDetails.request.paymentDate.map(_.enteredDate)
@@ -189,7 +189,7 @@ class AuditService @Inject (
               },
               regularPaymentAmount = envelopeDetails.request.paymentPlanType match
                 case PaymentPlanType.BudgetPaymentPlan =>
-                  envelopeDetails.request.regularPaymentAmount.orElse(envelopeDetails.request.calculation.flatMap(_.regularPaymentAmount))
+                  envelopeDetails.request.amendPaymentAmount
                 case _ => None,
               planStartDate = envelopeDetails.request.paymentPlanType match
                 case PaymentPlanType.BudgetPaymentPlan => envelopeDetails.request.planStartDate.map(_.enteredDate)
