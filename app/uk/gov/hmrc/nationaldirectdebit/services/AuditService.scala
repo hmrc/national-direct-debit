@@ -173,7 +173,7 @@ class AuditService @Inject (
                 case PaymentPlanType.SinglePayment => envelopeDetails.request.amendPaymentAmount
                 case _                             => None,
               paymentDate = envelopeDetails.request.paymentPlanType match
-                case PaymentPlanType.SinglePayment => envelopeDetails.request.paymentDate.map(_.enteredDate)
+                case PaymentPlanType.SinglePayment => envelopeDetails.request.planStartDate.map(_.enteredDate)
                 case _                             => None,
               paymentFrequency = envelopeDetails.request match {
                 case r
