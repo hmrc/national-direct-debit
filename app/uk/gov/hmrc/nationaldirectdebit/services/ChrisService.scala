@@ -255,7 +255,7 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
                         auditHandler(envelopeDetails, submissionResult, correlatingId)
 
                       case submissionResult @ SubmissionResult(SubmissionStatusFatalError, rawXml, meta) =>
-                        logger.info(
+                        logger.error(
                           s"ChRIS submission failed with SubmissionStatus, ${SubmissionStatusFatalError.name} for a correlatingId = $correlatingId. "
                         )
                         Future.failed(new RuntimeException(s"ChRIS submission failed with rawXml = $rawXml and meta = $meta ."))
