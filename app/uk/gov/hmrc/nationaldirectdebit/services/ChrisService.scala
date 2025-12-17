@@ -131,14 +131,11 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
 
     authConnector.authorise(EmptyPredicate, Retrievals.allEnrolments).map { enrolments =>
 
-      logger.info(s"Retrieved enrolments: ${enrolments.enrolments.map(_.key).mkString(", ")}")
+      logger.debug(s"Retrieved enrolments: ${enrolments.enrolments.map(_.key).mkString(", ")}")
 
-      val expectedHodServiceOpt =
-        ChrisEnvelopeConstants.listHodServices.get(serviceType)
+      val expectedHodServiceOpt = ChrisEnvelopeConstants.listHodServices.get(serviceType)
 
-      logger.info(
-        s"Expected HOD service for [$serviceType] = ${expectedHodServiceOpt.getOrElse("not found")}"
-      )
+      logger.info(s"Expected HOD service for [$serviceType] = ${expectedHodServiceOpt.getOrElse("not found")}")
 
       val activeEnrolments = enrolments.enrolments.toSeq.filter(_.isActivated)
 
@@ -168,8 +165,8 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
         }
       }
 
-      logger.info(s"SA keys originally present: ${grouped.keySet.intersect(saKeys.toSet)}")
-      logger.info(s"SA key retained for known fact: ${firstSaKeyOpt.getOrElse("none")}")
+      logger.debug(s"SA keys originally present: ${grouped.keySet.intersect(saKeys.toSet)}")
+      logger.debug(s"SA key retained for known fact: ${firstSaKeyOpt.getOrElse("none")}")
 
       // Build output ONLY for properly mapped enrolments + HOD services
       val mappedFacts: Seq[Map[String, String]] =
@@ -213,9 +210,7 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
             mappedFacts
         }
 
-      logger.info(
-        s"*** Final enrolment maps for XML (matching first): ${reordered.mkString(", ")}"
-      )
+      logger.debug(s"*** Final enrolment maps for XML (matching first): ${reordered.mkString(", ")}")
 
       reordered
     }
@@ -246,7 +241,6 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
                     Future.failed(new RuntimeException(s"XML validation failed: ${e.getMessage}", e))
 
                   case Success(_) =>
-                    logger.info("ChRIS XML validation succeeded. Sending audit before submission...")
                     auditService.sendEvent(envelopeDetails).flatMap {
                       case AuditResult.Success =>
                         logger.info("Audit succeeded. Submitting envelope to ChRIS...")

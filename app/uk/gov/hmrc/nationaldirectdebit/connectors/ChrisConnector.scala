@@ -43,7 +43,7 @@ class ChrisConnector @Inject() (
 
     val xmlString =
       """<?xml version="1.0" encoding="UTF-8"?>""" + "\n" + envelope.toString()
-    logger.info("\nFINAL XML SENT TO CHRIS:\n\n" + xmlString)
+    logger.debug("\nFINAL XML SENT TO CHRIS:\n\n" + xmlString)
     httpClient
       .post(url"$chrisBaseUrl")
       .setHeader(

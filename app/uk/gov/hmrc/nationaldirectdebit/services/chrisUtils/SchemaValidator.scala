@@ -34,12 +34,12 @@ class ValidationHandler extends ErrorHandler with Logging {
   }
 
   override def error(e: SAXParseException): Unit = {
-    logger.warn(s"SAX Error $e")
+    logger.error(s"SAX Error $e")
     error = true
   }
 
   override def fatalError(e: SAXParseException): Unit = {
-    logger.warn(s"SAX Fatal Error $e")
+    logger.error(s"SAX Fatal Error $e")
     error = true
   }
 }
