@@ -28,8 +28,6 @@ object SchemaLoader extends Logging {
   def loadSchemas(xsds: Seq[String], env: Environment): Schema = {
     val schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
 
-    logger.info("Loading XSD schemas from conf/xsds")
-
     val sources: Array[Source] = xsds.map { xsd =>
       val file = env.getFile(s"conf/xsds/$xsd")
 

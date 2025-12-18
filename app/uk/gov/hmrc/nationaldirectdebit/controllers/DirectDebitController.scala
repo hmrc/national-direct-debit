@@ -73,13 +73,6 @@ class DirectDebitController @Inject() (
     authorise(parse.json).async { implicit request =>
       withJsonBody[ChrisSubmissionRequest] { chrisRequest =>
 
-        logger.info(
-          s"""|
-             |Chris Submission Request received:
-              |${Json.prettyPrint(Json.toJson(chrisRequest))}
-              |""".stripMargin
-        )
-
         chrisService
           .submitToChris(chrisRequest, request.credId, request.affinityGroup)
           .map { response =>
@@ -88,7 +81,7 @@ class DirectDebitController @Inject() (
 
               case SUBMITTED =>
                 logger.info(
-                  s"ChRIS submission SUCCESS for request: ${chrisRequest.ddiReferenceNo}"
+                  s"DDI ref for successful ChRIS submission: ${chrisRequest.ddiReferenceNo}"
                 )
                 Ok(
                   Json.obj(
@@ -99,7 +92,7 @@ class DirectDebitController @Inject() (
 
               case FATAL_ERROR =>
                 logger.error(
-                  s"ChRIS submission FAILED (FATAL_ERROR) for request: ${chrisRequest.ddiReferenceNo}"
+                  s"DDI ref for Failed ChRIS submission (FATAL_ERROR): ${chrisRequest.ddiReferenceNo}"
                 )
                 InternalServerError(
                   Json.obj(
@@ -111,7 +104,7 @@ class DirectDebitController @Inject() (
 
               case _ =>
                 logger.error(
-                  s"ChRIS submission FAILED (Unknown status: ) for request: ${chrisRequest.ddiReferenceNo}"
+                  s"DDI ref for Failed ChRIS submission (Unknown status): ${chrisRequest.ddiReferenceNo}"
                 )
                 InternalServerError(
                   Json.obj(
@@ -124,7 +117,7 @@ class DirectDebitController @Inject() (
           }
           .recover { case ex =>
             logger.error(
-              s"ChRIS submission FAILED with exception for request: ${chrisRequest.ddiReferenceNo}",
+              s"ChRIS submission FAILED with exception for DDI ref: ${chrisRequest.ddiReferenceNo}",
               ex
             )
             InternalServerError(

@@ -17,17 +17,14 @@
 package uk.gov.hmrc.nationaldirectdebit.services
 
 import play.api.Logging
+import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.auth.core.authorise.EmptyPredicate
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
-import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
-import uk.gov.hmrc.nationaldirectdebit.models.SubmissionResult
-import uk.gov.hmrc.nationaldirectdebit.models.SUBMITTED as SubmissionStatusSubmitted
-import uk.gov.hmrc.nationaldirectdebit.models.FATAL_ERROR as SubmissionStatusFatalError
+import uk.gov.hmrc.nationaldirectdebit.models.{FATAL_ERROR as SubmissionStatusFatalError, SUBMITTED as SubmissionStatusSubmitted, SubmissionResult}
 import uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.{DirectDebitSource, EnvelopeDetails}
-import uk.gov.hmrc.nationaldirectdebit.services.ChrisEnvelopeConstants.enrolmentToHodService
 import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.{ChrisEnvelopeBuilder, XmlValidator}
 import uk.gov.hmrc.play.audit.http.connector.AuditResult
 
@@ -133,14 +130,11 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
 
     authConnector.authorise(EmptyPredicate, Retrievals.allEnrolments).map { enrolments =>
 
-      logger.info(s"Retrieved enrolments: ${enrolments.enrolments.map(_.key).mkString(", ")}")
+      logger.debug(s"Retrieved enrolments: ${enrolments.enrolments.map(_.key).mkString(", ")}")
 
-      val expectedHodServiceOpt =
-        ChrisEnvelopeConstants.listHodServices.get(serviceType)
+      val expectedHodServiceOpt = ChrisEnvelopeConstants.listHodServices.get(serviceType)
 
-      logger.info(
-        s"Expected HOD service for [$serviceType] = ${expectedHodServiceOpt.getOrElse("not found")}"
-      )
+      logger.info(s"Expected HOD service for [$serviceType] = ${expectedHodServiceOpt.getOrElse("not found")}")
 
       val activeEnrolments = enrolments.enrolments.toSeq.filter(_.isActivated)
 
@@ -170,8 +164,8 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
         }
       }
 
-      logger.info(s"SA keys originally present: ${grouped.keySet.intersect(saKeys.toSet)}")
-      logger.info(s"SA key retained for known fact: ${firstSaKeyOpt.getOrElse("none")}")
+      logger.debug(s"SA keys originally present: ${grouped.keySet.intersect(saKeys.toSet)}")
+      logger.debug(s"SA key retained for known fact: ${firstSaKeyOpt.getOrElse("none")}")
 
       // Build output ONLY for properly mapped enrolments + HOD services
       val mappedFacts: Seq[Map[String, String]] =
@@ -214,10 +208,6 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
           case None =>
             mappedFacts
         }
-
-      logger.info(
-        s"*** Final enrolment maps for XML (matching first): ${reordered.mkString(", ")}"
-      )
 
       reordered
     }

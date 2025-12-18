@@ -35,7 +35,6 @@ class XmlValidator @Inject() (appConfig: AppConfig, schemaValidator: SchemaValid
       throw new RuntimeException("XML validation failed against schema")
     }
 
-    logger.info("XML validated successfully against schema")
   } recoverWith { case ex =>
     logger.error("XML validation failed due to exception", ex)
     Failure(ex)
