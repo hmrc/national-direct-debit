@@ -17,7 +17,6 @@
 package uk.gov.hmrc.nationaldirectdebit.models.audits
 
 import play.api.libs.json.*
-import play.api.libs.json.{Json, OFormat}
 
 sealed abstract class AuditType(val name: String)
 
