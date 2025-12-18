@@ -22,9 +22,9 @@ import uk.gov.hmrc.auth.core.authorise.EmptyPredicate
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
-import uk.gov.hmrc.nationaldirectdebit.models.SubmissionResult
+import uk.gov.hmrc.nationaldirectdebit.models.{FATAL_ERROR as SubmissionStatusFatalError, SUBMITTED as SubmissionStatusSubmitted, SubmissionResult}
 import uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest
-import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.DirectDebitSource
+import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.{DirectDebitSource, EnvelopeDetails}
 import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.{ChrisEnvelopeBuilder, XmlValidator}
 import uk.gov.hmrc.play.audit.http.connector.AuditResult
 
@@ -238,24 +238,39 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
                     Future.failed(new RuntimeException(s"XML validation failed: ${e.getMessage}", e))
 
                   case Success(_) =>
-                    auditService.sendEvent(envelopeDetails).flatMap {
-                      case AuditResult.Success =>
-                        logger.info("Audit succeeded. Submitting envelope to ChRIS...")
-                        chrisConnector.submitEnvelope(envelopeXml, correlatingId).recoverWith { case e =>
-                          logger.error(s"ChRIS submission failed: ${e.getMessage}", e)
-                          Future.failed(new RuntimeException(s"ChRIS submission failed: ${e.getMessage}", e))
-                        }
+                    logger.info(s"ChRIS XML validation successful. Sending ChRIS submission for a correlatingId = $correlatingId.")
+                    chrisConnector.submitEnvelope(envelopeXml, correlatingId) flatMap {
+                      case submissionResult @ SubmissionResult(SubmissionStatusSubmitted, rawXml, meta) =>
+                        logger.info(s"ChRIS submission successful for a correlatingId = $correlatingId.")
+                        auditHandler(envelopeDetails, submissionResult, correlatingId)
 
-                      case AuditResult.Disabled =>
-                        logger.error("Audit service returned Disabled result. Submission stopped.")
-                        Future.failed(new RuntimeException("Audit service disabled. Submission aborted."))
-
-                      case AuditResult.Failure(msg, _) =>
-                        logger.error(s"Audit service failure: $msg. Submission stopped.")
-                        Future.failed(new RuntimeException(s"Audit failed: $msg. Submission aborted."))
+                      case submissionResult @ SubmissionResult(SubmissionStatusFatalError, rawXml, meta) =>
+                        logger.error(
+                          s"ChRIS submission failed with SubmissionStatus, ${SubmissionStatusFatalError.name} for a correlatingId = $correlatingId. "
+                        )
+                        Future.failed(new RuntimeException(s"ChRIS submission failed with rawXml = $rawXml and meta = $meta ."))
                     }
                 }
     } yield result
   }
+
+  private def auditHandler(envelopeDetails: EnvelopeDetails, submissionResult: SubmissionResult, correlatingId: String)(implicit
+    hc: HeaderCarrier
+  ): Future[SubmissionResult] =
+    auditService.sendEvent(envelopeDetails) flatMap {
+      case AuditResult.Success =>
+        logger.info(s"Audit successful for a correlatingId = $correlatingId.")
+        Future.successful(submissionResult)
+
+      case AuditResult.Disabled =>
+        logger.error(s"Audit failed for a correlatingId = $correlatingId. Audit service returned Disabled result.")
+        Future.failed(new RuntimeException(s"Audit unsuccessful for a correlatingId = $correlatingId. Audit service returned Disabled result."))
+
+      case AuditResult.Failure(msg, _) =>
+        logger.error(s"Audit failed for a correlatingId = $correlatingId. Audit service failure: $msg .")
+        Future.failed(
+          new RuntimeException(s"Audit unsuccessful for a correlatingId = $correlatingId. Audit service failure: $msg .")
+        )
+    }
 
 }
