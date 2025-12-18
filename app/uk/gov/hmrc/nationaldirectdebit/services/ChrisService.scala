@@ -17,15 +17,14 @@
 package uk.gov.hmrc.nationaldirectdebit.services
 
 import play.api.Logging
+import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.auth.core.authorise.EmptyPredicate
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
-import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
 import uk.gov.hmrc.nationaldirectdebit.models.SubmissionResult
 import uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.DirectDebitSource
-import uk.gov.hmrc.nationaldirectdebit.services.ChrisEnvelopeConstants.enrolmentToHodService
 import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.{ChrisEnvelopeBuilder, XmlValidator}
 import uk.gov.hmrc.play.audit.http.connector.AuditResult
 
@@ -209,8 +208,6 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
           case None =>
             mappedFacts
         }
-
-      logger.debug(s"*** Final enrolment maps for XML (matching first): ${reordered.mkString(", ")}")
 
       reordered
     }

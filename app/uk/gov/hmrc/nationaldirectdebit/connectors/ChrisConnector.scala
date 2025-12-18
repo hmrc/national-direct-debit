@@ -43,7 +43,7 @@ class ChrisConnector @Inject() (
 
     val xmlString =
       """<?xml version="1.0" encoding="UTF-8"?>""" + "\n" + envelope.toString()
-    logger.debug("\nFINAL XML SENT TO CHRIS:\n\n" + xmlString)
+
     httpClient
       .post(url"$chrisBaseUrl")
       .setHeader(
@@ -62,9 +62,7 @@ class ChrisConnector @Inject() (
             meta   = None
           )
         } else {
-          logger.error(
-            s"[ChrisConnector] NON-2xx corrId=$correlationId status=${resp.status} response-body:\n${resp.body}"
-          )
+          logger.error(s"[ChrisConnector] NON-2xx corrId=$correlationId status=${resp.status} response-body:\n${resp.body}")
           SubmissionResult(
             status = FATAL_ERROR,
             rawXml = Some(resp.body),

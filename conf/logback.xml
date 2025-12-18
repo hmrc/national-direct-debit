@@ -28,11 +28,11 @@
 
     <logger name="application" level="DEBUG"/>
 
-    <logger name="connector" level="TRACE">
+    <logger name="connectors" level="INFO">
         <appender-ref ref="STDOUT"/>
     </logger>
 
-    <root level="INFO">
+    <root level="DEBUG">
         <appender-ref ref="FILE"/>
         <appender-ref ref="STDOUT"/>
     </root>
