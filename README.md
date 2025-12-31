@@ -1,11 +1,23 @@
 
 # national-direct-debit
 
-The new National Direct Debit backend service.
+The National Direct Debit System (NDDS), is a backend service that allows users to pay taxes via direct debits. Users can either opt for recurring payments or one of direct debit payments. The service currently supports setting up direct debits for multiple services.
+
+The services supported are:
+
+VAT
+SA
+MGD
+NIC
+CT
+PAYE
+SDLT
+TC
+Other Liability
 
 ## Running the service
 
-Service Manager: `sm2 --start NDDS_ALL`
+Service Manager for NDDS: `sm2 --start NDDS_ALL`
 
 To check libraries update, run all tests and coverage: `./run_all_tests.sh`
 
