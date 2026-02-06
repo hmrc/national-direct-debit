@@ -29,7 +29,7 @@ case class PaymentPlanDuplicateCheckRequest(
   paymentAmount: Option[BigDecimal],
   totalLiability: Option[Double],
   paymentFrequency: Option[Int],
-  paymentStartDate: LocalDate
+  paymentStartDate: Option[LocalDate]
 )
 
 object PaymentPlanDuplicateCheckRequest {
