@@ -396,7 +396,7 @@ class DirectDebitControllerSpec extends SpecBase {
       paymentAmount        = Some(120.00),
       totalLiability       = Some(120.00),
       paymentFrequency     = Some(1),
-      paymentStartDate     = currentTime.toLocalDate
+      paymentStartDate     = Some(currentTime.toLocalDate)
     )
   }
 }
