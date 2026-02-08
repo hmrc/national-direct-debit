@@ -20,12 +20,22 @@ sealed trait PaymentsFrequency
 
 object PaymentsFrequency extends Enumerable.Implicits {
 
-  case object Weekly  extends WithName("weekly") with PaymentsFrequency
-  case object Monthly extends WithName("monthly") with PaymentsFrequency
+  case object Weekly      extends WithName("weekly") with PaymentsFrequency
+  case object Monthly     extends WithName("monthly") with PaymentsFrequency
+  case object Fortnightly extends WithName("fortNightly") with PaymentsFrequency
+  case object FourWeekly  extends WithName("fourWeekly") with PaymentsFrequency
+  case object Quarterly   extends WithName("quarterly") with PaymentsFrequency
+  case object SixMonthly  extends WithName("sixMonthly") with PaymentsFrequency
+  case object Annually    extends WithName("annually") with PaymentsFrequency
 
   val values: Seq[PaymentsFrequency] = Seq(
     Weekly,
-    Monthly
+    Monthly,
+    Fortnightly,
+    FourWeekly,
+    Quarterly,
+    SixMonthly,
+    Annually
   )
 
   implicit val enumerable: Enumerable[PaymentsFrequency] =
@@ -33,9 +43,14 @@ object PaymentsFrequency extends Enumerable.Implicits {
 
   def auditName(oPaymentsFrequency: Option[PaymentsFrequency]): Option[String] =
     oPaymentsFrequency match {
-      case Some(Weekly)  => Some("WEEKLY")
-      case Some(Monthly) => Some("MONTHLY")
-      case _             => None
+      case Some(Weekly)      => Some("WEEKLY")
+      case Some(Monthly)     => Some("MONTHLY")
+      case Some(Fortnightly) => Some("FORTNIGHTLY")
+      case Some(FourWeekly)  => Some("FOURWEEKLY")
+      case Some(Quarterly)   => Some("QUARTERLY")
+      case Some(SixMonthly)  => Some("SIXMONTHLY")
+      case Some(Annually)    => Some("ANNUALLY")
+      case _                 => None
     }
 
 }
