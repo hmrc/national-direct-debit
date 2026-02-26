@@ -54,10 +54,6 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, validator: SchemaV
       "IR-SA"           -> 3
     ).withDefaultValue(99)
 
-    // Group identifiers correctly per enrolment (fixes key-mixing bug)
-//    val enrolMap: Map[String, Seq[(String, String)]] =
-//      active.map(e => e.key -> e.identifiers.map(i => i.key -> i.value.trim)).toMap
-
     // Map each enrolment → HoD service → knownFact
     val mapped: Seq[(String, String, Int)] =
       active.toSeq.flatMap {
