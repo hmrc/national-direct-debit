@@ -17,13 +17,16 @@
 package uk.gov.hmrc.nationaldirectdebit.models.requests
 
 import play.api.mvc.{Request, WrappedRequest}
+import uk.gov.hmrc.auth.core.Enrolment
 import uk.gov.hmrc.http.SessionId
 
 case class AuthenticatedRequest[A](
   private val request: Request[A],
-  internalId: String,
-  sessionId: SessionId,
   credId: String,
+  sessionId: SessionId,
   affinityGroup: String,
-  nino: Option[String]
-) extends WrappedRequest[A](request)
+  nino: Option[String],
+  enrolments: Set[Enrolment]
+) extends WrappedRequest[A](request) {
+  lazy val sessionData = s"credId = $credId, sessionId = $sessionId, enrolments: $enrolments"
+}

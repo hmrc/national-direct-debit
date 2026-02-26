@@ -23,6 +23,7 @@ import uk.gov.hmrc.nationaldirectdebit.config.AppConfig
 import java.io.StringReader
 import javax.inject.{Inject, Singleton}
 import javax.xml.transform.stream.StreamSource
+import scala.util.{Failure, Success, Try}
 import scala.xml.NodeSeq
 
 class ValidationHandler extends ErrorHandler with Logging {
@@ -48,17 +49,17 @@ class ValidationHandler extends ErrorHandler with Logging {
 @Singleton
 class SchemaValidator @Inject (config: AppConfig) {
 
-  def validate(xml: String): Unit = {
+  def validate(xml: String): Try[Unit] = {
     val validator = config.schema.newValidator()
     val handler = new ValidationHandler
 
     validator.setErrorHandler(handler)
     validator.validate(new StreamSource(new StringReader(xml.mkString)))
 
-    if (handler.error) throw new RuntimeException("XML validation failed against schema")
-    else ()
+    if (handler.error) Failure(RuntimeException("XML validation failed against schema"))
+    else Success(())
   }
 
-  def validate(xml: NodeSeq): Unit = validate(xml.mkString)
+  def validate(xml: NodeSeq): Try[Unit] = validate(xml.mkString)
 
 }

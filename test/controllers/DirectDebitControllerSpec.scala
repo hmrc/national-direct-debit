@@ -28,7 +28,7 @@ import play.api.test.Helpers.{contentAsJson, status}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.controllers.DirectDebitController
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.*
-import uk.gov.hmrc.nationaldirectdebit.models.requests.{ChrisSubmissionRequest, GenerateDdiRefRequest, PaymentPlanDuplicateCheckRequest, WorkingDaysOffsetRequest}
+import uk.gov.hmrc.nationaldirectdebit.models.requests.{AuthenticatedRequest, ChrisSubmissionRequest, GenerateDdiRefRequest, PaymentPlanDuplicateCheckRequest, WorkingDaysOffsetRequest}
 import uk.gov.hmrc.nationaldirectdebit.models.responses.*
 import uk.gov.hmrc.nationaldirectdebit.models.{SUBMITTED, SubmissionResult}
 import uk.gov.hmrc.nationaldirectdebit.services.{ChrisService, DirectDebitService}
@@ -126,10 +126,8 @@ class DirectDebitControllerSpec extends SpecBase {
 
         when(
           mockChrisService.submitToChris(
-            any[ChrisSubmissionRequest](),
-            any[String](),
-            any[String]()
-          )(any[HeaderCarrier]())
+            any[ChrisSubmissionRequest]()
+          )(any[HeaderCarrier](), any[AuthenticatedRequest[_]])
         ).thenReturn(
           Future.successful(
             SubmissionResult(
@@ -152,10 +150,8 @@ class DirectDebitControllerSpec extends SpecBase {
 
         when(
           mockChrisService.submitToChris(
-            any[ChrisSubmissionRequest](),
-            any[String](),
-            any[String]()
-          )(any[HeaderCarrier]())
+            any[ChrisSubmissionRequest]()
+          )(any[HeaderCarrier](), any[AuthenticatedRequest[_]])
         ).thenReturn(Future.failed(new RuntimeException("Boom!")))
 
         val result: Future[Result] =
@@ -211,7 +207,7 @@ class DirectDebitControllerSpec extends SpecBase {
 
     "isAdvanceNoticePresent method" - {
       "return 200 and a successful response when advance notice details exist" in new SetUp {
-        val currentTime = LocalDateTime.now().withNano(0)
+        val currentTime: LocalDateTime = LocalDateTime.now().withNano(0)
         when(mockDirectDebitService.isAdvanceNoticePresent(any(), any())(any()))
           .thenReturn(
             Future.successful(
@@ -234,7 +230,7 @@ class DirectDebitControllerSpec extends SpecBase {
       }
 
       "return 200 and a successful response when advance notice details does not exist" in new SetUp {
-        val currentTime = LocalDateTime.now().withNano(0)
+        val currentTime: LocalDateTime = LocalDateTime.now().withNano(0)
         when(mockDirectDebitService.isAdvanceNoticePresent(any(), any())(any()))
           .thenReturn(
             Future.successful(

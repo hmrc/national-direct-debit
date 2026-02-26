@@ -37,7 +37,7 @@ object XmlUtils {
         Seq(
           <Key Type={knownFactType.trim}>{valueToUse}</Key>
         )
-      }).getOrElse(Seq.empty)
+      }).fold(Seq.empty)(keys => <Keys>keys</Keys>)
     }
 
   def formatKnownFacts(hodServices: Seq[Map[String, String]]): Seq[scala.xml.Node] =

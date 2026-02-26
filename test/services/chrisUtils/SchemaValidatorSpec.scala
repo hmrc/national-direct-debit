@@ -48,7 +48,7 @@ class SchemaValidatorSpec extends AnyWordSpec with Matchers with MockitoSugar {
     schemaFactory.newSchema(xsdFiles.toArray.map(_.asInstanceOf[javax.xml.transform.Source]))
   }
 
-  private def validateXml(xml: String, schema: javax.xml.validation.Schema): Unit = {
+  private def validateXml(xml: String, schema: javax.xml.validation.Schema): Try[Unit] = {
     val mockConfig = mock[AppConfig]
     when(mockConfig.schema).thenReturn(schema)
 
@@ -112,7 +112,7 @@ class SchemaValidatorSpec extends AnyWordSpec with Matchers with MockitoSugar {
           |</ChRISEnvelope>
           |""".stripMargin
 
-      Try(validateXml(validXml, schema)).isSuccess shouldBe true
+      validateXml(validXml, schema).isSuccess shouldBe true
     }
 
     "fail validation if knownFact service exceeds 4 characters" in {
@@ -152,7 +152,7 @@ class SchemaValidatorSpec extends AnyWordSpec with Matchers with MockitoSugar {
           |</ChRISEnvelope>
           |""".stripMargin
 
-      val result = Try(validateXml(invalidXml, schema))
+      val result = validateXml(invalidXml, schema)
 
       result.isSuccess             shouldBe false
       result.failed.get.getMessage shouldBe "XML validation failed against schema"

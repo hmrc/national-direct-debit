@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.nationaldirectdebit.models.requests.chris
 
-import uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest
+import uk.gov.hmrc.nationaldirectdebit.models.requests.{AuthenticatedRequest, ChrisSubmissionRequest}
 import uk.gov.hmrc.nationaldirectdebit.services.ChrisEnvelopeConstants
 import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.{DateUtils, PaymentPlanBuilder, XmlUtils}
 
@@ -56,7 +56,7 @@ case class EnvelopeDetails(
           <Body>
             <IRenvelope xmlns={""}>
               <IRheader>
-                <Keys>{XmlUtils.formatKeys(keysData)}</Keys>
+                {XmlUtils.formatKeys(keysData)}
                 <PeriodEnd>{periodEnd}</PeriodEnd>
                 <Sender>{senderType}</Sender>
               </IRheader>
@@ -92,26 +92,25 @@ case class EnvelopeDetails(
 object EnvelopeDetails {
   val prettyPrinter = new PrettyPrinter(120, 4)
 
-  def details(request: ChrisSubmissionRequest,
-              credId: String,
-              affinityGroup: String,
+  def details(submission: ChrisSubmissionRequest,
+              request: AuthenticatedRequest[?],
               knownFactData: Seq[Map[String, String]],
               keysData: Seq[Map[String, String]],
               correlatingId: String
              ): EnvelopeDetails = {
     val now = LocalDateTime.now(UTC).format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS"))
     EnvelopeDetails(
-      request,
-      credId,
+      submission,
+      request.credId,
       knownFactData,
       keysData,
       correlatingId,
       now,
       now,
       DateUtils.calculatePeriodEnd(),
-      if (affinityGroup == "Agent") "Agent" else "Individual",
-      request.serviceType,
-      ChrisEnvelopeConstants.listHodServices.get(request.serviceType)
+      if (request.affinityGroup == "Agent") "Agent" else "Individual",
+      submission.serviceType,
+      ChrisEnvelopeConstants.listHodServices.get(submission.serviceType)
     )
   }
 }
