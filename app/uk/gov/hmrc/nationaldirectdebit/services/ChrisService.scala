@@ -17,15 +17,17 @@
 package uk.gov.hmrc.nationaldirectdebit.services
 
 import play.api.Logging
+import uk.gov.hmrc.auth.core.{Enrolment, EnrolmentIdentifier}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
 import uk.gov.hmrc.nationaldirectdebit.models.{FATAL_ERROR as SubmissionStatusFatalError, SUBMITTED as SubmissionStatusSubmitted, SubmissionResult}
 import uk.gov.hmrc.nationaldirectdebit.models.requests.{AuthenticatedRequest, ChrisSubmissionRequest}
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.{DirectDebitSource, EnvelopeDetails}
+import uk.gov.hmrc.nationaldirectdebit.services.ChrisEnvelopeConstants.{enrolmentToHodService, hodServiceToKnownFactType}
 import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.SchemaValidator
 import uk.gov.hmrc.play.audit.http.connector.AuditResult
-import scala.util.{Failure, Success}
 
+import scala.util.{Failure, Success}
 import java.util.UUID
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
@@ -33,12 +35,14 @@ import scala.concurrent.{ExecutionContext, Future}
 class ChrisService @Inject() (chrisConnector: ChrisConnector, validator: SchemaValidator, auditService: AuditService)(implicit ec: ExecutionContext)
     extends Logging {
 
-  // TODO
+  private val enrolmentHasKnownFacts =
+    (enrolmentKey: String) => hodServiceToKnownFactType.keys.exists(_ == enrolmentToHodService(enrolmentKey))
+
   private def getActiveEnrolmentForKeys(
     serviceType: DirectDebitSource
   )(implicit request: AuthenticatedRequest[?]): Seq[Map[String, String]] = {
 
-    val expectedHodServiceOpt = ChrisEnvelopeConstants.listHodServices.get(serviceType)
+    val expectedHodServiceOpt = ChrisEnvelopeConstants.directDebitSourceToHodService.get(serviceType)
 
     // Only activated enrolments
     val active = request.enrolments.filter(_.isActivated)
@@ -51,33 +55,27 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, validator: SchemaV
     ).withDefaultValue(99)
 
     // Group identifiers correctly per enrolment (fixes key-mixing bug)
-    val enrolMap: Map[String, Seq[(String, String)]] =
-      active.map(e => e.key -> e.identifiers.map(i => i.key -> i.value.trim)).toMap
+//    val enrolMap: Map[String, Seq[(String, String)]] =
+//      active.map(e => e.key -> e.identifiers.map(i => i.key -> i.value.trim)).toMap
 
     // Map each enrolment → HoD service → knownFact
     val mapped: Seq[(String, String, Int)] =
-      enrolMap.toSeq.flatMap { case (enrolKey, identifiers) =>
-        ChrisEnvelopeConstants.enrolmentToHodService.get(enrolKey).toSeq.flatMap { hodService =>
+      active.toSeq.flatMap {
+        case Enrolment(enrolmentKey, identifiers, _, _) if enrolmentHasKnownFacts(enrolmentKey) =>
+          val hodService = ChrisEnvelopeConstants.enrolmentToHodService(enrolmentKey)
+          val knownFactType = ChrisEnvelopeConstants.hodServiceToKnownFactType(hodService)
 
-          ChrisEnvelopeConstants.hodServiceToKnownFactType.get(hodService).toSeq.map { knownFactType =>
-
-            val value: String =
-              if ((hodService == "PAYE" || hodService == "CIS") && knownFactType == "EMPREF") {
-                val ton = identifiers.find(_._1 == "TaxOfficeNumber").map(_._2).getOrElse("")
-                val tor = identifiers.find(_._1 == "TaxOfficeReference").map(_._2).getOrElse("")
-                ton + tor
-              } else {
-                identifiers
-                  .collectFirst {
-                    case ("NINO", v) => v.take(8)
-                    case (_, v)      => v
-                  }
-                  .getOrElse("")
+          val value = hodService match {
+            case "PAYE" | "CIS" =>
+              identifiers.find(_.key == "TaxOfficeNumber").map(_.value).getOrElse("") +
+                identifiers.find(_.key == "TaxOfficeReference").map(_.value).getOrElse("")
+            case _ =>
+              identifiers.headOption.fold("") { case EnrolmentIdentifier(key, v) =>
+                if (key == "NINO") v.trim.take(8) else v.trim
               }
-
-            (knownFactType, value, utrPriority(enrolKey))
           }
-        }
+          Some((knownFactType, value, utrPriority(enrolmentKey)))
+        case _ => None
       }
 
     // Deduplicate by knownFactType and apply EMPREF rules
@@ -101,110 +99,77 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, validator: SchemaV
         }
 
     // Reorder to put expected service's knownFactType first
-    val reordered: Seq[Map[String, String]] =
-      expectedHodServiceOpt match {
-        case Some(expectedService) =>
-          val expectedKnownFactType =
-            ChrisEnvelopeConstants.hodServiceToKnownFactType.getOrElse(expectedService, "")
+    expectedHodServiceOpt match {
+      case Some(expectedService) =>
+        val expectedKnownFactType = hodServiceToKnownFactType.getOrElse(expectedService, "")
+        val (matching, others) = deduped.partition(_("knownFactType") == expectedKnownFactType)
+        matching ++ others
 
-          val (matching, others) =
-            deduped.partition(_("knownFactType") == expectedKnownFactType)
-
-          matching ++ others
-
-        case None =>
-          deduped
-      }
-
-    reordered
+      case None =>
+        deduped
+    }
   }
 
-  // TODO
   private def knownFactDataWithEnrolment(
     serviceType: DirectDebitSource
   )(implicit request: AuthenticatedRequest[?]): Seq[Map[String, String]] = {
 
+    val expectedHodServiceOpt = ChrisEnvelopeConstants.directDebitSourceToHodService.get(serviceType)
+
     logger.debug(s"Retrieved enrolments: ${request.enrolments.map(_.key).mkString(", ")}")
-
-    val expectedHodServiceOpt = ChrisEnvelopeConstants.listHodServices.get(serviceType)
-
     logger.info(s"Expected HOD service for [$serviceType] = ${expectedHodServiceOpt.getOrElse("not found")}")
 
-    val activeEnrolments = request.enrolments.toSeq.filter(_.isActivated)
+    val saKeys = Set("IR-SA-PART-ORG", "IR-SA", "IR-SA-TRUST-ORG")
 
-    val grouped: Map[String, Seq[(String, String)]] =
-      activeEnrolments
-        .groupBy(_.key)
-        .view
-        .mapValues(_.flatMap(_.identifiers.map(i => i.key -> i.value)))
-        .toMap
+    val (saEnrolments, otherEnrolments) =
+      request.enrolments.toSeq
+        .filter(_.isActivated)
+        .partition(e => saKeys(e.key))
 
     // --------------------------------------------------------
     // NEW: Collapse all SA enrolments into ONE
     // --------------------------------------------------------
-    val saKeys = Seq("IR-SA-PART-ORG", "IR-SA", "IR-SA-TRUST-ORG")
+    val activeEnrolments = saEnrolments.take(1) ++ otherEnrolments
 
-    val firstSaKeyOpt: Option[String] =
-      saKeys.find(grouped.contains)
-
-    val cleanedGrouped: Map[String, Seq[(String, String)]] = {
-      val withoutAllSA = grouped.filterNot { case (key, _) => saKeys.contains(key) }
-
-      firstSaKeyOpt match {
-        case Some(saKey) =>
-          withoutAllSA + (saKey -> grouped(saKey)) // Keep only one SA enrolment
-        case None =>
-          withoutAllSA
-      }
-    }
-
-    logger.debug(s"SA keys originally present: ${grouped.keySet.intersect(saKeys.toSet)}")
-    logger.debug(s"SA key retained for known fact: ${firstSaKeyOpt.getOrElse("none")}")
+    logger.debug(s"SA keys originally present: $saEnrolments")
+    logger.debug(s"SA key retained for known fact: ${saEnrolments.take(1)}")
 
     // Build output ONLY for properly mapped enrolments + HOD services
     val mappedFacts: Seq[Map[String, String]] =
-      cleanedGrouped.toSeq.flatMap { case (enrolmentKey, identifiers) =>
-        ChrisEnvelopeConstants.enrolmentToHodService.get(enrolmentKey).toSeq.flatMap { hodService =>
+      activeEnrolments.flatMap {
+        case Enrolment(enrolmentKey, identifiers, _, _) if enrolmentHasKnownFacts(enrolmentKey) =>
+          val hodService = enrolmentToHodService(enrolmentKey)
+          val knownFactType = hodServiceToKnownFactType(hodService)
 
-          ChrisEnvelopeConstants.hodServiceToKnownFactType.get(hodService).toSeq.map { knownFactType =>
-
-            val value: String =
-              if ((hodService == "PAYE" || hodService == "CIS") && knownFactType == "EMPREF") {
-                val taxOfficeNumber = identifiers.find(_._1 == "TaxOfficeNumber").map(_._2.trim).getOrElse("")
-                val taxOfficeRef = identifiers.find(_._1 == "TaxOfficeReference").map(_._2.trim).getOrElse("")
-                taxOfficeNumber + taxOfficeRef
-              } else {
-                identifiers.headOption
-                  .map {
-                    case ("NINO", v) => v.take(8)
-                    case (_, v)      => v.trim
-                  }
-                  .getOrElse("")
+          val value = hodService match {
+            case "PAYE" | "CIS" =>
+              identifiers.find(_.key == "TaxOfficeNumber").map(_.value).getOrElse("") +
+                identifiers.find(_.key == "TaxOfficeReference").map(_.value).getOrElse("")
+            case _ =>
+              identifiers.headOption.fold("") { case EnrolmentIdentifier(key, v) =>
+                if (key == "NINO") v.trim.take(8) else v.trim
               }
+          }
 
+          Some(
             Map(
               "service"         -> hodService,
               "identifierName"  -> knownFactType,
               "identifierValue" -> value
             )
-          }
-        }
+          )
+        case _ => None
       }
 
     // Reorder: matching first, then all others
-    val reordered =
-      expectedHodServiceOpt match {
-        case Some(expected) =>
-          val (matching, others) =
-            mappedFacts.partition(_("service") == expected)
-          matching ++ others
+    expectedHodServiceOpt match {
+      case Some(expected) =>
+        val (matching, others) = mappedFacts.partition(_("service") == expected)
+        matching ++ others
 
-        case None =>
-          mappedFacts
-      }
-
-    reordered
-
+      case None =>
+        mappedFacts
+    }
   }
 
   def submitToChris(

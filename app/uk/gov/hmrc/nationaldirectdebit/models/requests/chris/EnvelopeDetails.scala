@@ -66,11 +66,7 @@ case class EnvelopeDetails(
                 {XmlUtils.formatKnownFacts(knownFactData)}
                 <directDebitInstruction>
                   {
-          if (
-            request.amendPlan || request.cancelPlan
-            || request.suspendPlan || request.removeSuspensionPlan
-            || request.addPlan
-          ) {
+          if (request.hasExistingPlan) {
             <ddiReferenceNo>{request.ddiReferenceNo}</ddiReferenceNo>
           } else {
             <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
@@ -79,8 +75,16 @@ case class EnvelopeDetails(
                       <bankAccountNo>{request.yourBankDetailsWithAuddisStatus.accountNumber}</bankAccountNo>
                       <bankAccountName>{request.yourBankDetailsWithAuddisStatus.accountHolderName}</bankAccountName>
           }
-        }{if (request.yourBankDetailsWithAuddisStatus.auddisStatus) <paperAuddisFlag>01</paperAuddisFlag> else scala.xml.Null}
-                </directDebitInstruction>{PaymentPlanBuilder.build(request, expectedHodService)}
+        }
+                    {
+          if (request.yourBankDetailsWithAuddisStatus.auddisStatus) {
+            <paperAuddisFlag>01</paperAuddisFlag>
+          } else {
+            scala.xml.Null
+          }
+        }
+                </directDebitInstruction>
+                {PaymentPlanBuilder.build(request, expectedHodService)}
               </dDIPPDetails>
             </IRenvelope>
           </Body>
@@ -110,7 +114,7 @@ object EnvelopeDetails {
       DateUtils.calculatePeriodEnd(),
       if (request.affinityGroup == "Agent") "Agent" else "Individual",
       submission.serviceType,
-      ChrisEnvelopeConstants.listHodServices.get(submission.serviceType)
+      ChrisEnvelopeConstants.directDebitSourceToHodService.get(submission.serviceType)
     )
   }
 }

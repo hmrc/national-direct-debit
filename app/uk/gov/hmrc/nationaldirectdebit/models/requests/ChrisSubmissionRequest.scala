@@ -48,7 +48,9 @@ case class ChrisSubmissionRequest(
   addPlan: Boolean = false,
   auditType: Option[AuditType] = None,
   bankAccountType: Option[PersonalOrBusinessAccount] = None
-)
+) {
+  lazy val hasExistingPlan: Boolean = amendPlan || cancelPlan || suspendPlan || removeSuspensionPlan || addPlan
+}
 
 object ChrisSubmissionRequest {
   implicit val format: OFormat[ChrisSubmissionRequest] = Json.format[ChrisSubmissionRequest]

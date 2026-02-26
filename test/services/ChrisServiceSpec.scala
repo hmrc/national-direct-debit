@@ -445,7 +445,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(
         Set(
           Enrolment(
-            key               = "IR-SA",
+            key               = "IR-SA-PART-ORG",
             identifiers       = Seq(EnrolmentIdentifier("TaxId", "1234567890")),
             state             = "Activated",
             delegatedAuthRule = None
@@ -469,7 +469,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(
         Set(
           Enrolment(
-            key               = "IR-SA",
+            key               = "IR-SA-TRUST-ORG",
             identifiers       = Seq(EnrolmentIdentifier("TaxId", "1234567890")),
             state             = "Activated",
             delegatedAuthRule = None
@@ -545,7 +545,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(
         Set(
           Enrolment(
-            key               = "CESA",
+            key               = "IR-SA",
             identifiers       = Seq(EnrolmentIdentifier("UTR", "1234567890")),
             state             = "Activated",
             delegatedAuthRule = None
@@ -567,7 +567,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(
         Set(
           Enrolment(
-            key               = "SAFE",
+            key               = "HMRC-ECL-ORG",
             identifiers       = Seq(EnrolmentIdentifier("UTR", "1234567890")),
             state             = "Activated",
             delegatedAuthRule = None
@@ -591,7 +591,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(
         Set(
           Enrolment(
-            key               = "COTA",
+            key               = "IR-CT",
             identifiers       = Seq(EnrolmentIdentifier("UTR", "1234567890")),
             state             = "Activated",
             delegatedAuthRule = None
@@ -613,7 +613,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(
         Set(
           Enrolment(
-            key               = "COTA",
+            key               = "IR-CT",
             identifiers       = Seq(EnrolmentIdentifier("UTR", "1234567890")),
             state             = "Activated",
             delegatedAuthRule = None
@@ -635,7 +635,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(
         Set(
           Enrolment(
-            key               = "COTA",
+            key               = "IR-CT",
             identifiers       = Seq(EnrolmentIdentifier("UTR", "1234567890")),
             state             = "Activated",
             delegatedAuthRule = None
@@ -657,7 +657,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(
         Set(
           Enrolment(
-            key               = "VAT",
+            key               = "IR-CT",
             identifiers       = Seq(EnrolmentIdentifier("UTR", "1234567890")),
             state             = "Activated",
             delegatedAuthRule = None
@@ -679,7 +679,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(
         Set(
           Enrolment(
-            key               = "VAT",
+            key               = "IR-CT",
             identifiers       = Seq(EnrolmentIdentifier("UTR", "1234567890")),
             state             = "Activated",
             delegatedAuthRule = None
@@ -723,7 +723,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(
         Set(
           Enrolment(
-            key               = "MGD",
+            key               = "HMRC-MGD-ORG",
             identifiers       = Seq(EnrolmentIdentifier("HMRCMGDRN", "MGD4567890")),
             state             = "Activated",
             delegatedAuthRule = None
@@ -745,7 +745,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(
         Set(
           Enrolment(
-            key               = "MGD",
+            key               = "HMRC-MGD-ORG",
             identifiers       = Seq(EnrolmentIdentifier("HMRCMGDRN", "MGD4567890")),
             state             = "Activated",
             delegatedAuthRule = None
@@ -768,7 +768,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
     }
 
     "propagate connector failures" in {
-      implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(Set(Enrolment("HMRC-NDDS-ORG")))
+      implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(Set(Enrolment("HMRC-CIS-ORG")))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
       when(mockSchemaValidator.validate(any[Elem])).thenReturn(Success(()))
 
@@ -781,7 +781,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
     }
 
     "fail when XML validation fails" in {
-      implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(Set(Enrolment("HMRC-NDDS-ORG")))
+      implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(Set(Enrolment("HMRC-CIS-ORG")))
       when(mockSchemaValidator.validate(any[Elem])).thenReturn(Failure(new RuntimeException("Invalid XML")))
 
       assertThrows[RuntimeException] {
