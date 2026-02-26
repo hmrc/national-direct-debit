@@ -233,7 +233,6 @@ class AuditService @Inject (
   }
 
   def sendEvent(envelopeDetails: EnvelopeDetails)(implicit hc: HeaderCarrier): Future[AuditResult] = {
-
     val extendedDataEvent = ExtendedDataEvent(
       auditSource = auditSource,
       auditType   = envelopeDetails.request.auditType.map(_.name).getOrElse("Other"),

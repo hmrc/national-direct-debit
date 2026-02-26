@@ -30,14 +30,13 @@ import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
 import uk.gov.hmrc.nationaldirectdebit.models.requests.*
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.*
 import uk.gov.hmrc.nationaldirectdebit.models.{SUBMITTED, SubmissionResult, SuspensionPeriodRange}
-import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.XmlValidator
+import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.SchemaValidator
 import uk.gov.hmrc.nationaldirectdebit.services.{AuditService, ChrisService}
 import uk.gov.hmrc.play.audit.http.connector.AuditResult
 import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success as AuditResultSuccess
 
 import java.time.LocalDate
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
 import scala.xml.Elem
 
 class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures with MockitoSugar {
@@ -46,10 +45,10 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
 
   private val mockConnector = mock[ChrisConnector]
   private val mockAuthConnector = mock[AuthConnector]
-  private val mockXmlValidator = mock[XmlValidator]
+  private val mockSchemaValidator = mock[SchemaValidator]
   private val mockAuditService = mock[AuditService]
 
-  private val service = new ChrisService(mockConnector, mockAuthConnector, mockXmlValidator, mockAuditService)
+  private val service = new ChrisService(mockConnector, mockAuthConnector, mockSchemaValidator, mockAuditService)
 
   // Plan and payment details
   private val planStartDateDetails = PlanStartDateDetails(
@@ -371,9 +370,6 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       when(mockAuthConnector.authorise(any(), any())(any(), any()))
         .thenReturn(Future.successful(enrolments))
 
-      when(mockXmlValidator.validate(any[Elem]))
-        .thenReturn(Success(()))
-
       when(mockAuditService.sendEvent(any())(any()))
         .thenReturn(Future.successful(AuditResultSuccess))
 
@@ -406,7 +402,6 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
         )
       )
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(
@@ -436,7 +431,6 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
         )
       )
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(
@@ -463,7 +457,6 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
         )
       )
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(
@@ -491,7 +484,6 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       when(mockAuthConnector.authorise(any(), any())(any(), any()))
         .thenReturn(Future.successful(enrolments))
 
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(
@@ -518,7 +510,6 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
 
       when(mockAuthConnector.authorise(any(), any())(any(), any()))
         .thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(
@@ -545,7 +536,6 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
 
       when(mockAuthConnector.authorise(any(), any())(any(), any()))
         .thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(
@@ -572,7 +562,6 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
         )
       )
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(Future.successful(SubmissionResult(status = SUBMITTED, rawXml = Some("<Confirmation>SA Weekly Message received</Confirmation>"))))
@@ -595,7 +584,6 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
         )
       )
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(
@@ -620,7 +608,6 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
         )
       )
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(Future.successful(SubmissionResult(status = SUBMITTED, rawXml = Some("<Confirmation>CT Message received</Confirmation>"))))
@@ -643,7 +630,6 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
         )
       )
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(Future.successful(SubmissionResult(status = SUBMITTED, rawXml = Some("<Confirmation>CT Message received</Confirmation>"))))
@@ -666,7 +652,6 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
         )
       )
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(Future.successful(SubmissionResult(status = SUBMITTED, rawXml = Some("<Confirmation>Cancel Message received</Confirmation>"))))
@@ -689,7 +674,6 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
         )
       )
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(Future.successful(SubmissionResult(status = SUBMITTED, rawXml = Some("<Confirmation>VAT Message received</Confirmation>"))))
@@ -712,7 +696,6 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
         )
       )
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(Future.successful(SubmissionResult(status = SUBMITTED, rawXml = Some("<Confirmation>SDLT Message received</Confirmation>"))))
@@ -735,7 +718,6 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
         )
       )
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(Future.successful(SubmissionResult(status = SUBMITTED, rawXml = Some("<Confirmation>PAYE Message received</Confirmation>"))))
@@ -758,7 +740,6 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
         )
       )
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(Future.successful(SubmissionResult(status = SUBMITTED, rawXml = Some("<Confirmation>MGD Message received</Confirmation>"))))
@@ -781,7 +762,6 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
         )
       )
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(
@@ -797,7 +777,7 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
     }
 
     "fail when XML validation fails" in {
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Failure(new RuntimeException("Invalid XML")))
+      when(mockSchemaValidator.validate(any[Elem])).thenThrow(RuntimeException("Invalid XML"))
 
       recoverToSucceededIf[RuntimeException] {
         service.submitToChris(tcRequest, "credId123", "Organisation")
@@ -807,7 +787,6 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
     "propagate connector failures" in {
       val enrolments = Enrolments(Set(Enrolment("HMRC-NDDS-ORG")))
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
 
       // Connector fails with an exception -> service should propagate (fail the Future)

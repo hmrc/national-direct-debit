@@ -16,15 +16,21 @@
 
 package services.chrisUtils
 
+import org.mockito.Mockito.when
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import javax.xml.validation.SchemaFactory
+import org.scalatestplus.mockito.MockitoSugar
+import uk.gov.hmrc.nationaldirectdebit.config.AppConfig
+
 import javax.xml.XMLConstants
 import javax.xml.transform.stream.StreamSource
 import java.io.File
 import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.SchemaValidator
 
-class SchemaValidatorSpec extends AnyWordSpec with Matchers {
+import javax.xml.validation.SchemaFactory
+import scala.util.Try
+
+class SchemaValidatorSpec extends AnyWordSpec with Matchers with MockitoSugar {
 
   private def loadSchema(): javax.xml.validation.Schema = {
     val xsdFiles = Seq(
@@ -42,9 +48,12 @@ class SchemaValidatorSpec extends AnyWordSpec with Matchers {
     schemaFactory.newSchema(xsdFiles.toArray.map(_.asInstanceOf[javax.xml.transform.Source]))
   }
 
-  private def validateXml(xml: String, schema: javax.xml.validation.Schema): Boolean = {
-    val validator = new SchemaValidator
-    validator.validate(xml, schema)
+  private def validateXml(xml: String, schema: javax.xml.validation.Schema): Unit = {
+    val mockConfig = mock[AppConfig]
+    when(mockConfig.schema).thenReturn(schema)
+
+    val validator = new SchemaValidator(mockConfig)
+    validator.validate(xml)
   }
 
   private val schema = loadSchema()
@@ -103,7 +112,7 @@ class SchemaValidatorSpec extends AnyWordSpec with Matchers {
           |</ChRISEnvelope>
           |""".stripMargin
 
-      validateXml(validXml, schema) shouldBe true
+      Try(validateXml(validXml, schema)).isSuccess shouldBe true
     }
 
     "fail validation if knownFact service exceeds 4 characters" in {
@@ -143,7 +152,10 @@ class SchemaValidatorSpec extends AnyWordSpec with Matchers {
           |</ChRISEnvelope>
           |""".stripMargin
 
-      validateXml(invalidXml, schema) shouldBe false
+      val result = Try(validateXml(invalidXml, schema))
+
+      result.isSuccess             shouldBe false
+      result.failed.get.getMessage shouldBe "XML validation failed against schema"
     }
   }
 }

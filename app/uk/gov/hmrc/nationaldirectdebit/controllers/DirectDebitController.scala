@@ -76,13 +76,9 @@ class DirectDebitController @Inject() (
         chrisService
           .submitToChris(chrisRequest, request.credId, request.affinityGroup)
           .map { response =>
-
             response.status match {
-
               case SUBMITTED =>
-                logger.info(
-                  s"DDI ref for successful ChRIS submission: ${chrisRequest.ddiReferenceNo}"
-                )
+                logger.info(s"DDI ref for successful ChRIS submission: ${chrisRequest.ddiReferenceNo}")
                 Ok(
                   Json.obj(
                     "success"  -> true,
@@ -91,9 +87,7 @@ class DirectDebitController @Inject() (
                 )
 
               case FATAL_ERROR =>
-                logger.error(
-                  s"DDI ref for Failed ChRIS submission (FATAL_ERROR): ${chrisRequest.ddiReferenceNo}"
-                )
+                logger.error(s"DDI ref for Failed ChRIS submission (FATAL_ERROR): ${chrisRequest.ddiReferenceNo}")
                 InternalServerError(
                   Json.obj(
                     "success" -> false,
@@ -101,19 +95,7 @@ class DirectDebitController @Inject() (
                     "status"  -> "FATAL_ERROR"
                   )
                 )
-
-              case _ =>
-                logger.error(
-                  s"DDI ref for Failed ChRIS submission (Unknown status): ${chrisRequest.ddiReferenceNo}"
-                )
-                InternalServerError(
-                  Json.obj(
-                    "success" -> false,
-                    "message" -> s"Unknown status returned from ChRIS"
-                  )
-                )
             }
-
           }
           .recover { case ex =>
             logger.error(

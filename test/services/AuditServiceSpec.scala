@@ -32,7 +32,7 @@ import uk.gov.hmrc.nationaldirectdebit.services.AuditService
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
 import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 
-import java.time.{LocalDate, LocalDateTime}
+import java.time.LocalDate
 import scala.concurrent.Future
 
 class AuditServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures with MockitoSugar {

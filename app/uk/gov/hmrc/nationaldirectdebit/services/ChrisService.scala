@@ -25,13 +25,14 @@ import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
 import uk.gov.hmrc.nationaldirectdebit.models.{FATAL_ERROR as SubmissionStatusFatalError, SUBMITTED as SubmissionStatusSubmitted, SubmissionResult}
 import uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.{DirectDebitSource, EnvelopeDetails}
-import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.{ChrisEnvelopeBuilder, XmlValidator}
+import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.SchemaValidator
 import uk.gov.hmrc.play.audit.http.connector.AuditResult
 
+import java.util.UUID
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: AuthConnector, validator: XmlValidator, auditService: AuditService)(
+class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: AuthConnector, validator: SchemaValidator, auditService: AuditService)(
   implicit ec: ExecutionContext
 ) extends Logging {
 
@@ -213,64 +214,46 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, authConnector: Aut
     }
   }
 
-  import scala.util.{Failure, Success}
-
   def submitToChris(
     request: ChrisSubmissionRequest,
     credId: String,
     affinityGroup: String
   )(implicit hc: HeaderCarrier): Future[SubmissionResult] = {
-
-    val correlatingId: String = java.util.UUID.randomUUID().toString.replace("-", "")
+    val correlationId: String = UUID.randomUUID().toString.replace("-", "")
 
     for {
       knownFactData <- knownFactDataWithEnrolment(request.serviceType)
       keysData      <- getActiveEnrolmentForKeys(request.serviceType)
-      envelopeDetails = ChrisEnvelopeBuilder.getEnvelopeDetails(request, credId, affinityGroup, knownFactData, keysData, correlatingId)
-      envelopeXml = ChrisEnvelopeBuilder.build(envelopeDetails)
-
-      // Validate XML
-      validationResult = validator.validate(envelopeXml)
-
-      result <- validationResult match {
-                  case Failure(e) =>
-                    logger.error(s"ChRIS XML validation failed: ${e.getMessage}", e)
-                    Future.failed(new RuntimeException(s"XML validation failed: ${e.getMessage}", e))
-
-                  case Success(_) =>
-                    logger.info(s"ChRIS XML validation successful. Sending ChRIS submission for a correlatingId = $correlatingId.")
-                    chrisConnector.submitEnvelope(envelopeXml, correlatingId) flatMap {
-                      case submissionResult @ SubmissionResult(SubmissionStatusSubmitted, rawXml, meta) =>
-                        logger.info(s"ChRIS submission successful for a correlatingId = $correlatingId.")
-                        auditHandler(envelopeDetails, submissionResult, correlatingId)
-
-                      case submissionResult @ SubmissionResult(SubmissionStatusFatalError, rawXml, meta) =>
-                        logger.error(
-                          s"ChRIS submission failed with SubmissionStatus, ${SubmissionStatusFatalError.name} for a correlatingId = $correlatingId. "
-                        )
-                        Future.failed(new RuntimeException(s"ChRIS submission failed with rawXml = $rawXml and meta = $meta ."))
-                    }
-                }
-    } yield result
+      envelopeDetails = EnvelopeDetails.details(request, credId, affinityGroup, knownFactData, keysData, correlationId)
+      _ = validator.validate(envelopeDetails.build)
+      result <- chrisConnector.submitEnvelope(envelopeDetails.build, correlationId)
+    } yield result -> envelopeDetails match {
+      case (submissionResult, details) if submissionResult.status == SubmissionStatusSubmitted =>
+        logger.debug(s"ChRIS submission successful for a correlationId = $correlationId.")
+        audit(details, correlationId)
+        result
+      case (submissionResult, _) =>
+        val message =
+          s"ChRIS submission failed with " +
+            s"SubmissionStatus = ${SubmissionStatusFatalError.name}, " +
+            s"credId = $credId, " +
+            s"correlationId = $correlationId, " +
+            s"rawXml = ${submissionResult.rawXml}, " +
+            s"meta = ${submissionResult.meta}"
+        throw new RuntimeException(message)
+    }
   }
 
-  private def auditHandler(envelopeDetails: EnvelopeDetails, submissionResult: SubmissionResult, correlatingId: String)(implicit
-    hc: HeaderCarrier
-  ): Future[SubmissionResult] =
-    auditService.sendEvent(envelopeDetails) flatMap {
-      case AuditResult.Success =>
-        logger.info(s"Audit successful for a correlatingId = $correlatingId.")
-        Future.successful(submissionResult)
-
-      case AuditResult.Disabled =>
-        logger.error(s"Audit failed for a correlatingId = $correlatingId. Audit service returned Disabled result.")
-        Future.failed(new RuntimeException(s"Audit unsuccessful for a correlatingId = $correlatingId. Audit service returned Disabled result."))
-
-      case AuditResult.Failure(msg, _) =>
-        logger.error(s"Audit failed for a correlatingId = $correlatingId. Audit service failure: $msg .")
-        Future.failed(
-          new RuntimeException(s"Audit unsuccessful for a correlatingId = $correlatingId. Audit service failure: $msg .")
-        )
+  private def audit(envelopeDetails: EnvelopeDetails, correlationId: String)(implicit hc: HeaderCarrier): Future[String] = {
+    auditService.sendEvent(envelopeDetails) map { result =>
+      val message = s"{$result} for correlationId = $correlationId."
+      result match {
+        case AuditResult.Success => message
+        case _ =>
+          logger.error(message)
+          throw new RuntimeException(message)
+      }
     }
+  }
 
 }
