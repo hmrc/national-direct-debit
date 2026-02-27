@@ -23,7 +23,7 @@ import java.time.LocalDate
 
 final case class CommonAuditFields(
   auditType: String,
-  correlatingId: String,
+  correlationId: String,
   credentialId: String,
   directDebitReference: String,
   submissionDateTime: String,
@@ -94,7 +94,7 @@ object AuditEvent {
 
   implicit val commonWrites: OWrites[CommonAuditFields] = OWrites { o =>
     Json.obj(
-      "correlatingId"        -> o.correlatingId,
+      "correlatingId"        -> o.correlationId,
       "credentialId"         -> o.credentialId,
       "directDebitReference" -> o.directDebitReference,
       "submissionDateTime"   -> o.submissionDateTime,

@@ -71,18 +71,14 @@ class DirectDebitController @Inject() (
 
   def submitToChris(): Action[JsValue] =
     authorise(parse.json).async { implicit request =>
-      withJsonBody[ChrisSubmissionRequest] { chrisRequest =>
+      withJsonBody[ChrisSubmissionRequest] { chrisSubmission =>
 
         chrisService
-          .submitToChris(chrisRequest, request.credId, request.affinityGroup)
+          .submitToChris(chrisSubmission)
           .map { response =>
-
             response.status match {
-
               case SUBMITTED =>
-                logger.info(
-                  s"DDI ref for successful ChRIS submission: ${chrisRequest.ddiReferenceNo}"
-                )
+                logger.info(s"DDI ref for successful ChRIS submission: ${chrisSubmission.ddiReferenceNo}")
                 Ok(
                   Json.obj(
                     "success"  -> true,
@@ -91,9 +87,7 @@ class DirectDebitController @Inject() (
                 )
 
               case FATAL_ERROR =>
-                logger.error(
-                  s"DDI ref for Failed ChRIS submission (FATAL_ERROR): ${chrisRequest.ddiReferenceNo}"
-                )
+                logger.error(s"DDI ref for Failed ChRIS submission (FATAL_ERROR): ${chrisSubmission.ddiReferenceNo}")
                 InternalServerError(
                   Json.obj(
                     "success" -> false,
@@ -101,23 +95,11 @@ class DirectDebitController @Inject() (
                     "status"  -> "FATAL_ERROR"
                   )
                 )
-
-              case _ =>
-                logger.error(
-                  s"DDI ref for Failed ChRIS submission (Unknown status): ${chrisRequest.ddiReferenceNo}"
-                )
-                InternalServerError(
-                  Json.obj(
-                    "success" -> false,
-                    "message" -> s"Unknown status returned from ChRIS"
-                  )
-                )
             }
-
           }
           .recover { case ex =>
             logger.error(
-              s"ChRIS submission FAILED with exception for DDI ref: ${chrisRequest.ddiReferenceNo}",
+              s"ChRIS submission FAILED with exception for DDI ref: ${chrisSubmission.ddiReferenceNo}",
               ex
             )
             InternalServerError(

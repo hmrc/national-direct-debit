@@ -19,6 +19,7 @@ package actions
 import play.api.mvc.{PlayBodyParsers, Request, Result}
 import uk.gov.hmrc.http.SessionId
 import uk.gov.hmrc.nationaldirectdebit.actions.AuthAction
+import uk.gov.hmrc.auth.core.{Enrolment, EnrolmentIdentifier}
 import uk.gov.hmrc.nationaldirectdebit.models.requests.AuthenticatedRequest
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -36,11 +37,11 @@ class FakeAuthAction(
     block(
       AuthenticatedRequest(
         request,
-        internalId    = "internalId-123",
         sessionId     = SessionId("sessionId-123"),
         credId        = testCredId,
         affinityGroup = testAffinity,
-        nino          = testNino
+        nino          = testNino,
+        enrolments    = Set(Enrolment("IR-SA", Seq(EnrolmentIdentifier("UTR", "123456789")), "Activated"))
       )
     )
 

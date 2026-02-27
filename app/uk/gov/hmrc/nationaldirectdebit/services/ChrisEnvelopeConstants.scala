@@ -32,7 +32,7 @@ object ChrisEnvelopeConstants {
   val PPType_3 = "03"
   val PPType_4 = "04"
 
-  val listHodServices: Map[DirectDebitSource, String] = Map(
+  val directDebitSourceToHodService: Map[DirectDebitSource, String] = Map(
     DirectDebitSource.CT   -> "COTA",
     DirectDebitSource.PAYE -> "PAYE",
     DirectDebitSource.SA   -> "CESA",

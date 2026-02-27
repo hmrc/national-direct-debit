@@ -19,13 +19,11 @@ package uk.gov.hmrc.nationaldirectdebit.models
 import play.api.libs.json.{Format, JsError, JsResult, JsString, JsSuccess, Json, OFormat}
 
 // Base trait
-sealed trait SubmissionStatus {
-  def name: String
-}
+sealed abstract class SubmissionStatus(val name: String)
 
 // Statuses
-case object FATAL_ERROR extends SubmissionStatus { val name = "FATAL_ERROR" }
-case object SUBMITTED   extends SubmissionStatus { val name = "SUBMITTED" }
+case object FATAL_ERROR extends SubmissionStatus("FATAL_ERROR")
+case object SUBMITTED   extends SubmissionStatus("SUBMITTED")
 
 object SubmissionStatus {
   implicit val format: Format[SubmissionStatus] = new Format[SubmissionStatus] {
@@ -41,7 +39,7 @@ object SubmissionStatus {
 }
 
 // Submission result
-final case class SubmissionResult(
+case class SubmissionResult(
   status: SubmissionStatus,
   rawXml: Option[String] = None, // optional, useful for stubs/logs
   meta: Option[String] = None // optional, can store additional info

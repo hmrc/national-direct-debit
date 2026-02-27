@@ -18,11 +18,13 @@ package uk.gov.hmrc.nationaldirectdebit.services.chrisUtils
 
 import org.xml.sax.{ErrorHandler, SAXParseException}
 import play.api.Logging
+import uk.gov.hmrc.nationaldirectdebit.config.AppConfig
 
 import java.io.StringReader
-import javax.inject.Singleton
+import javax.inject.{Inject, Singleton}
 import javax.xml.transform.stream.StreamSource
-import javax.xml.validation.Schema
+import scala.util.{Failure, Success, Try}
+import scala.xml.NodeSeq
 
 class ValidationHandler extends ErrorHandler with Logging {
 
@@ -45,14 +47,19 @@ class ValidationHandler extends ErrorHandler with Logging {
 }
 
 @Singleton
-class SchemaValidator {
+class SchemaValidator @Inject (config: AppConfig) {
 
-  def validate(xml: String, schema: Schema): Boolean = {
-    val validator = schema.newValidator()
+  def validate(xml: String): Try[Unit] = {
+    val validator = config.schema.newValidator()
     val handler = new ValidationHandler
+
     validator.setErrorHandler(handler)
-    validator.validate(new StreamSource(new StringReader(xml)))
-    !handler.error
+    validator.validate(new StreamSource(new StringReader(xml.mkString)))
+
+    if (handler.error) Failure(RuntimeException("XML validation failed against schema"))
+    else Success(())
   }
+
+  def validate(xml: NodeSeq): Try[Unit] = validate(xml.mkString)
 
 }

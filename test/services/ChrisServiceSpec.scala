@@ -24,13 +24,13 @@ import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.test.FakeRequest
-import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
+import uk.gov.hmrc.auth.core.{Enrolment, EnrolmentIdentifier}
 import uk.gov.hmrc.http.{HeaderCarrier, SessionId}
 import uk.gov.hmrc.nationaldirectdebit.connectors.ChrisConnector
 import uk.gov.hmrc.nationaldirectdebit.models.requests.*
 import uk.gov.hmrc.nationaldirectdebit.models.requests.chris.*
 import uk.gov.hmrc.nationaldirectdebit.models.{SUBMITTED, SubmissionResult, SuspensionPeriodRange}
-import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.XmlValidator
+import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.SchemaValidator
 import uk.gov.hmrc.nationaldirectdebit.services.{AuditService, ChrisService}
 import uk.gov.hmrc.play.audit.http.connector.AuditResult
 import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success as AuditResultSuccess
@@ -45,11 +45,10 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
   private val mockConnector = mock[ChrisConnector]
-  private val mockAuthConnector = mock[AuthConnector]
-  private val mockXmlValidator = mock[XmlValidator]
+  private val mockSchemaValidator = mock[SchemaValidator]
   private val mockAuditService = mock[AuditService]
 
-  private val service = new ChrisService(mockConnector, mockAuthConnector, mockXmlValidator, mockAuditService)
+  private val service = new ChrisService(mockConnector, mockSchemaValidator, mockAuditService)
 
   // Plan and payment details
   private val planStartDateDetails = PlanStartDateDetails(
@@ -343,21 +342,20 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
     suspensionPeriodRangeDate = None
   )
 
-  val fakeAuthRequest = AuthenticatedRequest(
+  def fakeAuthRequest(enrolments: Set[Enrolment]) = AuthenticatedRequest(
     request       = FakeRequest(),
-    internalId    = "internalId-123",
     sessionId     = SessionId("session-123"),
     credId        = "credId123",
     affinityGroup = "Organisation",
-    nino          = Some("AB123456C")
+    nino          = Some("AB123456C"),
+    enrolments    = enrolments
   )
   val CorrelatingID = "668102531dd2491f81811a90dac00a33"
 
   "ChrisService.submitToChris" should {
 
     "return confirmation when submission succeeds for TC" in {
-
-      val enrolments = Enrolments(
+      implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(
         Set(
           Enrolment(
             key               = "IR-NTC-CITIZEN-1",
@@ -368,15 +366,9 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
         )
       )
 
-      when(mockAuthConnector.authorise(any(), any())(any(), any()))
-        .thenReturn(Future.successful(enrolments))
-
-      when(mockXmlValidator.validate(any[Elem]))
-        .thenReturn(Success(()))
-
       when(mockAuditService.sendEvent(any())(any()))
         .thenReturn(Future.successful(AuditResultSuccess))
-
+      when(mockSchemaValidator.validate(any[Elem])).thenReturn(Success(()))
       // IMPORTANT: submitEnvelope must return SubmissionResult
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(
@@ -388,14 +380,14 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
           )
         )
 
-      service.submitToChris(tcRequest, "credId123", "Organisation").map { result =>
+      service.submitToChris(tcRequest) map { result =>
         result.status mustBe SUBMITTED
         result.rawXml.value must include("TC Message received")
       }
     }
 
     "return confirmation when submission succeeds for SA (monthly)" in {
-      val enrolments = Enrolments(
+      implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(
         Set(
           Enrolment(
             key               = "IR-SA",
@@ -405,9 +397,8 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
           )
         )
       )
-      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
+      when(mockSchemaValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(
           Future.successful(
@@ -418,14 +409,14 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
           )
         )
 
-      service.submitToChris(saMonthlyRequest, "credId123", "Organisation").map { result =>
+      service.submitToChris(saMonthlyRequest) map { result =>
         result.status mustBe SUBMITTED
         result.rawXml.value must include("SA Monthly Message received")
       }
     }
 
     "return confirmation when submission succeeds for SA Amend (monthly)" in {
-      val enrolments = Enrolments(
+      implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(
         Set(
           Enrolment(
             key               = "IR-SA",
@@ -435,9 +426,8 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
           )
         )
       )
-      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
+      when(mockSchemaValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(
           Future.successful(
@@ -445,42 +435,41 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
           )
         )
 
-      service.submitToChris(saAmendRequest, "credId123", "Agent").map { result =>
+      service.submitToChris(saAmendRequest) map { result =>
         result.status mustBe SUBMITTED
         result.rawXml.value must include("SA amend Monthly Message received")
       }
     }
 
     "return confirmation when submission succeeds for SA cancel (monthly)" in {
-      val enrolments = Enrolments(
+      implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(
         Set(
           Enrolment(
-            key               = "IR-SA",
+            key               = "IR-SA-PART-ORG",
             identifiers       = Seq(EnrolmentIdentifier("TaxId", "1234567890")),
             state             = "Activated",
             delegatedAuthRule = None
           )
         )
       )
-      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
+      when(mockSchemaValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(
           Future.successful(SubmissionResult(status = SUBMITTED, rawXml = Some("<Confirmation>SA Cancel Monthly Message received</Confirmation>")))
         )
 
-      service.submitToChris(saCancelequest, "credId123", "Organisation").map { result =>
+      service.submitToChris(saCancelequest) map { result =>
         result.status mustBe SUBMITTED
         result.rawXml.value must include("SA Cancel Monthly Message received")
       }
     }
 
     "return confirmation when submission succeeds for SA suspend (monthly)" in {
-      val enrolments = Enrolments(
+      implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(
         Set(
           Enrolment(
-            key               = "IR-SA",
+            key               = "IR-SA-TRUST-ORG",
             identifiers       = Seq(EnrolmentIdentifier("TaxId", "1234567890")),
             state             = "Activated",
             delegatedAuthRule = None
@@ -488,24 +477,21 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
         )
       )
 
-      when(mockAuthConnector.authorise(any(), any())(any(), any()))
-        .thenReturn(Future.successful(enrolments))
-
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
+      when(mockSchemaValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(
           Future.successful(SubmissionResult(status = SUBMITTED, rawXml = Some("<Confirmation>SA Suspend Monthly Message received</Confirmation>")))
         )
 
-      service.submitToChris(saBudgetingSuspendRequest, "credId123", "Agent").map { result =>
+      service.submitToChris(saBudgetingSuspendRequest) map { result =>
         result.status mustBe SUBMITTED
         result.rawXml.value must include("SA Suspend Monthly Message received")
       }
     }
 
     "return confirmation when submission succeeds for SA suspend (Weekly)" in {
-      val enrolments = Enrolments(
+      implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(
         Set(
           Enrolment(
             key               = "IR-SA",
@@ -516,23 +502,21 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
         )
       )
 
-      when(mockAuthConnector.authorise(any(), any())(any(), any()))
-        .thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
+      when(mockSchemaValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(
           Future.successful(SubmissionResult(status = SUBMITTED, rawXml = Some("<Confirmation>SA Suspend Weekly Message received</Confirmation>")))
         )
 
-      service.submitToChris(saBudgetingSuspendRequestWeekly, "credId123", "Agent").map { result =>
+      service.submitToChris(saBudgetingSuspendRequestWeekly) map { result =>
         result.status mustBe SUBMITTED
         result.rawXml.value must include("SA Suspend Weekly Message received")
       }
     }
 
     "return confirmation when submission succeeds for SA remove suspension (Weekly)" in {
-      val enrolments = Enrolments(
+      implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(
         Set(
           Enrolment(
             key               = "IR-SA",
@@ -542,11 +526,8 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
           )
         )
       )
-
-      when(mockAuthConnector.authorise(any(), any())(any(), any()))
-        .thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
+      when(mockSchemaValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(
           Future.successful(
@@ -554,177 +535,170 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
           )
         )
 
-      service.submitToChris(saBudgetingRemoveSuspendRequest, "credId123", "Agent").map { result =>
+      service.submitToChris(saBudgetingRemoveSuspendRequest) map { result =>
         result.status mustBe SUBMITTED
         result.rawXml.value must include("SA Remove Suspension Weekly Message received")
       }
     }
 
     "return confirmation when submission succeeds for SA (weekly)" in {
-      val enrolments = Enrolments(
+      implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(
         Set(
           Enrolment(
-            key               = "CESA",
+            key               = "IR-SA",
             identifiers       = Seq(EnrolmentIdentifier("UTR", "1234567890")),
             state             = "Activated",
             delegatedAuthRule = None
           )
         )
       )
-      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
+      when(mockSchemaValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(Future.successful(SubmissionResult(status = SUBMITTED, rawXml = Some("<Confirmation>SA Weekly Message received</Confirmation>"))))
 
-      service.submitToChris(saWeeklyRequest, "credId123", "Organisation").map { result =>
+      service.submitToChris(saWeeklyRequest) map { result =>
         result.status mustBe SUBMITTED
         result.rawXml.value must include("SA Weekly Message received")
       }
     }
 
     "return confirmation when submission succeeds for OTHER_LIABILITY" in {
-      val enrolments = Enrolments(
+      implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(
         Set(
           Enrolment(
-            key               = "SAFE",
+            key               = "HMRC-ECL-ORG",
             identifiers       = Seq(EnrolmentIdentifier("UTR", "1234567890")),
             state             = "Activated",
             delegatedAuthRule = None
           )
         )
       )
-      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
+      when(mockSchemaValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(
           Future.successful(SubmissionResult(status = SUBMITTED, rawXml = Some("<Confirmation>OTHER_LIABILITY Message received</Confirmation>")))
         )
 
-      service.submitToChris(ctRequest, "credId123", "Individual").map { result =>
+      service.submitToChris(ctRequest) map { result =>
         result.status mustBe SUBMITTED
         result.rawXml.value must include("OTHER_LIABILITY Message received")
       }
     }
 
     "return confirmation when submission succeeds for CT" in {
-      val enrolments = Enrolments(
+      implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(
         Set(
           Enrolment(
-            key               = "COTA",
+            key               = "IR-CT",
             identifiers       = Seq(EnrolmentIdentifier("UTR", "1234567890")),
             state             = "Activated",
             delegatedAuthRule = None
           )
         )
       )
-      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
+      when(mockSchemaValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(Future.successful(SubmissionResult(status = SUBMITTED, rawXml = Some("<Confirmation>CT Message received</Confirmation>"))))
 
-      service.submitToChris(ctRequest, "credId123", "Agent").map { result =>
+      service.submitToChris(ctRequest) map { result =>
         result.status mustBe SUBMITTED
         result.rawXml.value must include("CT Message received")
       }
     }
 
     "return confirmation when submission succeeds for Amend Single" in {
-      val enrolments = Enrolments(
+      implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(
         Set(
           Enrolment(
-            key               = "COTA",
+            key               = "IR-CT",
             identifiers       = Seq(EnrolmentIdentifier("UTR", "1234567890")),
             state             = "Activated",
             delegatedAuthRule = None
           )
         )
       )
-      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
+      when(mockSchemaValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(Future.successful(SubmissionResult(status = SUBMITTED, rawXml = Some("<Confirmation>CT Message received</Confirmation>"))))
 
-      service.submitToChris(amendSingleRequest, "credId123", "Agent").map { result =>
+      service.submitToChris(amendSingleRequest) map { result =>
         result.status mustBe SUBMITTED
         result.rawXml.value must include("CT Message received")
       }
     }
 
     "return confirmation when submission succeeds for cancel single plan" in {
-      val enrolments = Enrolments(
+      implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(
         Set(
           Enrolment(
-            key               = "COTA",
+            key               = "IR-CT",
             identifiers       = Seq(EnrolmentIdentifier("UTR", "1234567890")),
             state             = "Activated",
             delegatedAuthRule = None
           )
         )
       )
-      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
+      when(mockSchemaValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(Future.successful(SubmissionResult(status = SUBMITTED, rawXml = Some("<Confirmation>Cancel Message received</Confirmation>"))))
 
-      service.submitToChris(cancelSingleRequest, "credId123", "Agent").map { result =>
+      service.submitToChris(cancelSingleRequest).map { result =>
         result.status mustBe SUBMITTED
         result.rawXml.value must include("Cancel Message received")
       }
     }
 
     "return confirmation when submission succeeds for VAT" in {
-      val enrolments = Enrolments(
+      implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(
         Set(
           Enrolment(
-            key               = "VAT",
+            key               = "IR-CT",
             identifiers       = Seq(EnrolmentIdentifier("UTR", "1234567890")),
             state             = "Activated",
             delegatedAuthRule = None
           )
         )
       )
-      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
+      when(mockSchemaValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(Future.successful(SubmissionResult(status = SUBMITTED, rawXml = Some("<Confirmation>VAT Message received</Confirmation>"))))
 
-      service.submitToChris(vatRequest, "credId123", "Agent").map { result =>
+      service.submitToChris(vatRequest) map { result =>
         result.status mustBe SUBMITTED
         result.rawXml.value must include("VAT Message received")
       }
     }
 
     "return confirmation when submission succeeds for SDLT" in {
-      val enrolments = Enrolments(
+      implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(
         Set(
           Enrolment(
-            key               = "VAT",
+            key               = "IR-CT",
             identifiers       = Seq(EnrolmentIdentifier("UTR", "1234567890")),
             state             = "Activated",
             delegatedAuthRule = None
           )
         )
       )
-      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
+      when(mockSchemaValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(Future.successful(SubmissionResult(status = SUBMITTED, rawXml = Some("<Confirmation>SDLT Message received</Confirmation>"))))
 
-      service.submitToChris(ctRequest, "credId123", "Agent").map { result =>
+      service.submitToChris(ctRequest) map { result =>
         result.status mustBe SUBMITTED
         result.rawXml.value must include("SDLT Message received")
       }
     }
 
     "return confirmation when submission succeeds for PAYE" in {
-      val enrolments = Enrolments(
+      implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(
         Set(
           Enrolment(
             key               = "IR-PAYE",
@@ -734,55 +708,52 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
           )
         )
       )
-      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
+      when(mockSchemaValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(Future.successful(SubmissionResult(status = SUBMITTED, rawXml = Some("<Confirmation>PAYE Message received</Confirmation>"))))
 
-      service.submitToChris(payeRequest, "credId123", "Agent").map { result =>
+      service.submitToChris(payeRequest) map { result =>
         result.status mustBe SUBMITTED
         result.rawXml.value must include("PAYE Message received")
       }
     }
 
     "return confirmation when submission succeeds for MGD (none)" in {
-      val enrolments = Enrolments(
+      implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(
         Set(
           Enrolment(
-            key               = "MGD",
+            key               = "HMRC-MGD-ORG",
             identifiers       = Seq(EnrolmentIdentifier("HMRCMGDRN", "MGD4567890")),
             state             = "Activated",
             delegatedAuthRule = None
           )
         )
       )
-      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
+      when(mockSchemaValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(Future.successful(SubmissionResult(status = SUBMITTED, rawXml = Some("<Confirmation>MGD Message received</Confirmation>"))))
 
-      service.submitToChris(mgdRequest, "credId123", "Individual").map { result =>
+      service.submitToChris(mgdRequest) map { result =>
         result.status mustBe SUBMITTED
         result.rawXml.value must include("MGD Message received")
       }
     }
 
     "return confirmation when submission succeeds for cancel variable plan" in {
-      val enrolments = Enrolments(
+      implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(
         Set(
           Enrolment(
-            key               = "MGD",
+            key               = "HMRC-MGD-ORG",
             identifiers       = Seq(EnrolmentIdentifier("HMRCMGDRN", "MGD4567890")),
             state             = "Activated",
             delegatedAuthRule = None
           )
         )
       )
-      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
+      when(mockSchemaValidator.validate(any[Elem])).thenReturn(Success(()))
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
         .thenReturn(
           Future.successful(
@@ -790,31 +761,31 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
           )
         )
 
-      service.submitToChris(mgdCancelRequest, "credId123", "Individual").map { result =>
+      service.submitToChris(mgdCancelRequest) map { result =>
         result.status mustBe SUBMITTED
         result.rawXml.value must include("MGD with variable Cancel Message received")
       }
     }
 
-    "fail when XML validation fails" in {
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Failure(new RuntimeException("Invalid XML")))
-
-      recoverToSucceededIf[RuntimeException] {
-        service.submitToChris(tcRequest, "credId123", "Organisation")
-      }
-    }
-
     "propagate connector failures" in {
-      val enrolments = Enrolments(Set(Enrolment("HMRC-NDDS-ORG")))
-      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(enrolments))
-      when(mockXmlValidator.validate(any[Elem])).thenReturn(Success(()))
+      implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(Set(Enrolment("HMRC-CIS-ORG")))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
+      when(mockSchemaValidator.validate(any[Elem])).thenReturn(Success(()))
 
       // Connector fails with an exception -> service should propagate (fail the Future)
       when(mockConnector.submitEnvelope(any[Elem], any[String])(any())).thenReturn(Future.failed(new RuntimeException("Boom")))
 
       recoverToSucceededIf[RuntimeException] {
-        service.submitToChris(tcRequest, "credId789", "Agent")
+        service.submitToChris(tcRequest)
+      }
+    }
+
+    "fail when XML validation fails" in {
+      implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(Set(Enrolment("HMRC-CIS-ORG")))
+      when(mockSchemaValidator.validate(any[Elem])).thenReturn(Failure(new RuntimeException("Invalid XML")))
+
+      assertThrows[RuntimeException] {
+        service.submitToChris(tcRequest)
       }
     }
   }

@@ -16,7 +16,14 @@
 
 package uk.gov.hmrc.nationaldirectdebit.models.requests.chris
 
-import uk.gov.hmrc.nationaldirectdebit.models.requests.ChrisSubmissionRequest
+import uk.gov.hmrc.nationaldirectdebit.models.requests.{AuthenticatedRequest, ChrisSubmissionRequest}
+import uk.gov.hmrc.nationaldirectdebit.services.ChrisEnvelopeConstants
+import uk.gov.hmrc.nationaldirectdebit.services.chrisUtils.{DateUtils, PaymentPlanBuilder, XmlUtils}
+
+import java.time.LocalDateTime
+import java.time.ZoneOffset.UTC
+import java.time.format.DateTimeFormatter
+import scala.xml.{Elem, PrettyPrinter, XML}
 
 case class EnvelopeDetails(
   request: ChrisSubmissionRequest,
@@ -30,4 +37,84 @@ case class EnvelopeDetails(
   senderType: String,
   serviceType: DirectDebitSource,
   expectedHodService: Option[String]
-)
+) {
+  lazy val build: Elem =
+    XML.loadString(
+      EnvelopeDetails.prettyPrinter.format(
+        <ChRISEnvelope xmlns="http://www.hmrc.gov.uk/ChRIS/Envelope/2">
+          <EnvelopeVersion>2.0</EnvelopeVersion>
+          <Header>
+            <MessageClass>{ChrisEnvelopeConstants.MessageClass}</MessageClass>
+            <Qualifier>{ChrisEnvelopeConstants.Qualifier}</Qualifier>
+            <Function>{ChrisEnvelopeConstants.Function}</Function>
+            <Sender>
+              <System>{ChrisEnvelopeConstants.SenderSystem}</System>
+              <CorrelatingID>{correlatingId}</CorrelatingID>
+              <ReceiptDate>{receiptDate}</ReceiptDate>
+            </Sender>
+          </Header>
+          <Body>
+            <IRenvelope xmlns={""}>
+              <IRheader>
+                {XmlUtils.formatKeys(keysData)}
+                <PeriodEnd>{periodEnd}</PeriodEnd>
+                <Sender>{senderType}</Sender>
+              </IRheader>
+              <dDIPPDetails>
+                <submissionDateTime>{submissionDateTime}</submissionDateTime>
+                <credentialID>{credId}</credentialID>
+                {XmlUtils.formatKnownFacts(knownFactData)}
+                <directDebitInstruction>
+                  {
+          if (request.hasExistingPlan) {
+            <ddiReferenceNo>{request.ddiReferenceNo}</ddiReferenceNo>
+          } else {
+            <actionType>{ChrisEnvelopeConstants.ActionType_1}</actionType>
+                      <ddiReferenceNo>{request.ddiReferenceNo}</ddiReferenceNo>
+                      <bankSortCode>{request.yourBankDetailsWithAuddisStatus.sortCode}</bankSortCode>
+                      <bankAccountNo>{request.yourBankDetailsWithAuddisStatus.accountNumber}</bankAccountNo>
+                      <bankAccountName>{request.yourBankDetailsWithAuddisStatus.accountHolderName}</bankAccountName>
+          }
+        }
+                    {
+          if (request.yourBankDetailsWithAuddisStatus.auddisStatus) {
+            <paperAuddisFlag>01</paperAuddisFlag>
+          } else {
+            scala.xml.Null
+          }
+        }
+                </directDebitInstruction>
+                {PaymentPlanBuilder.build(request, expectedHodService)}
+              </dDIPPDetails>
+            </IRenvelope>
+          </Body>
+        </ChRISEnvelope>
+      )
+    )
+}
+
+object EnvelopeDetails {
+  val prettyPrinter = new PrettyPrinter(120, 4)
+
+  def details(submission: ChrisSubmissionRequest,
+              request: AuthenticatedRequest[?],
+              knownFactData: Seq[Map[String, String]],
+              keysData: Seq[Map[String, String]],
+              correlatingId: String
+             ): EnvelopeDetails = {
+    val now = LocalDateTime.now(UTC).format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS"))
+    EnvelopeDetails(
+      submission,
+      request.credId,
+      knownFactData,
+      keysData,
+      correlatingId,
+      now,
+      now,
+      DateUtils.calculatePeriodEnd(),
+      if (request.affinityGroup == "Agent") "Agent" else "Individual",
+      submission.serviceType,
+      ChrisEnvelopeConstants.directDebitSourceToHodService.get(submission.serviceType)
+    )
+  }
+}

@@ -37,7 +37,7 @@ class DefaultAuthAction @Inject() (
     with AuthorisedFunctions
     with Logging:
 
-  val acceptedEnrolments = Set(
+  private val acceptedEnrolments = Set(
     "IR-SA",
     "IR-SA-TRUST-ORG",
     "IR-SA-PART-ORG",
@@ -48,8 +48,8 @@ class DefaultAuthAction @Inject() (
     "HMRC-ECL-ORG"
   )
 
-  private def usingSupportedEnrolments(enrolments: Enrolments): Boolean = {
-    enrolments.enrolments
+  private def usingSupportedEnrolments(enrolments: Set[Enrolment]): Boolean = {
+    enrolments
       .exists {
         case e @ Enrolment("HMRC-PSA-ORG", _, _, _) if e.isActivated                        => true
         case e @ Enrolment(key, _, state, _) if e.isActivated || state == "NotYetActivated" => acceptedEnrolments(key)
@@ -69,24 +69,22 @@ class DefaultAuthAction @Inject() (
     val retrievals = Retrievals.internalId and Retrievals.credentials and Retrievals.affinityGroup and Retrievals.nino and Retrievals.allEnrolments
 
     authorised()
-      .retrieve(retrievals) { case maybeInternalId ~ maybeCreds ~ maybeAffinity ~ maybeNino ~ enrolments =>
-        (maybeInternalId, maybeCreds, maybeAffinity, enrolments) match
-          case (Some(internalId), Some(credentials), Some(affinity), userEnrolments) if usingSupportedEnrolments(userEnrolments) =>
-            val credId = credentials.providerId
-            val affinityName = affinity.toString
-            block(
-              AuthenticatedRequest(
-                request,
-                internalId,
-                sessionId,
-                credId,
-                affinityName,
-                nino = maybeNino
-              )
+      .retrieve(retrievals) {
+        case Some(internalId) ~ Some(credentials) ~ Some(affinity) ~ nino ~ Enrolments(userEnrolments) if usingSupportedEnrolments(userEnrolments) =>
+          val credId = credentials.providerId
+          val affinityName = affinity.toString
+          block(
+            AuthenticatedRequest(
+              request,
+              credId,
+              sessionId,
+              affinityName,
+              nino,
+              userEnrolments
             )
-
-          case _ =>
-            throw new UnauthorizedException("Unable to retrieve required auth values")
+          )
+        case _ =>
+          throw new UnauthorizedException("Unable to retrieve required auth values")
       }
       .recover { case _: AuthorisationException =>
         val error = "Failed to authorise request"
