@@ -45,7 +45,7 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, validator: SchemaV
     val expectedHodServiceOpt = ChrisEnvelopeConstants.directDebitSourceToHodService.get(serviceType)
 
     // Only activated enrolments
-    val active = request.enrolments.filter(_.isActivated)
+    val active = request.enrolments.filter(e => e.isActivated && enrolmentToHodService.keys.toSet(e.key))
 
     // Priority ordering for UTR-based enrolments
     val utrPriority: Map[String, Int] = Map(
@@ -119,7 +119,7 @@ class ChrisService @Inject() (chrisConnector: ChrisConnector, validator: SchemaV
 
     val (saEnrolments, otherEnrolments) =
       request.enrolments.toSeq
-        .filter(_.isActivated)
+        .filter(e => e.isActivated && enrolmentToHodService.keys.toSet(e.key))
         .partition(e => saKeys(e.key))
 
     // --------------------------------------------------------

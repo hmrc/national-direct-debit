@@ -767,6 +767,24 @@ class ChrisServiceSpec extends AsyncWordSpec with Matchers with ScalaFutures wit
       }
     }
 
+    "not fail because of unknown enrolments" in {
+      implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(Set(Enrolment("WHAT-IS-THIS")))
+      when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
+      when(mockSchemaValidator.validate(any[Elem])).thenReturn(Success(()))
+
+      when(mockConnector.submitEnvelope(any[Elem], any[String])(any()))
+        .thenReturn(
+          Future.successful(
+            SubmissionResult(status = SUBMITTED, rawXml = Some("<Confirmation>MGD with variable Cancel Message received</Confirmation>"))
+          )
+        )
+
+      service.submitToChris(mgdCancelRequest) map { result =>
+        result.status mustBe SUBMITTED
+        result.rawXml.value must include("MGD with variable Cancel Message received")
+      }
+    }
+
     "propagate connector failures" in {
       implicit val req: AuthenticatedRequest[?] = fakeAuthRequest(Set(Enrolment("HMRC-CIS-ORG")))
       when(mockAuditService.sendEvent(any())(any())).thenReturn(Future.successful(AuditResultSuccess))
