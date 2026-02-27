@@ -22,9 +22,9 @@ object XmlUtils {
 
   def formatKeys(
     enrolments: Seq[Map[String, String]]
-  ): Seq[scala.xml.Node] =
-    enrolments.flatMap { entry =>
-      (for {
+  ): Seq[scala.xml.Node] = {
+    val keys = enrolments.flatMap { entry =>
+      for {
         knownFactType  <- entry.get("knownFactType")
         knownFactValue <- entry.get("knownFactValue")
       } yield {
@@ -34,11 +34,11 @@ object XmlUtils {
           else
             knownFactValue.trim
 
-        Seq(
-          <Key Type={knownFactType.trim}>{valueToUse}</Key>
-        )
-      }).fold(Seq.empty)(keys => <Keys>keys</Keys>)
+        <Key Type={knownFactType.trim}>{valueToUse}</Key>
+      }
     }
+    if (keys.isEmpty) Seq() else Seq(<Keys>{keys}</Keys>)
+  }
 
   def formatKnownFacts(hodServices: Seq[Map[String, String]]): Seq[scala.xml.Node] =
     hodServices.flatMap { serviceMap =>
